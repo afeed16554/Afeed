@@ -10,169 +10,164 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
         }
         .sim-card {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .sim-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
         }
     </style>
 </head>
-<body class="min-h-screen text-slate-800">
+<body class="min-h-screen bg-slate-900 text-slate-300 selection:bg-indigo-500/30">
 
-    <!-- Header Section -->
-    <header class="bg-indigo-700 text-white py-16 px-4">
+    <header class="bg-slate-950 border-b border-slate-800 py-16 px-4">
         <div class="max-w-5xl mx-auto text-center">
             <div class="flex justify-center mb-4">
-                <i data-lucide="atom" class="w-16 h-16 text-indigo-200 animate-pulse"></i>
+                <i data-lucide="atom" class="w-16 h-16 text-indigo-400 animate-pulse"></i>
             </div>
-            <h1 class="text-4xl md:text-5xl font-bold mb-4 tracking-tight">Physics Lab Portal</h1>
-            <p class="text-xl text-indigo-100 max-w-2xl mx-auto">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-white">Physics Lab Portal</h1>
+            <p class="text-xl text-slate-400 max-w-2xl mx-auto">
                 Explore the laws of nature through interactive visualizations and real-time simulations.
             </p>
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="max-w-6xl mx-auto py-12 px-6">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             
-
-
-            <!-- Lens Simulation Card -->
-            <a href="Lens%20visual%20Simulation.html" class="sim-card block bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+            <a href="Lens%20visual%20Simulation.html" class="sim-card block bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 shadow-lg shadow-black/20 hover:border-slate-600">
                 <div class="h-3 bg-blue-500"></div>
                 <div class="p-8 text-center">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 text-blue-600 mb-6">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/10 text-blue-400 mb-6 ring-1 ring-blue-500/20">
                         <i data-lucide="eye" class="w-8 h-8"></i>
                     </div>
-                    <h2 class="text-2xl font-bold text-slate-900 mb-3">Lens Simulation</h2>
-                    <p class="text-slate-600 mb-6 leading-relaxed">
+                    <h2 class="text-2xl font-bold text-white mb-3">Lens Simulation</h2>
+                    <p class="text-slate-400 mb-6 leading-relaxed">
                         Visualize light rays, focal points, and image formation in convex and concave lenses.
                     </p>
-                    <span class="inline-flex items-center text-blue-600 font-semibold group">
+                    <span class="inline-flex items-center text-blue-400 font-semibold group">
                         Launch Lab <i data-lucide="arrow-right" class="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1"></i>
                     </span>
                 </div>
             </a>
 
-
-
-            <!-- Simple Harmonic Motion Card -->
-            <a href="Simple%20harmonic%20motion%20Simulation.html" class="sim-card block bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+            <a href="Simple%20harmonic%20motion%20Simulation.html" class="sim-card block bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 shadow-lg shadow-black/20 hover:border-slate-600">
                 <div class="h-3 bg-emerald-500"></div>
                 <div class="p-8 text-center">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 mb-6">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-400 mb-6 ring-1 ring-emerald-500/20">
                         <i data-lucide="activity" class="w-8 h-8"></i>
                     </div>
-                    <h2 class="text-2xl font-bold text-slate-900 mb-3">Harmonic Motion</h2>
-                    <p class="text-slate-600 mb-6 leading-relaxed">
+                    <h2 class="text-2xl font-bold text-white mb-3">Harmonic Motion</h2>
+                    <p class="text-slate-400 mb-6 leading-relaxed">
                         Study oscillations, springs, and pendulums with real-time graphs and energy tracking.
                     </p>
-                    <span class="inline-flex items-center text-emerald-600 font-semibold group">
+                    <span class="inline-flex items-center text-emerald-400 font-semibold group">
                         Launch Lab <i data-lucide="arrow-right" class="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1"></i>
                     </span>
                 </div>
             </a>
 
-
-
-            <!-- Vector Calculus Card -->
-            <a href="Vector%20Calculus%20Simulation.html" class="sim-card block bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+            <a href="Vector%20Calculus%20Simulation.html" class="sim-card block bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 shadow-lg shadow-black/20 hover:border-slate-600">
                 <div class="h-3 bg-orange-500"></div>
                 <div class="p-8 text-center">
-                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-50 text-orange-600 mb-6">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-500/10 text-orange-400 mb-6 ring-1 ring-orange-500/20">
                         <i data-lucide="maximize" class="w-8 h-8"></i>
                     </div>
-                    <h2 class="text-2xl font-bold text-slate-900 mb-3">Vector Calculus</h2>
-                    <p class="text-slate-600 mb-6 leading-relaxed">
+                    <h2 class="text-2xl font-bold text-white mb-3">Vector Calculus</h2>
+                    <p class="text-slate-400 mb-6 leading-relaxed">
                         Explore vector fields, gradients, and flux in a 2D/3D coordinate system.
                     </p>
-                    <span class="inline-flex items-center text-orange-600 font-semibold group">
+                    <span class="inline-flex items-center text-orange-400 font-semibold group">
                         Launch Lab <i data-lucide="arrow-right" class="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1"></i>
                     </span>
                 </div>
             </a>
 
+            <a href="Superposition%20of%20wave%20Simulation.html" class="sim-card block bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 shadow-lg shadow-black/20 hover:border-slate-600">
+                <div class="h-3 bg-purple-500"></div> 
+                <div class="p-8 text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-500/10 text-purple-400 mb-6 ring-1 ring-purple-500/20">
+                        <i data-lucide="waves" class="w-8 h-8"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white mb-3">Superposition of Waves</h2>
+                    <p class="text-slate-400 mb-6 leading-relaxed">
+                        Analyze wave interference, constructive and destructive superposition patterns in 1D and 2D mediums.
+                    </p>
+                    <span class="inline-flex items-center text-purple-400 font-semibold group">
+                        Launch Lab <i data-lucide="arrow-right" class="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1"></i>
+                    </span>
+                </div>
+            </a>
 
+            <a href="Deviation%20Angle%20of%20Prism%20Simulation.html" class="sim-card block bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 shadow-lg shadow-black/20 hover:border-slate-600">
+                <div class="h-3 bg-rose-500"></div> 
+                <div class="p-8 text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-rose-500/10 text-rose-400 mb-6 ring-1 ring-rose-500/20">
+                        <i data-lucide="triangle" class="w-8 h-8"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white mb-3">Deviation Angle of Prism</h2>
+                    <p class="text-slate-400 mb-6 leading-relaxed">
+                        Investigate light refraction, dispersion, and calculate the angle of minimum deviation through a glass prism.
+                    </p>
+                    <span class="inline-flex items-center text-rose-400 font-semibold group">
+                        Launch Lab <i data-lucide="arrow-right" class="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1"></i>
+                    </span>
+                </div>
+            </a>
 
-<!-- Superposition Simulation -->
-<a href="Superposition%20of%20wave%20Simulation.html" class="sim-card block bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
-    <!-- Use 'bg-purple-500' or 'bg-rose-500' or 'bg-amber-500' for different colors -->
-    <div class="h-3 bg-purple-500"></div> 
-    <div class="p-8 text-center">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-50 text-purple-600 mb-6">
-            <!-- Change 'beaker' to 'zap', 'target', or 'wind' for different icons -->
-            <i data-lucide="beaker" class="w-8 h-8"></i>
+            <!-- ==================================================================== -->
+            <!-- HOW TO ADD A NEW SIMULATION CARD:                                    -->
+            <!-- 1. Copy the block of code below.                                     -->
+            <!-- 2. Change the href="..." to your new HTML file link.                 -->
+            <!-- 3. Change 'cyan' to any color (e.g., yellow, teal, indigo).          -->
+            <!-- 4. Pick a new icon name for data-lucide="..." (e.g. 'magnet', 'zap') -->
+            <!-- ==================================================================== -->
+            
+            <!--
+            <a href="New%20Simulation.html" class="sim-card block bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 shadow-lg shadow-black/20 hover:border-slate-600">
+                <div class="h-3 bg-cyan-500"></div> 
+                <div class="p-8 text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-cyan-500/10 text-cyan-400 mb-6 ring-1 ring-cyan-500/20">
+                        <i data-lucide="zap" class="w-8 h-8"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white mb-3">New Simulation Title</h2>
+                    <p class="text-slate-400 mb-6 leading-relaxed">
+                        Add a description of your new physics simulation here.
+                    </p>
+                    <span class="inline-flex items-center text-cyan-400 font-semibold group">
+                        Launch Lab <i data-lucide="arrow-right" class="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1"></i>
+                    </span>
+                </div>
+            </a>
+            -->
+
         </div>
-        <h2 class="text-2xl font-bold text-slate-900 mb-3">Superposition of wave Simulation</h2>
-        <p class="text-slate-600 mb-6 leading-relaxed">
-            Write a short description here about what students will learn in this simulation.
-        </p>
-        <span class="inline-flex items-center text-purple-600 font-semibold group">
-            Launch Lab <i data-lucide="arrow-right" class="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1"></i>
-        </span>
-    </div>
-</a>
 
-
-
-
-<!-- Deviation Angle of Prism Simulation -->
-<a href="Deviation%20Angle%20of%20Prism%20Simulation.html" class="sim-card block bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
-    <!-- Use 'bg-purple-500' or 'bg-rose-500' or 'bg-amber-500' for different colors -->
-    <div class="h-3 bg-purple-500"></div> 
-    <div class="p-8 text-center">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-50 text-purple-600 mb-6">
-            <!-- Change 'beaker' to 'zap', 'target', or 'wind' for different icons -->
-            <i data-lucide="beaker" class="w-8 h-8"></i>
-        </div>
-        <h2 class="text-2xl font-bold text-slate-900 mb-3">Deviation Angle of Prism Simulation</h2>
-        <p class="text-slate-600 mb-6 leading-relaxed">
-            Write a short description here about what students will learn in this simulation.
-        </p>
-        <span class="inline-flex items-center text-purple-600 font-semibold group">
-            Launch Lab <i data-lucide="arrow-right" class="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1"></i>
-        </span>
-    </div>
-</a>
-
-
-
-
-
-
-        </div>
-
-        <!-- Help Section -->
-        <section class="mt-20 text-center bg-slate-100 rounded-3xl p-10">
-            <h3 class="text-2xl font-bold text-slate-800 mb-2">Academic Instructions</h3>
-            <p class="text-slate-600 mb-6">These simulations are designed for 11th and 12th grade Physics students.</p>
+        <section class="mt-20 text-center bg-slate-800/50 border border-slate-700/50 rounded-3xl p-10 shadow-inner">
+            <h3 class="text-2xl font-bold text-white mb-2">Academic Instructions</h3>
+            <p class="text-slate-400 mb-6">These simulations are designed for 11th and 12th grade Physics students.</p>
             <div class="flex flex-wrap justify-center gap-4">
-                <div class="bg-white px-4 py-2 rounded-lg text-sm font-medium text-slate-500 shadow-sm border border-slate-200">
+                <div class="bg-slate-800 px-4 py-2 rounded-lg text-sm font-medium text-slate-300 shadow-sm border border-slate-600">
                     💻 Works on Tablets & Desktops
                 </div>
-                <div class="bg-white px-4 py-2 rounded-lg text-sm font-medium text-slate-500 shadow-sm border border-slate-200">
+                <div class="bg-slate-800 px-4 py-2 rounded-lg text-sm font-medium text-slate-300 shadow-sm border border-slate-600">
                     ⚡ Interactive Sliders
                 </div>
-                <div class="bg-white px-4 py-2 rounded-lg text-sm font-medium text-slate-500 shadow-sm border border-slate-200">
+                <div class="bg-slate-800 px-4 py-2 rounded-lg text-sm font-medium text-slate-300 shadow-sm border border-slate-600">
                     📊 Real-time Data
                 </div>
             </div>
         </section>
     </main>
 
-    <footer class="text-center py-10 text-slate-400 text-sm">
-        <p>&copy; 2024 afeed16554 Physics Lab. Hosted on GitHub Pages.</p>
+    <footer class="text-center py-10 text-slate-500 text-sm">
+        <p>&copy; 2024 Physics Lab. Hosted on GitHub Pages.</p>
     </footer>
 
     <script>
-        // Initialize Lucide icons
         lucide.createIcons();
     </script>
 </body>
 </html>
-
