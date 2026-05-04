@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wave Superposition Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a; /* Slate 900 */
+            color: #e2e8f0; /* Slate 200 */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .slider-label {
+            width: 100px;
+            font-size: 0.875rem;
+        }
+        input[type=range] {
+            flex-grow: 1;
+            height: 6px;
+            border-radius: 3px;
+            appearance: none;
+            background: #334155;
+            outline: none;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #cbd5e1;
+            cursor: pointer;
+            transition: background .15s ease-in-out;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            background: #fff;
+        }
+        .wave1-slider input[type=range]::-webkit-slider-thumb { background: #f87171; }
+        .wave2-slider input[type=range]::-webkit-slider-thumb { background: #60a5fa; }
+        
+        canvas {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 0.5rem;
+            background: #1e293b;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4">
+
+    <div class="w-full max-w-5xl">
+        <header class="mb-6 text-center">
+            <h1 class="text-3xl font-bold mb-2 text-white">Wave Superposition</h1>
+            <p class="text-slate-400 text-sm">Visualizing the interference of two traveling waves. The <span class="text-green-400 font-bold">Green Dot</span> represents a particle in the medium.</p>
+        </header>
+
+        <!-- Canvas Container -->
+        <div class="relative w-full aspect-[2/1] md:aspect-[3/1] mb-6">
+            <canvas id="simCanvas" class="w-full h-full block border border-slate-700"></canvas>
+            
+            <!-- Legend overlay -->
+            <div class="absolute top-4 right-4 bg-slate-800/80 backdrop-blur-sm p-3 rounded border border-slate-600 text-xs">
+                <div class="flex items-center mb-1">
+                    <div class="w-4 h-0.5 bg-red-400 mr-2"></div> Wave 1
+                </div>
+                <div class="flex items-center mb-1">
+                    <div class="w-4 h-0.5 bg-blue-400 mr-2"></div> Wave 2
+                </div>
+                <div class="flex items-center">
+                    <div class="w-4 h-1 bg-white mr-2"></div> Resultant (Sum)
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl">
+            
+            <!-- Wave 1 Controls -->
+            <div class="bg-slate-900/50 p-4 rounded-lg border-l-4 border-red-400 wave1-slider">
+                <h2 class="text-red-400 font-bold mb-4 flex justify-between">
+                    <span>Wave 1</span>
+                    <label class="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer">
+                        <input type="checkbox" id="showWave1" checked class="accent-red-500">
+                        <span>Show</span>
+                    </label>
+                </h2>
+                
+                <div class="slider-container">
+                    <span class="slider-label">Amplitude</span>
+                    <input type="range" id="amp1" min="0" max="100" value="50">
+                    <span class="w-12 text-right text-xs font-mono" id="amp1Val">50</span>
+                </div>
+                <div class="slider-container">
+                    <span class="slider-label">Wavelength</span>
+                    <input type="range" id="lambda1" min="50" max="600" value="200">
+                    <span class="w-12 text-right text-xs font-mono" id="lambda1Val">200</span>
+                </div>
+                <div class="slider-container">
+                    <span class="slider-label">Speed</span>
+                    <input type="range" id="speed1" min="-10" max="10" value="2" step="0.5">
+                    <span class="w-12 text-right text-xs font-mono" id="speed1Val">2</span>
+                </div>
+            </div>
+
+            <!-- Wave 2 Controls -->
+            <div class="bg-slate-900/50 p-4 rounded-lg border-l-4 border-blue-400 wave2-slider">
+                <h2 class="text-blue-400 font-bold mb-4 flex justify-between">
+                    <span>Wave 2</span>
+                    <label class="flex items-center space-x-2 text-xs text-slate-400 cursor-pointer">
+                        <input type="checkbox" id="showWave2" checked class="accent-blue-500">
+                        <span>Show</span>
+                    </label>
+                </h2>
+
+                <div class="slider-container">
+                    <span class="slider-label">Amplitude</span>
+                    <input type="range" id="amp2" min="0" max="100" value="50">
+                    <span class="w-12 text-right text-xs font-mono" id="amp2Val">50</span>
+                </div>
+                <div class="slider-container">
+                    <span class="slider-label">Wavelength</span>
+                    <input type="range" id="lambda2" min="50" max="600" value="250">
+                    <span class="w-12 text-right text-xs font-mono" id="lambda2Val">250</span>
+                </div>
+                <div class="slider-container">
+                    <span class="slider-label">Speed</span>
+                    <input type="range" id="speed2" min="-10" max="10" value="3" step="0.5">
+                    <span class="w-12 text-right text-xs font-mono" id="speed2Val">3</span>
+                </div>
+            </div>
+
+            <!-- Global Controls -->
+            <div class="md:col-span-2 flex flex-col md:flex-row justify-between items-center pt-2 border-t border-slate-700 mt-2">
+                <div class="flex space-x-4 mb-4 md:mb-0">
+                    <button id="pauseBtn" class="px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded text-white transition font-medium text-sm">Pause / Play</button>
+                    <button id="resetBtn" class="px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded text-white transition font-medium text-sm">Reset Defaults</button>
+                </div>
+                
+                <div class="flex items-center space-x-4 w-full md:w-auto">
+                    <span class="text-sm text-slate-400">Dot Position:</span>
+                    <input type="range" id="dotPos" min="0" max="100" value="50" class="flex-grow md:w-48">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // State variables
+        let time = 0;
+        let isPaused = false;
+        
+        // Wave parameters
+        const wave1 = { amp: 50, lambda: 200, speed: 2, show: true };
+        const wave2 = { amp: 50, lambda: 250, speed: 3, show: true };
+        let dotRelX = 0.5; // Relative position of dot (0 to 1)
+
+        // UI Elements
+        const inputs = {
+            amp1: document.getElementById('amp1'),
+            lambda1: document.getElementById('lambda1'),
+            speed1: document.getElementById('speed1'),
+            show1: document.getElementById('showWave1'),
+            
+            amp2: document.getElementById('amp2'),
+            lambda2: document.getElementById('lambda2'),
+            speed2: document.getElementById('speed2'),
+            show2: document.getElementById('showWave2'),
+
+            dotPos: document.getElementById('dotPos'),
+            pauseBtn: document.getElementById('pauseBtn'),
+            resetBtn: document.getElementById('resetBtn')
+        };
+
+        const displays = {
+            amp1: document.getElementById('amp1Val'),
+            lambda1: document.getElementById('lambda1Val'),
+            speed1: document.getElementById('speed1Val'),
+            amp2: document.getElementById('amp2Val'),
+            lambda2: document.getElementById('lambda2Val'),
+            speed2: document.getElementById('speed2Val'),
+        };
+
+        // Resize handling
+        function resize() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Input Event Listeners
+        function setupListeners() {
+            // Wave 1
+            inputs.amp1.oninput = (e) => { wave1.amp = +e.target.value; displays.amp1.innerText = wave1.amp; };
+            inputs.lambda1.oninput = (e) => { wave1.lambda = +e.target.value; displays.lambda1.innerText = wave1.lambda; };
+            inputs.speed1.oninput = (e) => { wave1.speed = +e.target.value; displays.speed1.innerText = wave1.speed; };
+            inputs.show1.onchange = (e) => { wave1.show = e.target.checked; };
+
+            // Wave 2
+            inputs.amp2.oninput = (e) => { wave2.amp = +e.target.value; displays.amp2.innerText = wave2.amp; };
+            inputs.lambda2.oninput = (e) => { wave2.lambda = +e.target.value; displays.lambda2.innerText = wave2.lambda; };
+            inputs.speed2.oninput = (e) => { wave2.speed = +e.target.value; displays.speed2.innerText = wave2.speed; };
+            inputs.show2.onchange = (e) => { wave2.show = e.target.checked; };
+
+            // Global
+            inputs.dotPos.oninput = (e) => { dotRelX = +e.target.value / 100; };
+            inputs.pauseBtn.onclick = () => { isPaused = !isPaused; };
+            
+            inputs.resetBtn.onclick = () => {
+                inputs.amp1.value = 50; inputs.amp1.dispatchEvent(new Event('input'));
+                inputs.lambda1.value = 200; inputs.lambda1.dispatchEvent(new Event('input'));
+                inputs.speed1.value = 2; inputs.speed1.dispatchEvent(new Event('input'));
+                
+                inputs.amp2.value = 50; inputs.amp2.dispatchEvent(new Event('input'));
+                inputs.lambda2.value = 250; inputs.lambda2.dispatchEvent(new Event('input'));
+                inputs.speed2.value = 3; inputs.speed2.dispatchEvent(new Event('input'));
+                
+                time = 0;
+            };
+        }
+
+        function calculateY(x, t, wave) {
+            // y = A * sin(2*PI * (x/lambda - f*t))
+            // To make speed intuitive: phase = (x - speed*t) * (2PI/lambda)
+            // This way speed represents pixels per frame roughly
+            const k = (2 * Math.PI) / wave.lambda;
+            const phase = k * (x - wave.speed * t); 
+            return wave.amp * Math.sin(phase);
+        }
+
+        function draw() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const centerY = h / 2;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Draw center axis
+            ctx.beginPath();
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1;
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(w, centerY);
+            ctx.stroke();
+
+            // Arrays to store path for summation
+            // We calculate Y for every pixel column
+            const ySum = new Float32Array(w);
+
+            // Draw Wave 1
+            if (wave1.show) {
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(248, 113, 113, 0.4)'; // Red faded
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]); // Dashed
+                for (let x = 0; x < w; x++) {
+                    const y = calculateY(x, time, wave1);
+                    ySum[x] += y;
+                    if (x === 0) ctx.moveTo(x, centerY - y);
+                    else ctx.lineTo(x, centerY - y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            } else {
+                // If hidden, still need to add to sum? 
+                // Usually "Show" just means visibility, but physics logic might imply 
+                // if it's not shown, it might not exist. Let's assume it exists but is invisible
+                // UNLESS we want to isolate waves. Let's calculate it anyway for the sum,
+                // but if the user unticks it, maybe they want to see the OTHER wave only.
+                // Let's stick to: Checkbox controls VISIBILITY only. 
+                // BUT for pedagogical reasons, usually you want to turn a wave OFF.
+                // Let's calculate sum based on active logic. 
+                // ACTUALLY: Let's calculate sum regardless, but only draw the line if checked.
+                for (let x = 0; x < w; x++) {
+                    ySum[x] += calculateY(x, time, wave1);
+                }
+            }
+
+            // Draw Wave 2
+            if (wave2.show) {
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(96, 165, 250, 0.4)'; // Blue faded
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                for (let x = 0; x < w; x++) {
+                    const y = calculateY(x, time, wave2);
+                    ySum[x] += y; // Accumulate sum
+                    if (x === 0) ctx.moveTo(x, centerY - y);
+                    else ctx.lineTo(x, centerY - y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            } else {
+                for (let x = 0; x < w; x++) {
+                    ySum[x] += calculateY(x, time, wave2);
+                }
+            }
+
+            // Draw Resultant Wave (Sum)
+            // If both are hidden, we still show sum usually, or maybe sum of nothing?
+            // Let's assume sum is always derived from enabled waves.
+            // Re-calculating sum array based on "Show" toggles might be better UX.
+            // Let's restart sum logic to respect toggles for the RESULTANT too.
+            
+            // RESET Y SUM for rendering the white line
+            let finalY = new Float32Array(w);
+            for(let x=0; x<w; x++) {
+                let y = 0;
+                if (wave1.show) y += calculateY(x, time, wave1);
+                if (wave2.show) y += calculateY(x, time, wave2);
+                finalY[x] = y;
+            }
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(255,255,255,0.5)';
+            for (let x = 0; x < w; x++) {
+                if (x === 0) ctx.moveTo(x, centerY - finalY[x]);
+                else ctx.lineTo(x, centerY - finalY[x]);
+            }
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Draw The Dot
+            const dotX = Math.floor(w * dotRelX);
+            const dotY = centerY - finalY[dotX];
+
+            // Guide line for dot
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(74, 222, 128, 0.3)'; // Green faded
+            ctx.lineWidth = 1;
+            ctx.moveTo(dotX, centerY);
+            ctx.lineTo(dotX, dotY);
+            ctx.stroke();
+
+            // The Dot itself
+            ctx.beginPath();
+            ctx.fillStyle = '#4ade80'; // Green 400
+            ctx.arc(dotX, dotY, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Dot glow
+            ctx.beginPath();
+            ctx.fillStyle = 'rgba(74, 222, 128, 0.3)';
+            ctx.arc(dotX, dotY, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Update Time
+            if (!isPaused) {
+                time += 1;
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        setupListeners();
+        draw();
+
+    </script>
+</body>
+</html>
+

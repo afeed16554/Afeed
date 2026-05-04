@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vector Field Constructor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: 'JetBrains Mono', monospace;
+            touch-action: none;
+        }
+
+        canvas { display: block; }
+
+        /* HUD Styling */
+        .hud-panel {
+            background: rgba(10, 10, 15, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        /* Tool Toggle Switch */
+        .tool-switch {
+            display: flex;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 4px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .tool-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            opacity: 0.6;
+        }
+        .tool-btn.active {
+            background: rgba(255,255,255,0.1);
+            opacity: 1;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .tool-btn.active.div-mode { color: #60A5FA; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .tool-btn.active.curl-mode { color: #C084FC; border: 1px solid rgba(192, 132, 252, 0.3); }
+
+        /* Bipolar Slider */
+        input[type=range].bipolar {
+            -webkit-appearance: none; background: transparent; width: 100%;
+        }
+        input[type=range].bipolar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px; width: 20px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer; margin-top: -8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            border: 2px solid #1f2937;
+        }
+        input[type=range].bipolar::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer;
+            border-radius: 2px;
+        }
+        /* Dynamic track colors handled in JS */
+
+        .status-badge {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            border: 1px solid;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+    </style>
+</head>
+<body class="text-gray-300">
+
+    <div class="fixed inset-0 z-0">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+    <!-- Main HUD -->
+    <div class="fixed inset-0 z-10 pointer-events-none flex flex-col md:flex-row p-4 md:p-6 gap-4">
+        
+        <!-- Left Controls -->
+        <div class="hud-panel pointer-events-auto w-full md:w-80 rounded-xl p-5 flex flex-col gap-5 shadow-2xl h-fit max-h-[90vh] overflow-y-auto custom-scroll">
+            
+            <header class="border-b border-white/10 pb-4">
+                <h1 class="text-xl font-bold text-white tracking-wider">FIELD CONSTRUCTOR</h1>
+                <div class="text-xs text-gray-500 mt-1 flex justify-between">
+                    <span>v.6.0 Unified</span>
+                    <button onclick="clearField()" class="text-red-400 hover:text-red-300 font-bold">RESET</button>
+                </div>
+            </header>
+
+            <!-- Tool Selection -->
+            <div>
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Select Brush</label>
+                <div class="tool-switch">
+                    <button onclick="setTool('div')" id="btn-div" class="tool-btn active div-mode">
+                        SOURCE / SINK<br>
+                        <span class="text-[10px] font-normal opacity-75">Control Divergence</span>
+                    </button>
+                    <button onclick="setTool('curl')" id="btn-curl" class="tool-btn">
+                        VORTEX<br>
+                        <span class="text-[10px] font-normal opacity-75">Control Curl</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Intensity Slider -->
+            <div class="space-y-2 pt-2">
+                <div class="flex justify-between items-end mb-1">
+                    <label class="text-xs font-bold text-gray-400 uppercase tracking-widest" id="slider-label">Source Strength</label>
+                    <span id="strength-display" class="text-sm font-mono font-bold text-blue-400">+25</span>
+                </div>
+                
+                <div class="relative h-6 flex items-center">
+                    <div class="absolute left-1/2 top-0 bottom-0 w-px bg-white/30 transform -translate-x-1/2 pointer-events-none"></div>
+                    <input type="range" id="strength-slider" class="bipolar" min="-50" max="50" value="25" step="1">
+                </div>
+
+                <div class="flex justify-between text-[10px] text-gray-500 font-mono mt-1" id="slider-legend">
+                    <span>(-) SINK</span>
+                    <span>SOURCE (+)</span>
+                </div>
+            </div>
+
+            <!-- Analysis Panel (Live Math) -->
+            <div class="pt-4 border-t border-white/10">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 block">Field Analysis</label>
+                
+                <div id="status-solenoidal" class="status-badge bg-gray-800 border-gray-600 text-gray-400">
+                    <span>SOLENOIDAL (∇⋅F = 0)</span>
+                    <span class="text-xs">NO</span>
+                </div>
+
+                <div id="status-irrotational" class="status-badge bg-gray-800 border-gray-600 text-gray-400">
+                    <span>IRROTATIONAL (∇×F = 0)</span>
+                    <span class="text-xs">NO</span>
+                </div>
+
+                <div class="mt-3 text-xs text-gray-400 bg-white/5 p-3 rounded leading-relaxed" id="analysis-text">
+                    Add particles to begin analysis.
+                </div>
+            </div>
+            
+            <div class="text-[10px] text-gray-600 text-center italic mt-2">
+                Tip: Mix Sources and Vortices to create complex fields.
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // --- State ---
+        let width, height;
+        let particles = [];
+        let entities = []; // {x, y, div, curl}
+        let activeTool = 'div'; // 'div' or 'curl'
+        let currentStrength = 25;
+        let mouse = { x: -1000, y: -1000, active: false };
+
+        const CONFIG = {
+            particleCount: 3000,
+            speed: 1.0,
+            decay: 500 // Field strength decay constant
+        };
+
+        // --- DOM Elements ---
+        const slider = document.getElementById('strength-slider');
+        const strengthDisplay = document.getElementById('strength-display');
+        const sliderLabel = document.getElementById('slider-label');
+        const sliderLegend = document.getElementById('slider-legend');
+        const badgeSol = document.getElementById('status-solenoidal');
+        const badgeIrr = document.getElementById('status-irrotational');
+        const analysisText = document.getElementById('analysis-text');
+
+        // --- Classes ---
+        class Entity {
+            constructor(x, y, div, curl) {
+                this.x = x;
+                this.y = y;
+                this.div = div;   // Source/Sink strength
+                this.curl = curl; // Vortex strength
+                this.radius = 15;
+                this.phase = 0; // Animation phase
+            }
+        }
+
+        class Particle {
+            constructor() { this.reset(true); }
+            reset(random) {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = 0; this.vy = 0;
+                this.life = Math.random() * 100 + 50;
+            }
+            update() {
+                const f = getFieldAt(this.x, this.y);
+                
+                // Physics: Velocity Field
+                let tx = f.x;
+                let ty = f.y;
+
+                // Speed Clamp
+                const speedSq = tx*tx + ty*ty;
+                if (speedSq > 200) {
+                    const s = 14.14 / Math.sqrt(speedSq);
+                    tx *= s; ty *= s;
+                }
+
+                this.vx += (tx - this.vx) * 0.2;
+                this.vy += (ty - this.vy) * 0.2;
+                this.x += this.vx * CONFIG.speed;
+                this.y += this.vy * CONFIG.speed;
+                this.life--;
+
+                if (this.x < 0 || this.x > width || this.y < 0 || this.y > height || this.life <= 0) {
+                    this.reset();
+                }
+            }
+            draw() {
+                const speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+                const norm = Math.min(speed/5, 1);
+                
+                // Color based on curl vs div influence? 
+                // Let's keep it simple: speed-based heatmap
+                // Cyan (Slow) -> Purple (Fast)
+                const h = 180 + norm * 100;
+                const l = 50 + norm * 40;
+                
+                ctx.fillStyle = `hsl(${h}, 90%, ${l}%)`;
+                ctx.fillRect(this.x, this.y, 2, 2);
+            }
+        }
+
+        // --- Physics Engine (The Heart) ---
+        function getFieldAt(x, y) {
+            let tx = 0, ty = 0;
+
+            if (entities.length === 0) {
+                return { x: 0, y: 0 };
+            }
+
+            for (let e of entities) {
+                const dx = x - e.x;
+                const dy = y - e.y;
+                let rSq = dx*dx + dy*dy;
+                if (rSq < 100) rSq = 100; // Singularity protection
+                
+                // Inverse Square Law
+                const factor = CONFIG.decay / rSq;
+
+                // 1. Divergence Component (Radial)
+                if (e.div !== 0) {
+                    tx += dx * e.div * factor;
+                    ty += dy * e.div * factor;
+                }
+
+                // 2. Curl Component (Tangential)
+                if (e.curl !== 0) {
+                    // Tangent vector is (-dy, dx)
+                    tx += -dy * e.curl * factor;
+                    ty += dx * e.curl * factor;
+                }
+            }
+            return { x: tx, y: ty };
+        }
+
+        // --- UI & Interaction ---
+        function init() {
+            resize();
+            window.addEventListener('resize', resize);
+            
+            canvas.addEventListener('mousedown', handleInput);
+            canvas.addEventListener('mousemove', (e) => {
+                const r = canvas.getBoundingClientRect();
+                mouse.x = e.clientX - r.left;
+                mouse.y = e.clientY - r.top;
+                mouse.active = true;
+            });
+            canvas.addEventListener('mouseup', () => mouse.active = false); // Stop drag if implemented later
+            
+            canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleInput(e);
+            }, {passive: false});
+
+            slider.addEventListener('input', updateUI);
+            
+            // Start
+            updateUI();
+            for(let i=0; i<CONFIG.particleCount; i++) particles.push(new Particle());
+            loop();
+        }
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        function updateUI() {
+            currentStrength = parseInt(slider.value);
+            
+            // Update Slider Visuals
+            const track = slider;
+            if (activeTool === 'div') {
+                track.style.background = `linear-gradient(90deg, #ef4444 0%, #1f2937 50%, #3b82f6 100%)`;
+                sliderLegend.innerHTML = `<span>(-) SINK</span><span>SOURCE (+)</span>`;
+                if (currentStrength > 0) {
+                    strengthDisplay.className = "text-sm font-mono font-bold text-blue-400";
+                    strengthDisplay.innerText = "+" + currentStrength;
+                } else if (currentStrength < 0) {
+                    strengthDisplay.className = "text-sm font-mono font-bold text-red-400";
+                    strengthDisplay.innerText = currentStrength;
+                } else {
+                    strengthDisplay.className = "text-sm font-mono font-bold text-gray-500";
+                    strengthDisplay.innerText = "OFF";
+                }
+            } else {
+                track.style.background = `linear-gradient(90deg, #d946ef 0%, #1f2937 50%, #a855f7 100%)`; // Pink to Purple
+                sliderLegend.innerHTML = `<span>(-) CW</span><span>CCW (+)</span>`;
+                if (currentStrength !== 0) {
+                    strengthDisplay.className = "text-sm font-mono font-bold text-purple-400";
+                    strengthDisplay.innerText = (currentStrength > 0 ? "+" : "") + currentStrength;
+                } else {
+                    strengthDisplay.className = "text-sm font-mono font-bold text-gray-500";
+                    strengthDisplay.innerText = "OFF";
+                }
+            }
+        }
+
+        window.setTool = function(tool) {
+            activeTool = tool;
+            
+            // Toggle Buttons
+            document.getElementById('btn-div').className = `tool-btn ${tool === 'div' ? 'active div-mode' : ''}`;
+            document.getElementById('btn-curl').className = `tool-btn ${tool === 'curl' ? 'active curl-mode' : ''}`;
+            
+            // Reset slider slightly to suggest change or keep val? Keep val for convenience.
+            sliderLabel.innerText = tool === 'div' ? "Divergence Strength" : "Curl Strength";
+            updateUI();
+        }
+
+        function handleInput(e) {
+            if (e.button === 2) { // Right click
+                entities = [];
+                analyzeField();
+                return;
+            }
+
+            let mx, my;
+            if(e.type === 'touchstart') {
+                const r = canvas.getBoundingClientRect();
+                mx = e.touches[0].clientX - r.left;
+                my = e.touches[0].clientY - r.top;
+            } else {
+                mx = mouse.x;
+                my = mouse.y;
+            }
+
+            if (currentStrength === 0) return;
+
+            // Add Entity
+            const div = activeTool === 'div' ? currentStrength : 0;
+            const curl = activeTool === 'curl' ? currentStrength : 0;
+            
+            // Check if clicking near existing entity to modify it?
+            // For simplicity, we just add new ones or merge if very close
+            let merged = false;
+            for(let ent of entities) {
+                const dist = Math.hypot(ent.x - mx, ent.y - my);
+                if (dist < 20) {
+                    // Merge logic: Add to existing
+                    if (activeTool === 'div') ent.div += currentStrength;
+                    if (activeTool === 'curl') ent.curl += currentStrength;
+                    merged = true;
+                }
+            }
+
+            if (!merged) {
+                entities.push(new Entity(mx, my, div, curl));
+            }
+            
+            analyzeField();
+        }
+
+        window.clearField = function() {
+            entities = [];
+            analyzeField();
+            particles.forEach(p => p.reset(true));
+        }
+
+        function analyzeField() {
+            if (entities.length === 0) {
+                badgeSol.className = "status-badge bg-gray-800 border-gray-600 text-gray-400";
+                badgeSol.querySelector('span:last-child').innerText = "-";
+                badgeIrr.className = "status-badge bg-gray-800 border-gray-600 text-gray-400";
+                badgeIrr.querySelector('span:last-child').innerText = "-";
+                analysisText.innerText = "Canvas is empty.";
+                return;
+            }
+
+            let totalDiv = 0;
+            let totalCurl = 0;
+            let hasDiv = false;
+            let hasCurl = false;
+
+            for(let e of entities) {
+                totalDiv += Math.abs(e.div);
+                totalCurl += Math.abs(e.curl);
+                if (e.div !== 0) hasDiv = true;
+                if (e.curl !== 0) hasCurl = true;
+            }
+
+            // Logic for Badges
+            // Solenoidal: Div is zero everywhere (here, sum of abs div is zero)
+            if (!hasDiv && hasCurl) {
+                badgeSol.className = "status-badge bg-green-900/40 border-green-500 text-green-400 border";
+                badgeSol.querySelector('span:last-child').innerText = "YES";
+                badgeIrr.className = "status-badge bg-red-900/20 border-red-900 text-red-400/50 border";
+                badgeIrr.querySelector('span:last-child').innerText = "NO";
+                analysisText.innerHTML = "This field is <strong class='text-green-400'>Perfectly Solenoidal</strong>. It has rotation but no expansion/compression.";
+            } 
+            else if (hasDiv && !hasCurl) {
+                badgeSol.className = "status-badge bg-red-900/20 border-red-900 text-red-400/50 border";
+                badgeSol.querySelector('span:last-child').innerText = "NO";
+                badgeIrr.className = "status-badge bg-green-900/40 border-green-500 text-green-400 border";
+                badgeIrr.querySelector('span:last-child').innerText = "YES";
+                analysisText.innerHTML = "This field is <strong class='text-blue-400'>Irrotational</strong> (Conservative). It has sources/sinks but no circulation.";
+            } 
+            else {
+                badgeSol.className = "status-badge bg-yellow-900/20 border-yellow-700 text-yellow-500 border";
+                badgeSol.querySelector('span:last-child').innerText = "NO";
+                badgeIrr.className = "status-badge bg-yellow-900/20 border-yellow-700 text-yellow-500 border";
+                badgeIrr.querySelector('span:last-child').innerText = "NO";
+                analysisText.innerHTML = "This is a <strong class='text-yellow-400'>General Vector Field</strong>. It contains both Sources/Sinks (Div) and Vortices (Curl). This is known as Helmholtz Decomposition.";
+            }
+        }
+
+        function loop() {
+            // Fade trails
+            ctx.fillStyle = 'rgba(5, 5, 8, 0.25)';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw Entities
+            for (let e of entities) {
+                e.phase += 0.05;
+
+                // 1. Draw Divergence Body (Circle)
+                if (e.div !== 0) {
+                    ctx.beginPath();
+                    ctx.arc(e.x, e.y, 8, 0, Math.PI*2);
+                    ctx.fillStyle = e.div > 0 ? '#3B82F6' : '#EF4444';
+                    ctx.fill();
+                    // Pulse
+                    ctx.beginPath();
+                    ctx.arc(e.x, e.y, 8 + Math.sin(e.phase)*2, 0, Math.PI*2);
+                    ctx.strokeStyle = e.div > 0 ? 'rgba(59, 130, 246, 0.5)' : 'rgba(239, 68, 68, 0.5)';
+                    ctx.stroke();
+                } else {
+                    // Neutral core if only curl
+                    ctx.beginPath();
+                    ctx.arc(e.x, e.y, 4, 0, Math.PI*2);
+                    ctx.fillStyle = '#aaa';
+                    ctx.fill();
+                }
+
+                // 2. Draw Curl Body (Spinning Ring)
+                if (e.curl !== 0) {
+                    ctx.save();
+                    ctx.translate(e.x, e.y);
+                    // Rotate based on curl direction
+                    const rotSpeed = e.curl > 0 ? -0.1 : 0.1;
+                    ctx.rotate(e.phase * (e.curl/10)); // Speed proportional to strength
+                    
+                    ctx.beginPath();
+                    // Draw a broken ring to show spin
+                    ctx.arc(0, 0, 16, 0, 1.5); 
+                    ctx.arc(0, 0, 16, 3.14, 4.6);
+                    ctx.strokeStyle = '#C084FC'; // Purple
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    // Add arrows?
+                    ctx.restore();
+                }
+            }
+
+            // Draw Ghost Cursor
+            if (mouse.active) {
+                ctx.beginPath();
+                ctx.arc(mouse.x, mouse.y, 20, 0, Math.PI*2);
+                ctx.strokeStyle = activeTool === 'div' ? '#3B82F6' : '#C084FC';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                ctx.fillStyle = 'white';
+                ctx.font = '10px JetBrains Mono';
+                ctx.fillText(activeTool === 'div' ? "DIV" : "CURL", mouse.x + 25, mouse.y);
+            }
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(loop);
+        }
+
+        init();
+
+    </script>
+</body>
+</html>
+

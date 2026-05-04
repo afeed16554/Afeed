@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rigorous Optics Sandbox</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #080B10;
+            color: #E2E8F0;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #080B10; }
+        ::-webkit-scrollbar-thumb { background: #1E2330; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2A3241; }
+
+        .panel {
+            background-color: #12151C;
+            border: 1px solid #1E2330;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .inner-panel {
+            background-color: #0D1017;
+            border: 1px solid #1E2330;
+            border-radius: 8px;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none; width: 100%; background: transparent;
+        }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer;
+            background: #2A3241; border-radius: 2px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 16px; width: 16px; border-radius: 50%;
+            background: #40C4FF; cursor: pointer;
+            -webkit-appearance: none; margin-top: -6px;
+            box-shadow: 0 0 10px rgba(64, 196, 255, 0.5);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:active { transform: scale(1.2); }
+
+        .math-text { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; line-height: 1.5; }
+        #sim-canvas { cursor: crosshair; filter: drop-shadow(0 0 2px rgba(86, 240, 0, 0.2)); }
+        button { outline: none; }
+        
+        .badge {
+            font-size: 0.65rem; padding: 2px 6px; border-radius: 4px;
+            background: #1E2330; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen p-4 box-border flex gap-4">
+
+    <!-- Left Column: Parameters -->
+    <div class="w-80 flex flex-col gap-4 h-full shrink-0">
+        <div class="panel p-5 flex flex-col gap-4 flex-1 overflow-y-auto">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#40C4FF" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    <h2 class="font-semibold text-lg">System Params</h2>
+                </div>
+                <span class="badge">n = 1.5</span>
+            </div>
+
+            <!-- Optical Power -->
+            <div class="flex flex-col gap-3">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-gray-400">Power (<span class="italic">P</span>)</span>
+                    <div class="bg-[#0D1017] border border-[#1E2330] px-3 py-1 rounded text-[#40C4FF] math-text" id="p-val">10.0 D</div>
+                </div>
+                <input type="range" id="p-slider" min="-20" max="20" step="0.5" value="10">
+            </div>
+
+            <!-- Focal Length -->
+            <div class="flex flex-col gap-3 mt-1">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-gray-400">Scaled Focal (<span class="italic">f</span>)</span>
+                    <div class="bg-[#0D1017] border border-[#1E2330] px-3 py-1 rounded text-[#40C4FF] math-text" id="f-val">100 px</div>
+                </div>
+                <input type="range" id="f-slider" min="-500" max="500" step="5" value="100">
+            </div>
+
+            <button id="toggle-lens-btn" class="w-full py-2 mt-2 rounded bg-[#0D1615] text-[#4ADE80] border border-[#1A2E26] hover:bg-[#13241F] transition-all text-sm font-medium flex items-center justify-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+                <span>Snap to Diverging</span>
+            </button>
+
+            <hr class="border-[#1E2330] my-2">
+
+            <!-- Object Distance -->
+            <div class="flex flex-col gap-3">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-gray-400">Object Pos (<span class="italic">u</span>)</span>
+                    <div class="bg-[#0D1017] border border-[#1E2330] px-3 py-1 rounded text-[#40C4FF] math-text" id="u-val">-200</div>
+                </div>
+                <input type="range" id="u-slider" min="10" max="1000" step="1" value="200">
+                <div class="flex justify-between text-[10px] text-gray-500 uppercase tracking-widest mt-1">
+                    <span>Close</span>
+                    <span>Drag for -∞</span>
+                </div>
+            </div>
+
+            <div class="mt-auto border-t border-[#1E2330] pt-4">
+                <div class="flex items-center gap-2 text-[#4ADE80] text-sm mb-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    <span>Rigorous Simulation</span>
+                </div>
+                <ul class="text-[11px] text-gray-400 leading-relaxed list-disc pl-4 space-y-1">
+                    <li>Cartesian standard applied ($u \le 0$).</li>
+                    <li>Lens uses Thin-Lens Approx (Optical Center ray is undeviated).</li>
+                    <li>Slab ($P=0$) implements exact Snell's Law lateral displacement ($d$).</li>
+                    <li>Dimensional mapping: $10D \equiv 100px$.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Center Column -->
+    <div class="flex-1 flex flex-col gap-4 h-full min-w-0">
+        <!-- Canvas -->
+        <div class="panel flex-1 relative overflow-hidden flex flex-col">
+            <div class="absolute top-4 left-4 z-10 flex gap-2 items-center">
+                <div id="state-pill" class="px-3 py-1 rounded-full text-xs font-bold border" style="background: rgba(86, 240, 0, 0.1); color: #56F000; border-color: rgba(86, 240, 0, 0.2);">
+                    Real Image
+                </div>
+                <div class="text-xs text-gray-500 font-semibold" id="lens-type-label">Convex ($f > 0$)</div>
+            </div>
+            <div class="flex-1 w-full relative">
+                <canvas id="sim-canvas" class="absolute inset-0 w-full h-full"></canvas>
+            </div>
+        </div>
+
+        <!-- Graph Panel -->
+        <div class="panel h-48 p-4 flex flex-col relative shrink-0">
+            <h3 class="text-sm font-medium text-gray-300 mb-2 flex justify-between">
+                <span>Image Distance (<span class="italic">v</span>) vs Object Distance (<span class="italic">u</span>)</span>
+                <span class="text-xs text-gray-500">Dashed = Asymptotes</span>
+            </h3>
+            <div class="flex-1 relative w-full">
+                <canvas id="graph-canvas" class="absolute inset-0 w-full h-full"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Proofs -->
+    <div class="w-80 flex flex-col gap-4 h-full shrink-0">
+        <div class="panel p-5 flex flex-col gap-4 flex-1 overflow-y-auto">
+            <div class="flex items-center gap-2 mb-2">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C678DD" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+                <h2 class="font-semibold text-lg">Mathematics</h2>
+            </div>
+
+            <!-- Step 1 -->
+            <div class="inner-panel p-4 flex flex-col gap-2">
+                <h4 class="text-xs text-gray-400 font-semibold uppercase tracking-wider">1. Thin Lens Equation</h4>
+                <div class="text-[#E2E8F0] math-text" id="calc-step1"></div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="inner-panel p-4 flex flex-col gap-2">
+                <h4 class="text-xs text-gray-400 font-semibold uppercase tracking-wider">2. Magnification (m)</h4>
+                <div class="text-[#E2E8F0] math-text">m = v / u</div>
+                <div class="text-[#40C4FF] math-text mt-1 border-t border-[#1E2330] pt-2" id="calc-step2"></div>
+            </div>
+
+            <!-- Conclusion -->
+            <div class="inner-panel p-4 flex flex-col gap-2 border-l-2 border-l-[#F5A623]">
+                <h4 class="text-xs text-gray-400 font-semibold uppercase tracking-wider">3. Optical Result</h4>
+                <div class="text-sm font-medium text-[#F5A623] mt-1" id="calc-step3">Real, Inverted, Same Size</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById('sim-canvas');
+    const ctx = canvas.getContext('2d');
+    const graphCanvas = document.getElementById('graph-canvas');
+    const graphCtx = graphCanvas.getContext('2d');
+    
+    const pSlider = document.getElementById('p-slider');
+    const fSlider = document.getElementById('f-slider');
+    const uSlider = document.getElementById('u-slider');
+    const toggleLensBtn = document.getElementById('toggle-lens-btn');
+    
+    const ui = {
+        pVal: document.getElementById('p-val'),
+        fVal: document.getElementById('f-val'),
+        uVal: document.getElementById('u-val'),
+        statePill: document.getElementById('state-pill'),
+        lensLabel: document.getElementById('lens-type-label'),
+        step1: document.getElementById('calc-step1'),
+        step2: document.getElementById('calc-step2'),
+        step3: document.getElementById('calc-step3')
+    };
+
+    const CONST = {
+        MAX_U: 1000,
+        INF_U: -1e6, 
+        EPSILON: 1e-4,
+        INDEX: 1.5,
+        SLAB_THICK: 40
+    };
+
+    const COLORS = {
+        grid: '#1E2532', axis: '#2A3241',
+        lens: 'rgba(64, 196, 255, 0.2)', lensOutline: '#40C4FF',
+        object: '#E2E8F0', image: '#F5A623',
+        rayReal: '#56F000', rayVirtual: '#3A9600',
+        focalPoint: '#FF4B8C', slab: '#94A3B8',
+        asymV: 'rgba(64, 196, 255, 0.4)', asymU: 'rgba(255, 75, 140, 0.4)'
+    };
+
+    // Centralized Physics Engine
+    const Physics = {
+        getV: (u, f) => {
+            if (Math.abs(f) === Infinity || f === 0) return NaN; // Slab
+            if (Math.abs(u + f) < CONST.EPSILON) return Infinity * Math.sign(u + f);
+            return 1 / ((1 / f) + (1 / u));
+        },
+        getM: (v, u) => v / u,
+        format: (val) => {
+            if (Math.abs(val) > 1e5) return val > 0 ? "+∞" : "-∞";
+            if (Math.abs(val) > 1000) return val.toExponential(2);
+            return val.toFixed(2);
+        }
+    };
+
+    let state = { P: 10, f: 100, u: -200, h: 50, isInfinity: false, isSlab: false, v: 0, m: 0, cx: 0, cy: 0 };
+
+    function resize() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width; canvas.height = rect.height;
+        state.cx = canvas.width / 2; state.cy = canvas.height / 2;
+
+        const grect = graphCanvas.parentElement.getBoundingClientRect();
+        graphCanvas.width = grect.width; graphCanvas.height = grect.height;
+        render();
+    }
+    window.addEventListener('resize', resize);
+
+    function setPill(text, colorHex) {
+        ui.statePill.innerHTML = text;
+        ui.statePill.style.color = colorHex;
+        ui.statePill.style.borderColor = colorHex;
+        ui.statePill.style.background = colorHex + '1A';
+    }
+
+    function updateState(source = 'P') {
+        if (source === 'P') {
+            state.P = parseFloat(pSlider.value);
+            if (state.P === 0) {
+                state.isSlab = true; state.f = Infinity; fSlider.value = 500;
+            } else {
+                state.isSlab = false; state.f = 1000 / state.P;
+                fSlider.value = Math.max(-500, Math.min(500, state.f));
+            }
+        } else if (source === 'f') {
+            let f_in = parseFloat(fSlider.value);
+            if (Math.abs(f_in) < 25) f_in = f_in >= 0 ? 25 : -25;
+            state.f = f_in; state.P = 1000 / state.f;
+            state.isSlab = false;
+            pSlider.value = Math.max(-20, Math.min(20, state.P));
+        }
+        
+        let raw_u = parseFloat(uSlider.value);
+        if (raw_u >= 990) {
+            state.isInfinity = true; state.u = CONST.INF_U; uSlider.value = 1000;
+        } else {
+            state.isInfinity = false; state.u = -raw_u;
+        }
+
+        // Route through unified physics engine
+        state.v = Physics.getV(state.u, state.f);
+        state.m = Physics.getM(state.v, state.u);
+
+        updateUI();
+        render();
+    }
+
+    function updateUI() {
+        ui.pVal.innerHTML = state.isSlab ? "0.0 D" : state.P.toFixed(1) + " D";
+        ui.fVal.innerHTML = state.isSlab ? "∞" : state.f.toFixed(0) + " px";
+        ui.uVal.innerHTML = state.isInfinity ? "-∞" : state.u.toFixed(0);
+
+        if (state.isSlab) {
+            ui.lensLabel.innerHTML = "Plane Parallel Medium (Slab)";
+            toggleLensBtn.innerHTML = `<span>Snap to Converging</span>`;
+            
+            ui.step1.innerHTML = `1/v - 1/u = 1/f<br>1/v - 1/(${Physics.format(state.u)}) = 1/∞<br><span class="text-[#56F000] mt-2 block border-t border-[#1E2330] pt-2">v = Undefined</span>`;
+            ui.step2.innerHTML = `No convergence/divergence.`;
+            ui.step3.innerHTML = "Lateral Displacement (Snell's Law)";
+            setPill("No Image Formation", "#94A3B8");
+        } else {
+            ui.lensLabel.innerHTML = state.P > 0 ? "Convex (Converging)" : "Concave (Diverging)";
+            toggleLensBtn.innerHTML = state.P > 0 ? `<span>Snap to Diverging</span>` : `<span>Snap to Converging</span>`;
+
+            let strU = Physics.format(state.u);
+            let strF = state.f.toFixed(0);
+            
+            let mathString = `1/v - 1/u = 1/f<br>1/v - 1/(${strU}) = 1/${strF}`;
+            if (!state.isInfinity) {
+                let termU = (1 / Math.abs(state.u)).toFixed(4);
+                let termF = (1 / state.f).toFixed(4);
+                mathString += `<br>1/v + ${termU} = ${termF}`;
+            }
+            mathString += `<br><span class="text-[#56F000] mt-2 block border-t border-[#1E2330] pt-2">v = ${Physics.format(state.v)}</span>`;
+            ui.step1.innerHTML = mathString;
+
+            if (state.isInfinity) {
+                ui.step2.innerHTML = `m = ${Physics.format(state.v)} / -∞ = 0.00`;
+                ui.step3.innerHTML = state.P > 0 ? "Real, at Focal Plane, Highly Diminished" : "Virtual, at Focal Plane, Highly Diminished";
+                setPill("Object at Infinity", "#40C4FF");
+            } else if (Math.abs(state.v) === Infinity) {
+                ui.step2.innerHTML = `m = ±∞ / ${strU} = ±∞`;
+                ui.step3.innerHTML = "Image at Infinity, Highly Magnified (Parallel Rays)";
+                setPill("Object at Focus", "#F5A623");
+            } else {
+                ui.step2.innerHTML = `m = ${Physics.format(state.v)} / ${strU} = ${Physics.format(state.m)}`;
+                let nature = state.v > 0 ? "Real" : "Virtual";
+                let orientation = state.m > 0 ? "Upright" : "Inverted";
+                
+                let size = "";
+                let absM = Math.abs(state.m);
+                if (absM > 10) size = "Highly Magnified";
+                else if (absM > 1.01) size = "Magnified";
+                else if (absM < 0.1) size = "Highly Diminished";
+                else if (absM < 0.99) size = "Diminished";
+                else size = "Same Size";
+
+                ui.step3.innerHTML = `${nature}, ${orientation}, ${size}`;
+                setPill(`${nature} Image`, nature === "Real" ? "#56F000" : "#FF4B8C");
+            }
+        }
+    }
+
+    // --- Core Rendering Primitives ---
+    function drawArrow(x, y, h, color) {
+        ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 3;
+        ctx.shadowBlur = 10; ctx.shadowColor = color;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - h); ctx.stroke();
+        const head = 8; const dir = h >= 0 ? 1 : -1;
+        ctx.beginPath(); ctx.moveTo(x - 5, y - h + head * dir);
+        ctx.lineTo(x, y - h); ctx.lineTo(x + 5, y - h + head * dir); ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    function drawRay(x1, y1, x2, y2, color, isDashed=false, opacity=1.0) {
+        ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
+        ctx.globalAlpha = opacity;
+        ctx.setLineDash(isDashed ? [6, 6] : []);
+        if (!isDashed && opacity === 1.0) { ctx.shadowBlur = 10; ctx.shadowColor = color; }
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        
+        if (!isDashed) {
+            const midX = (x1 + x2) / 2; const midY = (y1 + y2) / 2;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            ctx.fillStyle = color; ctx.beginPath();
+            ctx.moveTo(midX, midY);
+            ctx.lineTo(midX - 8 * Math.cos(angle - 0.5), midY - 8 * Math.sin(angle - 0.5));
+            ctx.lineTo(midX - 8 * Math.cos(angle + 0.5), midY - 8 * Math.sin(angle + 0.5));
+            ctx.fill();
+        }
+        ctx.shadowBlur = 0; ctx.setLineDash([]); ctx.globalAlpha = 1.0;
+    }
+
+    function drawRayVector(x, y, vx, vy, color, length=2000, isDashed=false) {
+        const mag = Math.sqrt(vx*vx + vy*vy);
+        const ux = vx/mag; const uy = vy/mag;
+        drawRay(x, y, x + ux*length, y + uy*length, color, isDashed);
+    }
+
+    function addLabel(x, y, text, color) {
+        ctx.fillStyle = color; ctx.font = "10px Inter"; ctx.globalAlpha = 0.7;
+        ctx.fillText(text, x, y); ctx.globalAlpha = 1.0;
+    }
+
+    function renderMainCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const cx = state.cx; const cy = state.cy;
+
+        // Grid & Axis
+        ctx.strokeStyle = COLORS.grid; ctx.lineWidth = 1;
+        for (let x = cx % 40; x < canvas.width; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+        for (let y = cy % 40; y < canvas.height; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+        ctx.strokeStyle = COLORS.axis; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(canvas.width, cy); ctx.stroke();
+
+        // --- RIGOROUS SLAB RENDERING ---
+        if (state.isSlab) {
+            const fx = cx - CONST.SLAB_THICK/2; const bx = cx + CONST.SLAB_THICK/2;
+            ctx.fillStyle = "rgba(148, 163, 184, 0.1)"; ctx.strokeStyle = COLORS.slab;
+            ctx.lineWidth = 2; ctx.beginPath(); ctx.rect(fx, cy - 150, CONST.SLAB_THICK, 300);
+            ctx.fill(); ctx.stroke();
+
+            if (!state.isInfinity) {
+                const uPx = cx + state.u;
+                const tipY = cy - state.h;
+                drawArrow(uPx, cy, state.h, COLORS.object);
+
+                // Ray 1: Parallel (Normal Incidence)
+                drawRay(uPx, tipY, fx, tipY, COLORS.rayReal);
+                drawRay(fx, tipY, bx, tipY, COLORS.rayReal, false, 0.4);
+                drawRayVector(bx, tipY, 1, 0, COLORS.rayReal);
+                addLabel(fx - 60, tipY - 5, "Parallel Ray", COLORS.object);
+
+                // Ray 2: Oblique (Snell's Law)
+                const dx = cx - uPx; const dy = cy - tipY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                const ux = dx/dist; const uy = dy/dist; 
+                
+                const hit1Y = tipY + (fx - uPx) * (uy/ux);
+                drawRay(uPx, tipY, fx, hit1Y, COLORS.rayReal);
+                
+                const theta1 = Math.atan2(uy, ux);
+                const theta2 = Math.asin(Math.sin(theta1) / CONST.INDEX);
+                const hit2Y = hit1Y + CONST.SLAB_THICK * Math.tan(theta2);
+                
+                drawRay(fx, hit1Y, bx, hit2Y, COLORS.rayReal, false, 0.4); 
+                drawRayVector(bx, hit2Y, ux, uy, COLORS.rayReal); 
+
+                drawRayVector(bx, hit2Y, -ux, -uy, COLORS.rayVirtual, 1000, true);
+                drawRayVector(bx, tipY, -1, 0, COLORS.rayVirtual, 1000, true);
+                
+                const shiftX = bx + (tipY - hit2Y) / (uy/ux);
+                drawArrow(shiftX, cy, state.h, 'rgba(245, 166, 35, 0.5)'); 
+                addLabel(shiftX - 10, cy + 20, "Virtual Shift (d)", COLORS.image);
+            }
+            return;
+        }
+
+        // --- LENS RENDERING ---
+        let p_norm = Math.max(-1, Math.min(1, state.P / 20));
+        let cW = Math.max(3, 12 + p_norm * 12); let eW = Math.max(3, 12 - p_norm * 12);
+        let rx = cx + 2 * cW - eW; let lx = cx - 2 * cW + eW;
+
+        ctx.fillStyle = COLORS.lens; ctx.strokeStyle = COLORS.lensOutline;
+        ctx.lineWidth = 2; ctx.beginPath();
+        ctx.moveTo(cx - eW, cy - 120); ctx.lineTo(cx + eW, cy - 120);
+        ctx.quadraticCurveTo(rx, cy, cx + eW, cy + 120);
+        ctx.lineTo(cx - eW, cy + 120); ctx.quadraticCurveTo(lx, cy, cx - eW, cy - 120);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+
+        ctx.fillStyle = COLORS.focalPoint;
+        [-state.f, state.f, -2*state.f, 2*state.f].forEach(pt => {
+            ctx.beginPath(); ctx.arc(cx + pt, cy, 3, 0, Math.PI*2); ctx.fill();
+        });
+
+        // --- RAY TRACING (LENS) ---
+        const h = state.h; const tipY = cy - h;
+        const uPx = cx + (state.isInfinity ? -CONST.MAX_U : state.u); 
+
+        if (state.isInfinity) {
+            const rays = [cy - h, cy - h/2, cy, cy + h/2, cy + h];
+            rays.forEach(ry => {
+                drawRay(0, ry, cx, ry, COLORS.rayReal);
+                if (state.f > 0) {
+                    drawRayVector(cx, ry, state.f, cy - ry, COLORS.rayReal);
+                } else {
+                    const f1x = cx + state.f; 
+                    drawRayVector(f1x, cy, cx - f1x, ry - cy, COLORS.rayVirtual, 1000, true);
+                    drawRayVector(cx, ry, cx - f1x, ry - cy, COLORS.rayReal);
+                }
+            });
+            ctx.fillStyle = COLORS.image; ctx.beginPath(); ctx.arc(cx + state.v, cy, 4, 0, Math.PI*2); ctx.fill();
+
+        } else if (Math.abs(state.v) === Infinity) {
+            drawArrow(uPx, cy, h, COLORS.object);
+            drawRay(uPx, tipY, cx, tipY, COLORS.rayReal);
+            drawRay(uPx, tipY, cx, cy, COLORS.rayReal);
+            
+            const dx = cx - uPx; const dy = cy - tipY;
+            drawRayVector(cx, tipY, dx, dy, COLORS.rayReal);
+            drawRayVector(cx, cy, dx, dy, COLORS.rayReal);
+
+        } else {
+            const vPx = cx + state.v;
+            const imgTipY = cy - (state.m * h);
+
+            drawArrow(uPx, cy, h, COLORS.object);
+
+            // Ray 1: Parallel Ray
+            drawRay(uPx, tipY, cx, tipY, COLORS.rayReal);
+            addLabel(uPx + 10, tipY - 8, "Parallel Ray", COLORS.object);
+            
+            if (state.f > 0) {
+                drawRayVector(cx, tipY, state.f, cy - tipY, COLORS.rayReal);
+                if (state.v < 0) drawRayVector(cx, tipY, state.v, imgTipY - tipY, COLORS.rayVirtual, 1000, true);
+            } else {
+                const f1x = cx + state.f; 
+                drawRayVector(f1x, cy, cx - f1x, tipY - cy, COLORS.rayVirtual, 1000, true);
+                drawRayVector(cx, tipY, cx - f1x, tipY - cy, COLORS.rayReal);
+            }
+
+            // Ray 2: Optical Center Ray
+            drawRay(uPx, tipY, cx, cy, COLORS.rayReal);
+            addLabel(cx - 60, cy + 15, "Center Ray", COLORS.object);
+            drawRayVector(cx, cy, cx - uPx, cy - tipY, COLORS.rayReal);
+            if (state.v < 0) drawRayVector(cx, cy, - (cx - uPx), - (cy - tipY), COLORS.rayVirtual, 1000, true);
+
+            if (Math.abs(state.m * h) < 5000) {
+                drawArrow(vPx, cy, state.m * h, COLORS.image);
+            }
+        }
+    }
+
+    function renderGraph() {
+        const w = graphCanvas.width; const h = graphCanvas.height;
+        graphCtx.clearRect(0, 0, w, h);
+        
+        graphCtx.strokeStyle = COLORS.grid; graphCtx.lineWidth = 1;
+        graphCtx.beginPath(); graphCtx.moveTo(0, h/2); graphCtx.lineTo(w, h/2); graphCtx.stroke();
+        graphCtx.beginPath(); graphCtx.moveTo(w, 0); graphCtx.lineTo(w, h); graphCtx.stroke(); 
+
+        if (state.isSlab) return; 
+
+        if (state.f > 0) {
+            let asymX = (( -state.f + 1000) / 1000) * w;
+            if (asymX > 0 && asymX < w) {
+                graphCtx.strokeStyle = COLORS.asymU; graphCtx.setLineDash([4, 4]);
+                graphCtx.beginPath(); graphCtx.moveTo(asymX, 0); graphCtx.lineTo(asymX, h); graphCtx.stroke();
+            }
+        }
+        let asymY = h/2 - (state.f / 500) * (h/2);
+        if (asymY > 0 && asymY < h) {
+            graphCtx.strokeStyle = COLORS.asymV; graphCtx.setLineDash([4, 4]);
+            graphCtx.beginPath(); graphCtx.moveTo(0, asymY); graphCtx.lineTo(w, asymY); graphCtx.stroke();
+        }
+        graphCtx.setLineDash([]);
+
+        graphCtx.strokeStyle = "#40C4FF"; graphCtx.lineWidth = 2; graphCtx.beginPath();
+        let started = false;
+        
+        for (let x = 0; x <= w; x++) {
+            let simU = -1000 + (x / w) * 1000; 
+            if (Math.abs(simU + state.f) < 2) { started = false; continue; } 
+            if (simU === 0) continue;
+            
+            let simV = Physics.getV(simU, state.f);
+            let y = h/2 - (simV / 500) * (h/2);
+            
+            if (y > -50 && y < h + 50) {
+                if (!started) { graphCtx.moveTo(x, y); started = true; }
+                else graphCtx.lineTo(x, y);
+            } else { started = false; }
+        }
+        graphCtx.stroke();
+
+        if (!state.isInfinity && Math.abs(state.v) !== Infinity) {
+            let px = ((state.u + 1000) / 1000) * w;
+            let py = h/2 - (state.v / 500) * (h/2);
+            
+            graphCtx.fillStyle = COLORS.image;
+            graphCtx.beginPath(); graphCtx.arc(px, py, 4, 0, Math.PI*2); graphCtx.fill();
+            
+            graphCtx.strokeStyle = 'rgba(245, 166, 35, 0.5)';
+            graphCtx.setLineDash([4, 4]); graphCtx.beginPath();
+            graphCtx.moveTo(px, h/2); graphCtx.lineTo(px, py); graphCtx.stroke();
+            graphCtx.moveTo(w, py); graphCtx.lineTo(px, py); graphCtx.stroke();
+            graphCtx.setLineDash([]);
+        }
+    }
+
+    function render() { renderMainCanvas(); renderGraph(); }
+
+    pSlider.addEventListener('input', () => updateState('P'));
+    fSlider.addEventListener('input', () => updateState('f'));
+    uSlider.addEventListener('input', () => updateState('u'));
+
+    toggleLensBtn.addEventListener('click', () => {
+        let currP = parseFloat(pSlider.value);
+        if (currP === 0) currP = 10;
+        pSlider.value = -currP;
+        updateState('P');
+    });
+
+    resize(); updateState('P');
+
+</script>
+</body>
+</html>
