@@ -3,470 +3,541 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHM Visualizer: Circle, Spring & Wave</title>
+    <title>SHM simu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500&display=swap');
+
         body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0B1120;
+            color: #E2E8F0;
             margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #0f172a; /* Slate 900 */
-            color: #e2e8f0; /* Slate 200 */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            height: 100vh;
             overflow: hidden;
         }
 
-        header {
-            padding: 1rem;
-            text-align: center;
-            width: 100%;
-            background-color: #1e293b; /* Slate 800 */
-            border-bottom: 1px solid #334155;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        .font-mono {
+            font-family: 'Roboto Mono', monospace;
         }
 
-        h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            color: #38bdf8; /* Sky 400 */
-        }
-
-        .controls-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1.5rem;
-            padding: 1rem;
-            justify-content: center;
-            align-items: center; /* Center buttons vertically with sliders */
-            background-color: #1e293b;
-            width: 100%;
-            border-bottom: 1px solid #334155;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            min-width: 140px;
-        }
-
-        /* Buttons Styling */
-        .button-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            height: 100%;
-            margin-top: 10px; /* Align slightly with slider tracks */
-        }
-
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 700;
-            color: white;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        button:active {
-            transform: translateY(1px);
-        }
-
-        #btn-toggle {
-            background-color: #fbbf24; /* Amber 400 - Pause */
-            color: #0f172a;
-            width: 100px;
-            justify-content: center;
-        }
-
-        #btn-toggle.is-running {
-             background-color: #fbbf24; /* Amber */
-        }
-
-        #btn-toggle.is-paused {
-            background-color: #22c55e; /* Green 500 - Run */
-            color: white;
-        }
-
-        #btn-reset {
-            background-color: #ef4444; /* Red 500 */
-        }
-        
-        #btn-reset:hover { background-color: #dc2626; }
-
-        /* Slider Styling */
-        label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: flex;
-            justify-content: space-between;
-        }
-
+        /* Custom Range Slider Styling */
         input[type=range] {
             -webkit-appearance: none;
             width: 100%;
-            background: transparent;
+            height: 4px;
+            background: #1E293B;
+            border-radius: 2px;
+            outline: none;
+            transition: background 0.1s;
         }
 
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            height: 16px;
+            appearance: none;
             width: 16px;
+            height: 16px;
             border-radius: 50%;
-            background: #38bdf8;
+            background: #60A5FA;
             cursor: pointer;
-            margin-top: -6px;
-            box-shadow: 0 0 5px rgba(56, 189, 248, 0.5);
+            border: 2px solid #0B1120;
+            box-shadow: 0 0 0 2px #60A5FA;
         }
 
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
+        input[type=range]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #60A5FA;
             cursor: pointer;
-            background: #475569;
-            border-radius: 2px;
+            border: 2px solid #0B1120;
+            box-shadow: 0 0 0 2px #60A5FA;
         }
-
-        input[type=range]:focus {
-            outline: none;
-        }
-
-        #canvas-container {
-            flex-grow: 1;
-            width: 100%;
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-        }
-
+        
+        /* Neon glow effects for canvas */
         canvas {
-            background-color: #0f172a;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+            display: block;
         }
 
-        .value-display {
-            color: #94a3b8;
-        }
-
-        /* Mobile adjustments */
-        @media (max-width: 600px) {
-            .controls-container {
-                gap: 1rem;
-                padding: 0.5rem;
-            }
-            .control-group {
-                min-width: 45%;
-            }
-            h1 {
-                font-size: 1.2rem;
-            }
-            .button-group {
-                width: 100%;
-                justify-content: center;
-            }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
         }
     </style>
 </head>
-<body>
+<body class="h-screen w-screen flex flex-col text-sm">
 
-    <header>
-        <h1>SHM Visualizer</h1>
+    <!-- Top Navigation Bar -->
+    <header class="h-16 flex items-center justify-between px-6 border-b border-slate-800 bg-[#0B1120] z-20 shrink-0">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center text-blue-400 border border-slate-700">
+                <i data-lucide="zap" class="w-5 h-5 fill-blue-400/20"></i>
+            </div>
+            <div>
+                <h1 class="text-blue-400 font-bold tracking-wider text-sm flex gap-2">
+                    SHM <span class="text-white">simu</span>
+                </h1>
+                <p class="text-slate-500 text-[10px] tracking-widest uppercase font-semibold mt-0.5">Phase-Projector Synchronization</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2 font-mono text-xs">
+                <span class="text-slate-400">STATUS:</span>
+                <span id="statusText" class="text-blue-400 font-bold">UNDAMPED</span>
+            </div>
+            <button id="panelToggleBtn" class="flex items-center gap-2 px-4 py-2 rounded-md border border-slate-700 hover:bg-slate-800 transition-colors text-xs font-semibold tracking-wider text-slate-300">
+                <i data-lucide="menu" class="w-4 h-4"></i>
+                PANEL TOGGLE
+            </button>
+        </div>
     </header>
 
-    <div class="controls-container">
-        <div class="control-group">
-            <label>Amplitude <span id="amp-val" class="value-display">80</span></label>
-            <input type="range" id="amplitude" min="20" max="150" value="80">
-        </div>
-        <div class="control-group">
-            <label>Frequency (Hz) <span id="freq-val" class="value-display">1.0</span></label>
-            <input type="range" id="frequency" min="0.1" max="3.0" step="0.1" value="1.0">
-        </div>
-        <div class="control-group">
-            <label>Wavelength <span id="wave-val" class="value-display">200</span></label>
-            <input type="range" id="wavelength" min="50" max="600" value="200">
-        </div>
-        <div class="control-group">
-            <label>Sim Speed <span id="speed-val" class="value-display">1.0x</span></label>
-            <input type="range" id="speed" min="0" max="3.0" step="0.1" value="1.0">
-        </div>
+    <!-- Main Workspace -->
+    <main class="flex flex-1 relative overflow-hidden">
+        
+        <!-- Left Sidebar (System Params) -->
+        <aside id="sidebar" class="w-[340px] flex flex-col border-r border-slate-800 bg-[#0B1120] z-10 shrink-0 transition-transform duration-300 ease-in-out">
+            <div class="p-6 flex-1 flex flex-col gap-8">
+                
+                <div class="flex items-center gap-2 text-slate-400">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                    <h2 class="text-[11px] font-bold tracking-widest uppercase">System Params</h2>
+                </div>
 
-        <div class="button-group">
-            <button id="btn-toggle" class="is-running">Pause</button>
-            <button id="btn-reset">Reset</button>
-        </div>
-    </div>
+                <div class="flex flex-col gap-6">
+                    <!-- Amplitude Slider -->
+                    <div class="flex flex-col gap-3">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[10px] font-bold tracking-widest text-slate-300 uppercase">Amplitude (A)</label>
+                            <span id="ampValue" class="font-mono text-blue-400 text-xs font-bold">97</span>
+                        </div>
+                        <input type="range" id="ampSlider" min="10" max="180" value="97" step="1" oninput="updateControls()">
+                    </div>
 
-    <div id="canvas-container">
-        <canvas id="simCanvas"></canvas>
-    </div>
+                    <!-- Spring Const Slider -->
+                    <div class="flex flex-col gap-3">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[10px] font-bold tracking-widest text-slate-300 uppercase">Spring Const (K)</label>
+                            <span id="kValue" class="font-mono text-blue-400 text-xs font-bold">15.00</span>
+                        </div>
+                        <input type="range" id="kSlider" min="1.0" max="40.0" value="15.00" step="0.1" oninput="updateControls('K')">
+                    </div>
+
+                    <!-- Period Slider -->
+                    <div class="flex flex-col gap-3">
+                        <div class="flex justify-between items-end">
+                            <label class="text-[10px] font-bold tracking-widest text-slate-300 uppercase">Period (T)</label>
+                            <span id="tValue" class="font-mono text-blue-400 text-xs font-bold">3.24s</span>
+                        </div>
+                        <input type="range" id="tSlider" min="2.0" max="12.6" value="3.24" step="0.01" oninput="updateControls('T')">
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="p-6 border-t border-slate-800 flex flex-col gap-3 bg-[#0B1120]">
+                <button id="pauseBtn" class="w-full py-3 bg-blue-400 hover:bg-blue-300 text-[#0B1120] font-bold text-[11px] tracking-widest uppercase rounded-lg transition-colors">
+                    Pause Experiment
+                </button>
+                <button id="resetBtn" class="w-full py-3 bg-transparent hover:bg-slate-800 text-slate-300 border border-slate-700 font-bold text-[11px] tracking-widest uppercase rounded-lg transition-colors">
+                    Reset Sync
+                </button>
+            </div>
+        </aside>
+
+        <!-- Canvas Area -->
+        <div class="flex-1 relative bg-[#060B14]">
+            
+            <!-- Floating Badge -->
+            <div class="absolute top-6 left-1/2 -translate-x-1/2 z-10">
+                <div class="glass-panel px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+                    Integrated Synchronous View
+                </div>
+            </div>
+
+            <canvas id="simCanvas" class="w-full h-full"></canvas>
+            
+        </div>
+    </main>
 
     <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Canvas Setup
         const canvas = document.getElementById('simCanvas');
         const ctx = canvas.getContext('2d');
-        const container = document.getElementById('canvas-container');
 
-        // Inputs
-        const inputs = {
-            amplitude: document.getElementById('amplitude'),
-            frequency: document.getElementById('frequency'),
-            wavelength: document.getElementById('wavelength'),
-            speed: document.getElementById('speed')
-        };
-
-        // Displays
-        const displays = {
-            amplitude: document.getElementById('amp-val'),
-            frequency: document.getElementById('freq-val'),
-            wavelength: document.getElementById('wave-val'),
-            speed: document.getElementById('speed-val')
-        };
-
-        // Buttons
-        const btnToggle = document.getElementById('btn-toggle');
-        const btnReset = document.getElementById('btn-reset');
-
-        // State
+        // State variables
+        let isRunning = true;
         let time = 0;
-        let isPaused = false;
+        let dt = 1/60;
+        let waveHistory = [];
         
-        let config = {
-            amp: 80,
-            freq: 1.0,
-            lambda: 200,
-            simSpeed: 1.0
-        };
+        // Physics / Visual Parameters
+        let A = 97;         // Base Amplitude
+        let K = 15.00;      // Stiffness (affects frequency)
+        let Z = 0;          // Damping (Hardcoded to 0 for pure SHM)
+        let T = 3.24;       // Period (Linked to K)
 
-        // Defaults for Reset
-        const defaults = { ...config };
+        // UI Elements
+        const aSlider = document.getElementById('ampSlider');
+        const kSlider = document.getElementById('kSlider');
+        const tSlider = document.getElementById('tSlider');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const statusText = document.getElementById('statusText');
+        const sidebar = document.getElementById('sidebar');
+        const panelToggleBtn = document.getElementById('panelToggleBtn');
 
-        // Colors
-        const colors = {
-            circle: '#475569',
-            circleDot: '#f472b6', // Pink
-            spring: '#94a3b8',
-            mass: '#22d3ee', // Cyan
-            wave: '#a78bfa', // Purple
-            waveDot: '#fbbf24', // Amber
-            grid: '#1e293b',
-            line: 'rgba(255, 255, 255, 0.15)'
-        };
+        // Slider track coloring helper
+        function styleSliderTrack(slider) {
+            const val = (slider.value - slider.min) / (slider.max - slider.min) * 100;
+            slider.style.background = `linear-gradient(to right, #60A5FA ${val}%, #1E293B ${val}%)`;
+        }
 
-        // Resize handling
+        // Update state from UI
+        function updateControls(source = null) {
+            A = parseFloat(aSlider.value);
+            
+            // Physics link: T = 4*pi / sqrt(K)  =>  K = (4*pi / T)^2
+            // The 4*pi factor rather than 2*pi accounts for the simulation's visual time scaling (omega = sqrt(K)*0.5)
+            
+            if (source === 'K') {
+                K = parseFloat(kSlider.value);
+                T = (4 * Math.PI) / Math.sqrt(K);
+                tSlider.value = T;
+            } else if (source === 'T') {
+                T = parseFloat(tSlider.value);
+                K = Math.pow((4 * Math.PI) / T, 2);
+                
+                // Clamp K visually to slider bounds
+                if (K > 40) K = 40;
+                if (K < 1) K = 1;
+                kSlider.value = K;
+            } else {
+                // Initial load
+                K = parseFloat(kSlider.value);
+                T = (4 * Math.PI) / Math.sqrt(K);
+                tSlider.value = T;
+            }
+
+            document.getElementById('ampValue').innerText = Math.round(A);
+            document.getElementById('kValue').innerText = K.toFixed(2);
+            document.getElementById('tValue').innerText = T.toFixed(2) + "s";
+
+            [aSlider, kSlider, tSlider].forEach(styleSliderTrack);
+
+            // Update Status text
+            statusText.innerText = "UNDAMPED";
+            statusText.className = "text-blue-400 font-bold";
+        }
+
+        // Resize handler
         function resize() {
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            // Handle high DPI displays
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
         }
         window.addEventListener('resize', resize);
-        resize();
 
-        // Update listeners
-        function updateConfig() {
-            config.amp = parseInt(inputs.amplitude.value);
-            config.freq = parseFloat(inputs.frequency.value);
-            config.lambda = parseInt(inputs.wavelength.value);
-            config.simSpeed = parseFloat(inputs.speed.value);
-
-            displays.amplitude.innerText = config.amp;
-            displays.frequency.innerText = config.freq.toFixed(1);
-            displays.wavelength.innerText = config.lambda;
-            displays.speed.innerText = config.simSpeed.toFixed(1) + 'x';
-        }
-
-        Object.values(inputs).forEach(input => {
-            input.addEventListener('input', updateConfig);
+        // Interaction bindings
+        pauseBtn.addEventListener('click', () => {
+            isRunning = !isRunning;
+            pauseBtn.innerText = isRunning ? "PAUSE EXPERIMENT" : "RESUME EXPERIMENT";
+            pauseBtn.className = isRunning 
+                ? "w-full py-3 bg-blue-400 hover:bg-blue-300 text-[#0B1120] font-bold text-[11px] tracking-widest uppercase rounded-lg transition-colors"
+                : "w-full py-3 bg-rose-500 hover:bg-rose-400 text-white font-bold text-[11px] tracking-widest uppercase rounded-lg transition-colors";
         });
 
-        // Button Listeners
-        btnToggle.addEventListener('click', () => {
-            isPaused = !isPaused;
-            if (isPaused) {
-                btnToggle.innerText = "Run";
-                btnToggle.classList.remove('is-running');
-                btnToggle.classList.add('is-paused');
-            } else {
-                btnToggle.innerText = "Pause";
-                btnToggle.classList.remove('is-paused');
-                btnToggle.classList.add('is-running');
+        resetBtn.addEventListener('click', () => {
+            time = 0;
+            waveHistory = [];
+            if(!isRunning) {
+                draw(); // Force a redraw if paused
             }
         });
 
-        btnReset.addEventListener('click', () => {
-            // Reset Time
-            time = 0;
-            
-            // Reset Inputs DOM
-            inputs.amplitude.value = defaults.amp;
-            inputs.frequency.value = defaults.freq;
-            inputs.wavelength.value = defaults.lambda;
-            inputs.speed.value = defaults.simSpeed;
-
-            // Reset Config State
-            updateConfig();
-            
-            // Optional: You can choose to auto-play on reset or keep state
-            // Let's keep the current Pause/Play state, just reset time.
+        let sidebarOpen = true;
+        panelToggleBtn.addEventListener('click', () => {
+            sidebarOpen = !sidebarOpen;
+            if(sidebarOpen) {
+                sidebar.style.transform = 'translateX(0)';
+                sidebar.style.marginRight = '0';
+                sidebar.style.width = '340px';
+                setTimeout(resize, 300); // resize canvas after transition
+            } else {
+                sidebar.style.transform = 'translateX(-100%)';
+                sidebar.style.marginRight = '-340px';
+                setTimeout(resize, 300);
+            }
         });
 
-        // Drawing helpers
-        function drawLine(x1, y1, x2, y2, color, dashed = false) {
+        // Drawing loops and utilities
+        function drawVector(ctx, startX, startY, endY, color, label) {
+            const diff = endY - startY;
+            if (Math.abs(diff) < 2) return; // Minimum length to render
+            
+            const headlen = 6;
+            const dir = diff < 0 ? -1 : 1; // -1 is up, 1 is down
+            
+            // Draw Line
             ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(startX, endY);
+            
+            // Draw Arrow Head
+            ctx.lineTo(startX - 4, endY - dir * headlen);
+            ctx.moveTo(startX, endY);
+            ctx.lineTo(startX + 4, endY - dir * headlen);
+            
             ctx.strokeStyle = color;
             ctx.lineWidth = 2;
-            if (dashed) ctx.setLineDash([5, 5]);
-            else ctx.setLineDash([]);
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
             ctx.stroke();
-            ctx.setLineDash([]);
+
+            // Draw Label
+            ctx.fillStyle = color;
+            ctx.font = 'bold 12px "Roboto Mono"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = dir < 0 ? 'bottom' : 'top';
+            ctx.shadowColor = '#060B14';
+            ctx.shadowBlur = 4;
+            
+            // Use `+ dir * 14` to add extra space along the direction of the arrow
+            ctx.fillText(label, startX, endY + dir * 14);
+            
+            ctx.shadowBlur = 0; // reset
         }
 
-        function drawCircle(x, y, r, strokeColor, fillColor) {
+        function drawGrid(width, height) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.arc(x, y, r, 0, Math.PI * 2);
-            if (fillColor) {
-                ctx.fillStyle = fillColor;
-                ctx.fill();
+            const gridSize = 40;
+            for (let x = 0; x <= width; x += gridSize) {
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
             }
-            if (strokeColor) {
-                ctx.strokeStyle = strokeColor;
-                ctx.lineWidth = 2;
+            for (let y = 0; y <= height; y += gridSize) {
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+            }
+            ctx.stroke();
+        }
+
+        function draw() {
+            const width = canvas.width / (window.devicePixelRatio || 1);
+            const height = canvas.height / (window.devicePixelRatio || 1);
+            
+            // Clear
+            ctx.clearRect(0, 0, width, height);
+            
+            // Grid
+            drawGrid(width, height);
+
+            // Calculate current physics state
+            // omega (angular frequency) based on K. Scale for visual speed.
+            const omega = Math.sqrt(K) * 0.5; 
+            const phase = time * omega;
+            
+            // Damping envelope: purely undamped SHM now
+            const currentA = A;
+
+            // Vertical displacement (Y)
+            const yDisp = currentA * Math.sin(phase);
+            const baseY = height / 2;
+            const currentY = baseY + yDisp;
+
+            // Layout coordinates
+            const phasorX = width * 0.20;
+            const springX = width * 0.45;
+            const waveStartX = width * 0.65;
+            
+            // Wave drawing horizontal speed (constant pixels per frame)
+            const waveSpeedX = 4; 
+
+            // Update History
+            if (isRunning) {
+                waveHistory.unshift(currentY);
+                // Remove points that fall off screen
+                const maxPoints = Math.ceil((width - waveStartX) / waveSpeedX) + 5;
+                if (waveHistory.length > maxPoints) {
+                    waveHistory.pop();
+                }
+            }
+
+            // --- 1. Connecting Dashed Line ---
+            ctx.beginPath();
+            ctx.setLineDash([4, 6]);
+            ctx.strokeStyle = 'rgba(96, 165, 250, 0.4)';
+            ctx.lineWidth = 1.5;
+            
+            // From phasor dot to wave start
+            const dotX = phasorX - currentA * Math.cos(phase); 
+            ctx.moveTo(dotX, currentY);
+            ctx.lineTo(waveStartX, currentY);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset dash
+
+            // --- 2. Phasor (Circle) & Polar Grid ---
+            const maxR = Math.max(0.1, currentA);
+            
+            // Draw Polar Grid
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.lineWidth = 1;
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.9)'; // slate-400 color
+            ctx.font = '10px "Roboto Mono"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const labelOffset = 18;
+
+            // Inner grid circle
+            ctx.beginPath();
+            ctx.arc(phasorX, baseY, maxR / 2, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Grid spokes and angle labels
+            for (let deg = 0; deg < 360; deg += 30) {
+                const rad = deg * Math.PI / 180;
+                const cosRad = Math.cos(rad);
+                const sinRad = -Math.sin(rad); // Negative for standard math coords (90 degrees points UP)
+
+                // Draw spoke
+                ctx.beginPath();
+                ctx.moveTo(phasorX, baseY);
+                ctx.lineTo(phasorX + maxR * cosRad, baseY + maxR * sinRad);
+                ctx.stroke();
+
+                // Draw label
+                const labelX = phasorX + (maxR + labelOffset) * cosRad;
+                const labelY = baseY + (maxR + labelOffset) * sinRad;
+                ctx.fillText(`${deg}°`, labelX, labelY);
+            }
+
+            // Outer boundary circle
+            ctx.beginPath();
+            ctx.arc(phasorX, baseY, maxR, 0, Math.PI * 2);
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Center dot
+            ctx.beginPath();
+            ctx.arc(phasorX, baseY, 3, 0, Math.PI * 2);
+            ctx.fillStyle = '#60A5FA';
+            ctx.fill();
+
+            // Radius Line
+            ctx.beginPath();
+            ctx.moveTo(phasorX, baseY);
+            ctx.lineTo(dotX, currentY);
+            ctx.strokeStyle = '#60A5FA';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Moving dot on circle
+            ctx.beginPath();
+            ctx.arc(dotX, currentY, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#60A5FA';
+            ctx.shadowColor = '#60A5FA';
+            ctx.shadowBlur = 10;
+            ctx.fill();
+            ctx.shadowBlur = 0; // reset
+
+            // --- 3. Spring and Mass ---
+            const topAnchorY = baseY - 200;
+            const massSize = 40;
+            const massTopY = currentY - massSize/2;
+
+            // Draw Spring
+            ctx.beginPath();
+            ctx.moveTo(springX, topAnchorY);
+            ctx.lineTo(springX, topAnchorY + 20); // Top straight segment
+            
+            const numCoils = 14;
+            const activeSpringH = massTopY - topAnchorY - 40;
+            const step = activeSpringH / numCoils;
+            const zigZagW = 16;
+            
+            for(let i=0; i<numCoils; i++) {
+                let xOff = (i % 2 === 0) ? zigZagW : -zigZagW;
+                ctx.lineTo(springX + xOff, topAnchorY + 20 + step * (i + 0.5));
+            }
+            
+            ctx.lineTo(springX, massTopY - 20); // Bottom straight segment
+            ctx.lineTo(springX, massTopY);
+            
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2.5;
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+
+            // Draw Mass
+            ctx.beginPath();
+            ctx.rect(springX - massSize/2, currentY - massSize/2, massSize, massSize);
+            ctx.fillStyle = '#0F172A';
+            ctx.fill();
+            ctx.strokeStyle = '#60A5FA';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = 'rgba(96, 165, 250, 0.5)';
+            ctx.shadowBlur = 15;
+            ctx.stroke();
+            ctx.shadowBlur = 0; // reset
+
+            // --- Vector Overlay (Velocity & Acceleration) ---
+            
+            // dy/dt (Velocity)
+            const v = currentA * omega * Math.cos(phase);
+            // dv/dt (Acceleration)
+            const a = currentA * (-omega * omega) * Math.sin(phase);
+
+            // Visual scaling so the vectors fit neatly on screen
+            const vVisualScale = 0.4;
+            const aVisualScale = 0.15;
+
+            // Velocity Vector (Emerald Green)
+            drawVector(ctx, springX - 30, currentY, currentY + (v * vVisualScale), '#10B981', 'v');
+            
+            // Acceleration Vector (Amber Orange)
+            drawVector(ctx, springX + 30, currentY, currentY + (a * aVisualScale), '#F59E0B', 'a');
+
+            // --- 4. The Wave ---
+            if (waveHistory.length > 0) {
+                ctx.beginPath();
+                ctx.moveTo(waveStartX, waveHistory[0]);
+                for (let i = 1; i < waveHistory.length; i++) {
+                    let x = waveStartX + i * waveSpeedX;
+                    ctx.lineTo(x, waveHistory[i]);
+                }
+                ctx.strokeStyle = '#818CF8';
+                ctx.lineWidth = 2.5;
+                ctx.lineJoin = 'round';
                 ctx.stroke();
             }
+
+            if (isRunning) {
+                time += dt;
+            }
+            
+            requestAnimationFrame(draw);
         }
 
-        function drawSpring(x, yStart, yEnd, width, windings) {
-            ctx.beginPath();
-            ctx.strokeStyle = colors.spring;
-            ctx.lineWidth = 3;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-
-            const height = yEnd - yStart;
-            const step = height / (windings * 2 + 1);
-            
-            ctx.moveTo(x, yStart);
-            
-            let currentY = yStart + step * 0.5;
-            ctx.lineTo(x, currentY);
-
-            for (let i = 0; i < windings; i++) {
-                ctx.lineTo(x + width / 2, currentY + step * 0.5);
-                ctx.lineTo(x - width / 2, currentY + step * 1.5);
-                currentY += step * 2;
-            }
-
-            ctx.lineTo(x, yEnd);
-            ctx.stroke();
-        }
-
-        // Main Animation Loop
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            
-            // Layout Calculation
-            const leftZoneX = canvas.width * 0.15; // Circle center X
-            const middleZoneX = canvas.width * 0.35; // Spring X
-            const rightZoneStart = canvas.width * 0.45; // Wave start X
-            
-            // Physics Calculations
-            const omega = 2 * Math.PI * config.freq;
-            const theta = omega * time;
-            
-            // Current displacement (y) 
-            // Negative sign because Canvas Y increases downwards
-            const displacement = -config.amp * Math.sin(theta);
-
-            // --- 1. REFERENCE CIRCLE (Left) ---
-            
-            drawCircle(leftZoneX, centerY, config.amp, colors.circle, null);
-            drawLine(leftZoneX - config.amp - 10, centerY, leftZoneX + config.amp + 10, centerY, colors.line); // H
-            drawLine(leftZoneX, centerY - config.amp - 10, leftZoneX, centerY + config.amp + 10, colors.line); // V
-
-            const dotX = leftZoneX + config.amp * Math.cos(theta);
-            const dotY = centerY + displacement;
-
-            drawLine(leftZoneX, centerY, dotX, dotY, colors.circle);
-            drawCircle(dotX, dotY, 8, null, colors.circleDot);
-
-            // --- 2. SPRING & MASS (Middle) ---
-
-            const springTopY = centerY - 200; 
-            const massY = centerY + displacement;
-            
-            drawLine(middleZoneX - 20, springTopY, middleZoneX + 20, springTopY, '#cbd5e1');
-            drawSpring(middleZoneX, springTopY, massY - 25, 30, 10);
-
-            ctx.fillStyle = colors.mass;
-            const boxSize = 50;
-            ctx.fillRect(middleZoneX - boxSize/2, massY - boxSize/2, boxSize, boxSize);
-            drawCircle(middleZoneX, massY, 4, null, '#fff');
-
-            // --- 3. WAVE (Right) ---
-
-            drawLine(rightZoneStart, centerY, canvas.width, centerY, colors.line);
-
-            const k = (2 * Math.PI) / config.lambda;
-
-            ctx.beginPath();
-            ctx.strokeStyle = colors.wave;
-            ctx.lineWidth = 3;
-
-            for (let x = 0; x < canvas.width - rightZoneStart; x += 2) {
-                const waveY = centerY - config.amp * Math.sin(theta - k * x);
-                if (x === 0) ctx.moveTo(rightZoneStart + x, waveY);
-                else ctx.lineTo(rightZoneStart + x, waveY);
-            }
-            ctx.stroke();
-
-            // Wave Dots
-            const leadWaveY = centerY - config.amp * Math.sin(theta);
-            drawCircle(rightZoneStart, leadWaveY, 6, null, colors.waveDot);
-            
-            const secondDotX = rightZoneStart + config.lambda;
-            if (secondDotX < canvas.width) {
-                 const secondDotY = centerY - config.amp * Math.sin(theta - k * config.lambda);
-                 drawCircle(secondDotX, secondDotY, 5, null, colors.waveDot);
-            }
-
-            // --- 4. SYNCHRONIZATION LINES ---
-            drawLine(dotX, dotY, middleZoneX - boxSize/2, massY, colors.line, true);
-            drawLine(middleZoneX + boxSize/2, massY, rightZoneStart, leadWaveY, colors.line, true);
-
-            // Labels
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = '14px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText("Circular Motion", leftZoneX, centerY + config.amp + 40);
-            ctx.fillText("Oscillator", middleZoneX, centerY + config.amp + 40);
-            ctx.fillText("Transverse Wave", rightZoneStart + 100, centerY + config.amp + 40);
-
-            // Update Time only if not paused
-            if (!isPaused) {
-                time += (1/60) * config.simSpeed;
-            }
-
-            requestAnimationFrame(animate);
-        }
-
-        // Start
-        animate();
+        // Init
+        updateControls();
+        resize();
+        requestAnimationFrame(draw);
 
     </script>
 </body>
 </html>
-
 
