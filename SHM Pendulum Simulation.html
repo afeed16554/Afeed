@@ -39,9 +39,17 @@
 
     <!-- Left Panel: Pedagogy & Controls -->
     <div class="w-full lg:w-80 h-auto lg:h-full flex-shrink-0 panel flex flex-col overflow-y-auto shadow-2xl z-20">
-        <div class="p-4 border-b border-slate-700 bg-slate-800/50">
-            <h1 class="text-xl font-semibold text-sky-400 tracking-wide">PENDULUM MODELS</h1>
-            <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Educational Dynamics Engine</p>
+        <div class="p-4 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-semibold text-sky-400 tracking-wide">PENDULUM MODELS</h1>
+                <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-wider">Educational Dynamics Engine</p>
+            </div>
+            <!-- Fullscreen Button -->
+            <button id="btnFullscreen" class="text-slate-400 hover:text-white transition p-2 rounded hover:bg-slate-700" title="Toggle Fullscreen">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+            </button>
         </div>
 
         <!-- Perspective Toggle Layer -->
@@ -218,6 +226,7 @@
         const ctx = { main: C.main.getContext('2d'), phase: C.phase.getContext('2d'), energy: C.energy.getContext('2d') };
 
         const UI = {
+            btnFullscreen: document.getElementById('btnFullscreen'),
             btnPersp: document.getElementById('btnPerspective'),
             lblGhost: document.getElementById('lblGhostText'), chkGhost: document.getElementById('chkGhost'),
             feedback: document.getElementById('modelFeedback'),
@@ -238,6 +247,28 @@
         function init() {
             window.addEventListener('resize', resizeCanvases);
             
+            // Fullscreen Logic
+            UI.btnFullscreen.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        console.warn(`Error attempting to enable fullscreen: ${err.message}`);
+                    });
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            });
+
+            // Fullscreen Icon update event listener (optional UX touch)
+            document.addEventListener('fullscreenchange', () => {
+                if (document.fullscreenElement) {
+                    UI.btnFullscreen.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 21m0 0h6m-6 0v-6m15-6l-6 6m0 0h-6m6 0v6" /></svg>`;
+                } else {
+                    UI.btnFullscreen.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" /></svg>`;
+                }
+            });
+
             // Perspective Toggle Logic
             UI.btnPersp.addEventListener('click', () => {
                 if (V.renderPerspective === 'ideal') {
@@ -686,4 +717,3 @@
     </script>
 </body>
 </html>
-
