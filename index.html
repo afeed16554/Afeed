@@ -116,6 +116,26 @@
                     </span>
                 </div>
             </a>
+            ```html
+
+<a href="SHM%20Pendulum%20Simulation.html" class="sim-card block bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+    <!-- Use 'bg-purple-500' or 'bg-rose-500' or 'bg-amber-500' for different colors -->
+    <div class="h-3 bg-purple-500"></div> 
+    <div class="p-8 text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-50 text-purple-600 mb-6">
+            <!-- Change 'beaker' to 'zap', 'target', or 'wind' for different icons -->
+            <i data-lucide="beaker" class="w-8 h-8"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-900 mb-3">SHM Pendulum Simulation.html</h2>
+        <p class="text-slate-600 mb-6 leading-relaxed">
+            This interactive educational engine simulates pendulum dynamics by simultaneously running idealized textbook equations (SHM) alongside exact non-linear physical models. Through real-time vector mapping, phase space graphs, and side-by-side "ghost" comparisons, it allows students to visually understand exactly when and why standard small-angle approximations fail in reality.
+        </p>
+        <span class="inline-flex items-center text-purple-600 font-semibold group">
+            Launch Lab <i data-lucide="arrow-right" class="ml-2 w-4 h-4 transition-transform group-hover:translate-x-1"></i>
+        </span>
+    </div>
+</a>
+
 
             <!-- ==================================================================== -->
             <!-- HOW TO ADD A NEW SIMULATION CARD:                                    -->
@@ -125,7 +145,7 @@
             <!-- 4. Pick a new icon name for data-lucide="..." (e.g. 'magnet', 'zap') -->
             <!-- ==================================================================== -->
             
-            <!--
+            <!-- For editors
             <a href="New%20Simulation.html" class="sim-card block bg-slate-800 rounded-2xl overflow-hidden border border-slate-700 shadow-lg shadow-black/20 hover:border-slate-600">
                 <div class="h-3 bg-cyan-500"></div> 
                 <div class="p-8 text-center">
