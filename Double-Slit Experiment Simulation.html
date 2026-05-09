@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wave Optics Engine V8</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        MathJax = { tex: {inlineMath: [['$', '$'], ['\\(', '\\)']]}, svg: {fontCache: 'global'} };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+        body {
+            background-color: #0d1117; color: #c9d1d9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden; margin: 0; padding: 0; display: flex; height: 100vh;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #161b22; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 999px; background: linear-gradient(to right, #1f6feb, #58a6ff); }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+            background: #ffffff; border: 2px solid #58a6ff; margin-top: -5px; cursor: pointer;
+            box-shadow: 0 0 8px rgba(88,166,255,0.8); transition: transform 0.15s ease;
+        }
+        input[type=range]:focus { outline: none; }
+        
+        input[type=range].speed-slider::-webkit-slider-runnable-track { background: linear-gradient(to right, #8957e5, #d2a8ff); }
+        input[type=range].speed-slider::-webkit-slider-thumb { border-color: #d2a8ff; box-shadow: 0 0 8px rgba(210,168,255,0.8); }
+
+        input[type=range].coh-slider::-webkit-slider-runnable-track { background: linear-gradient(to right, #e34c26, #f56565); }
+        input[type=range].coh-slider::-webkit-slider-thumb { border-color: #f56565; box-shadow: 0 0 8px rgba(245,101,101,0.8); }
+
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        #sidebar {
+            width: 400px; min-width: 400px; background: #161b22;
+            border-right: 1px solid #30363d; display: flex; flex-direction: column;
+            height: 100%; overflow-y: auto; z-index: 10; box-shadow: 5px 0 25px rgba(0,0,0,0.5);
+        }
+
+        #canvas-container { flex-grow: 1; position: relative; background: #0d1117; cursor: crosshair; }
+        #glCanvas, #simCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        #glCanvas { z-index: 1; }
+        #simCanvas { z-index: 2; pointer-events: none; }
+
+        .param-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .param-label { width: 55px; font-weight: bold; color: #8b949e; text-align: right; font-size: 11px; }
+        .param-value { width: 55px; font-family: monospace; color: #58a6ff; text-align: right; font-size: 11px;}
+        
+        .causal-box { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 12px; margin-bottom: 12px; }
+
+        .btn-group { display: flex; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
+        .btn-group button { flex: 1; padding: 6px; font-size: 11px; font-weight: 600; color: #8b949e; transition: all 0.2s; border-right: 1px solid #30363d; }
+        .btn-group button:last-child { border-right: none; }
+        .btn-group button.active { background: #1f6feb; color: #ffffff; }
+
+        .mode-btn { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 6px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .mode-btn.active-mode { background: #1f6feb; border-color: #58a6ff; color: #ffffff; }
+
+        .gpu-badge { display: inline-block; padding: 2px 6px; font-size: 9px; font-weight: bold; background: rgba(46, 160, 67, 0.2); color: #3fb950; border: 1px solid rgba(46, 160, 67, 0.4); border-radius: 4px; margin-left: 8px; }
+        .arch-badge { display: inline-block; padding: 2px 6px; font-size: 9px; font-weight: bold; background: rgba(163, 113, 247, 0.2); color: #a371f7; border: 1px solid rgba(163, 113, 247, 0.4); border-radius: 4px; margin-left: 4px; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar" class="p-4 flex flex-col">
+        <div class="mb-4">
+            <h1 class="text-xl font-bold text-white flex items-center">
+                Wave Optics <span class="gpu-badge">GPU</span><span class="arch-badge">V8 Rigor</span>
+            </h1>
+            <p class="text-[10px] text-gray-500 mt-1 leading-tight">Anisotropic Spatial Mapping Enabled</p>
+        </div>
+
+        <div class="mb-4">
+            <div class="btn-group">
+                <button id="btn-slit-1" onclick="Engine.UI.setSlits(1)">Single Slit</button>
+                <button id="btn-slit-2" class="active" onclick="Engine.UI.setSlits(2)">Double Slit</button>
+            </div>
+            <div class="btn-group">
+                <button id="btn-rep-sine" class="active" onclick="Engine.UI.setRep('sine')">Transverse (Pedagogy)</button>
+                <button id="btn-rep-field" onclick="Engine.UI.setRep('field')">Prob. Amplitude</button>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <div class="grid grid-cols-4 gap-1">
+                <button id="btn-mode-waves" class="mode-btn active-mode" onclick="Engine.UI.setMode('waves')">1. Prop</button>
+                <button id="btn-mode-path" class="mode-btn" onclick="Engine.UI.setMode('path')">2. Path</button>
+                <button id="btn-mode-interference" class="mode-btn" onclick="Engine.UI.setMode('interference')">3. Interf</button>
+                <button id="btn-mode-full" class="mode-btn" onclick="Engine.UI.setMode('full')">4. Full</button>
+            </div>
+        </div>
+
+        <div class="mb-2">
+            <div class="param-row"><span class="param-label">&lambda;</span><input type="range" id="sl-lambda" min="350" max="750" value="500" step="5" class="flex-1"><span class="param-value" id="lbl-lambda">500 nm</span></div>
+            <div class="param-row" id="row-a"><span class="param-label">a</span><input type="range" id="sl-a" min="10" max="80" value="30" step="1" class="flex-1"><span class="param-value" id="lbl-a">30 &micro;m</span></div>
+            <div class="param-row" id="row-d"><span class="param-label">d</span><input type="range" id="sl-d" min="80" max="300" value="150" step="2" class="flex-1"><span class="param-value" id="lbl-d">150 &micro;m</span></div>
+            <div class="param-row"><span class="param-label">L</span><input type="range" id="sl-L" min="200" max="900" value="500" step="10" class="flex-1"><span class="param-value" id="lbl-L">500 mm</span></div>
+            <div class="param-row"><span class="param-label">y</span><input type="range" id="sl-y" min="-300" max="300" value="0" class="flex-1"><span class="param-value" id="lbl-y">0.0 mm</span></div>
+            <div class="param-row mt-2 pt-2 border-t border-gray-800" id="row-coh"><span class="param-label text-[#f56565]">Coherence</span><input type="range" id="sl-coh" min="0" max="1" step="0.01" value="1.0" class="flex-1 coh-slider"><span class="param-value text-[#f56565]" id="lbl-coh">1.00 &gamma;</span></div>
+            <div class="param-row"><span class="param-label text-[#d2a8ff]">Time Spd</span><input type="range" id="sl-speed" min="0.0005" max="0.01" step="0.0005" value="0.002" class="flex-1 speed-slider"><span class="param-value text-[#d2a8ff]" id="lbl-speed">1.0x</span></div>
+        </div>
+
+        <div class="mt-auto">
+            <div class="causal-box mb-2">
+                <h2 class="text-[10px] font-bold text-gray-400 uppercase flex justify-between mb-2"><span>Live Analysis at P</span><span class="font-normal italic text-gray-600">Exact CPU Evaluation</span></h2>
+                <div class="space-y-1 text-xs" id="math-panel-body"></div>
+                <div class="mt-2 pt-2 border-t border-gray-800"><div id="fringe-status" class="text-center font-bold text-[11px] py-1 rounded bg-gray-800 text-white">--</div></div>
+            </div>
+
+            <div class="causal-box mb-0">
+                <h2 class="text-[10px] font-bold text-gray-400 uppercase flex justify-between mb-2"><span>Theory</span><span class="font-normal italic text-gray-600">Small Angle</span></h2>
+                <div class="space-y-1 text-[11px]">
+                    <div class="flex justify-between text-gray-300 mb-1"><span id="lbl-fringe-width">Spacing (&Delta;y)</span><span id="out-fringe-width" class="font-mono text-[#00e6ff] font-bold">0.00 mm</span></div>
+                    <div class="flex items-center justify-between border-t border-gray-800 pt-1 pb-1">
+                        <span class="text-gray-400">Order (n):</span><input type="number" id="inp-n" min="1" max="20" value="1" class="bg-[#161b22] text-white border border-gray-500 rounded px-1 py-0 w-12 font-mono text-center outline-none">
+                    </div>
+                    <div class="flex justify-between text-gray-300 mt-1"><span id="lbl-nth-1">n-th Bright (y<sub>n</sub>)</span><span id="out-nth-1" class="font-mono text-gray-400">0.00 mm</span></div>
+                    <div id="row-nth-2" class="flex justify-between text-gray-300"><span id="lbl-nth-2">n-th Dark (y<sub>n-0.5</sub>)</span><span id="out-nth-2" class="font-mono text-gray-400">0.00 mm</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <!-- GPU Accelerated Background + Screen Strip -->
+        <canvas id="glCanvas"></canvas>
+        <!-- Pure Geometry & Data Overlays -->
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+    <script>
+        /**
+         * WAVE OPTICS ENGINE V8
+         * - CPU Screen Rendering eliminated (GPU natively calculates and draws screen strip).
+         * - GPU Intensity hard-cutoff eliminated (Fades naturally via gamma curve).
+         * - Ornstein-Uhlenbeck phase noise model applied.
+         * - Spatial mapping explicitly defined.
+         */
+
+        const CONSTANTS = {
+            colors: {
+                s1: { hex: '#ff4444', rgb: '255, 68, 68' },
+                s2: { hex: '#44ff44', rgb: '68, 255, 68' },
+                result: { hex: '#00e6ff', rgb: '0, 230, 255' },
+                geom: 'rgba(255, 255, 255, 0.4)',
+                point: '#ffeb3b', barrier: '#30363d', bg: '#0d1117'
+            },
+            // The explicitly documented "Anisotropic Pedagogical Space Warp"
+            visualMapping: {
+                slitXRatio: 0.15,
+                screenOffsetMax: 180,
+                screenThickness: 16.0
+            }
+        };
+
+        const State = {
+            app: { slits: 2, waveRep: 'sine', layers: { traveling: true, geometry: false, wavefronts: false, field: false } },
+            physics: { lambda: 50, a: 30, d: 150, L: 500, y: 0, gamma: 1.0 },
+            time: { current: 0, speed: 0.002, phaseDrift: 0, lastRender: 0 },
+            interaction: { isDraggingPoint: false, phasorTrace: [] },
+            flags: { parametersDirty: true, theoryDirty: true }
+        };
+
+        // --- PHYSICS CORE (Pure Math, Single Eval Point) ---
+        const PhysicsCore = {
+            sincSq(x) { return x === 0 ? 1 : Math.pow(Math.sin(x)/x, 2); },
+            
+            evaluateAt(screenY, centerY, p = State.physics) {
+                const k = (2 * Math.PI) / p.lambda;
+                const s1Y = State.app.slits === 1 ? centerY : centerY - p.d / 2;
+                const s2Y = State.app.slits === 1 ? centerY : centerY + p.d / 2;
+
+                const r1 = Math.hypot(p.L, screenY - s1Y);
+                const r2 = Math.hypot(p.L, screenY - s2Y);
+                const dx = Math.abs(r1 - r2);
+                
+                const theta = Math.atan2(screenY - centerY, p.L);
+                const beta = (Math.PI * p.a * Math.sin(theta)) / p.lambda;
+                const envelope = this.sincSq(beta);
+
+                let interference = 1.0, m = 0;
+                if (State.app.slits === 2) {
+                    m = dx / p.lambda;
+                    interference = (1 + p.gamma * Math.cos(k * dx)) / 2;
+                }
+
+                const totalIntensity = envelope * interference;
+                return { s1Y, s2Y, r1, r2, m, envelope, interference, totalIntensity };
+            }
+        };
+
+        // --- GL MANAGER (GPU Render Engine) ---
+        const GLManager = {
+            gl: null, program: null, uniforms: {},
+            
+            vsSource: `attribute vec2 a_position; void main() { gl_Position = vec4(a_position, 0.0, 1.0); }`,
+            fsSource: `
+                precision highp float;
+                uniform vec2 u_resolution; uniform float u_dpr;
+                uniform float u_slitX; uniform float u_screenX; uniform float u_s1Y; uniform float u_s2Y; uniform float u_centerY;
+                uniform float u_lambda; uniform float u_a; uniform float u_d; uniform int u_slits; uniform float u_gamma;
+                uniform int u_renderField;
+                const float PI = 3.14159265359;
+
+                void main() {
+                    vec4 bgColor = vec4(0.051, 0.067, 0.090, 1.0); // #0d1117 Base UI Background
+                    vec2 st = gl_FragCoord.xy / u_dpr;
+                    st.y = (u_resolution.y / u_dpr) - st.y; // Flip Y for 2D mapping
+
+                    // 1. Calculate Intensity (Exact same math as PhysicsCore)
+                    float dx = u_screenX - u_slitX; // L distance
+                    
+                    // Note: For field visualization behind screen, we use current pixel X distance.
+                    // For the screen strip itself, we lock X to the Screen distance (dx)
+                    float evalDx = st.x > u_screenX ? dx : st.x - u_slitX;
+                    
+                    float d1 = sqrt(evalDx*evalDx + pow(st.y - u_s1Y, 2.0));
+                    float d2 = sqrt(evalDx*evalDx + pow(st.y - u_s2Y, 2.0));
+
+                    float theta = atan(st.y - u_centerY, evalDx);
+                    float beta = (PI * u_a * sin(theta)) / u_lambda;
+
+                    float envelope = 1.0;
+                    if (abs(beta) > 0.001) {
+                        float sinc = sin(beta) / beta;
+                        envelope = sinc * sinc;
+                    }
+
+                    float intensity = 0.0;
+                    if (u_slits == 1) {
+                        intensity = envelope;
+                    } else {
+                        float k = (2.0 * PI) / u_lambda;
+                        intensity = envelope * (1.0 + u_gamma * cos(k * (d1 - d2))) / 2.0;
+                    }
+
+                    // 2. Render Screen Strip vs Background Field
+                    float alpha = pow(intensity, 0.45); // Natural perceptual gamma dropoff (No hard cutoffs)
+                    vec3 fieldColor = vec3(0.0, 0.902, 1.0); // Cyan
+                    
+                    if (st.x >= u_screenX && st.x <= u_screenX + 16.0) { // Screen Plate Thickness
+                        // Render Screen Plate
+                        vec3 screenBg = vec3(0.03, 0.04, 0.06); // Darker plate
+                        gl_FragColor = vec4(mix(screenBg, fieldColor, alpha * 0.95), 1.0);
+                    } else if (u_renderField == 1 && st.x > u_slitX && st.x < u_screenX) {
+                        // Render Background Field
+                        gl_FragColor = vec4(mix(bgColor.rgb, fieldColor, alpha * 0.45), 1.0);
+                    } else {
+                        gl_FragColor = bgColor; // Empty Void
+                    }
+                }
+            `,
+
+            init(canvasId) {
+                const canvas = document.getElementById(canvasId);
+                this.gl = canvas.getContext('webgl', { preserveDrawingBuffer: false });
+                
+                const buildShader = (type, src) => {
+                    const s = this.gl.createShader(type);
+                    this.gl.shaderSource(s, src); this.gl.compileShader(s);
+                    return s;
+                };
+
+                this.program = this.gl.createProgram();
+                this.gl.attachShader(this.program, buildShader(this.gl.VERTEX_SHADER, this.vsSource));
+                this.gl.attachShader(this.program, buildShader(this.gl.FRAGMENT_SHADER, this.fsSource));
+                this.gl.linkProgram(this.program);
+                this.gl.useProgram(this.program);
+
+                const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]);
+                const buffer = this.gl.createBuffer();
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+                this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+
+                const posLoc = this.gl.getAttribLocation(this.program, "a_position");
+                this.gl.enableVertexAttribArray(posLoc);
+                this.gl.vertexAttribPointer(posLoc, 2, this.gl.FLOAT, false, 0, 0);
+
+                ['u_resolution', 'u_dpr', 'u_slitX', 'u_screenX', 'u_s1Y', 'u_s2Y', 'u_centerY', 
+                 'u_lambda', 'u_a', 'u_d', 'u_slits', 'u_gamma', 'u_renderField'].forEach(u => {
+                    this.uniforms[u] = this.gl.getUniformLocation(this.program, u);
+                });
+            },
+
+            resize(w, h, dpr) {
+                if (!this.gl) return;
+                this.gl.canvas.width = w * dpr; this.gl.canvas.height = h * dpr;
+                this.gl.viewport(0, 0, w * dpr, h * dpr);
+                this.syncUniforms(w, h, dpr);
+            },
+
+            syncUniforms(w, h, dpr) {
+                if (!this.gl) return;
+                const gl = this.gl, u = this.uniforms, p = State.physics;
+                
+                const centerY = h / 2;
+                const s1Y = State.app.slits === 1 ? centerY : centerY - p.d / 2;
+                const s2Y = State.app.slits === 1 ? centerY : centerY + p.d / 2;
+                const screenX = Math.min(w * CONSTANTS.visualMapping.slitXRatio + p.L, w - CONSTANTS.visualMapping.screenOffsetMax);
+
+                gl.uniform2f(u.u_resolution, w * dpr, h * dpr);
+                gl.uniform1f(u.u_dpr, dpr);
+                gl.uniform1f(u.u_slitX, w * CONSTANTS.visualMapping.slitXRatio);
+                gl.uniform1f(u.u_screenX, screenX);
+                gl.uniform1f(u.u_s1Y, s1Y); gl.uniform1f(u.u_s2Y, s2Y); gl.uniform1f(u.u_centerY, centerY);
+                
+                gl.uniform1f(u.u_lambda, p.lambda); gl.uniform1f(u.u_a, p.a); gl.uniform1f(u.u_d, p.d);
+                gl.uniform1i(u.u_slits, State.app.slits); gl.uniform1f(u.u_gamma, p.gamma);
+                gl.uniform1i(u.u_renderField, State.app.layers.field ? 1 : 0);
+                
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+                State.flags.parametersDirty = false;
+            }
+        };
+
+        // --- 2D RENDERER (Pure Overlays) ---
+        const Render2D = {
+            ctx: null, w: 0, h: 0, centerY: 0, slitX: 0, screenX: 0,
+
+            init(canvasId) { this.ctx = document.getElementById(canvasId).getContext('2d'); },
+
+            resize(w, h, dpr) {
+                this.w = w; this.h = h; this.centerY = h / 2;
+                this.ctx.canvas.width = w * dpr; this.ctx.canvas.height = h * dpr;
+                this.ctx.scale(dpr, dpr);
+                this.slitX = w * CONSTANTS.visualMapping.slitXRatio;
+                this.screenX = Math.min(this.slitX + State.physics.L, w - CONSTANTS.visualMapping.screenOffsetMax);
+            },
+
+            drawFrame() {
+                this.ctx.clearRect(0, 0, this.w, this.h);
+                
+                const p = State.physics;
+                const physData = PhysicsCore.evaluateAt(this.centerY + p.y, this.centerY);
+
+                if (State.app.layers.wavefronts) this.drawWavefronts(physData.s1Y, physData.s2Y);
+                if (State.app.layers.geometry) this.drawGeometry(physData.s1Y, physData.s2Y);
+                this.drawBarrier(physData.s1Y, physData.s2Y); 
+                if (State.app.layers.traveling) this.drawTravelingWaves(physData.s1Y, physData.s2Y);
+                
+                this.drawObservationPoint(this.centerY + p.y);
+                this.drawLabels(physData.s1Y, physData.s2Y);
+                this.drawPhaseVisualizer(physData);
+            },
+
+            drawBarrier(s1Y, s2Y) {
+                const thickness = 8, bX = this.slitX - thickness/2, halfA = State.physics.a / 2;
+                const ctx = this.ctx; ctx.fillStyle = CONSTANTS.colors.barrier;
+                ctx.fillRect(bX, 0, thickness, s1Y - halfA);
+                if (State.app.slits === 1) { ctx.fillRect(bX, s1Y + halfA, thickness, this.h - (s1Y + halfA)); } 
+                else { ctx.fillRect(bX, s1Y + halfA, thickness, State.physics.d - State.physics.a); ctx.fillRect(bX, s2Y + halfA, thickness, this.h - (s2Y + halfA)); }
+            },
+
+            drawGeometry(s1Y, s2Y) {
+                const ctx = this.ctx, tY = this.centerY + State.physics.y;
+                ctx.setLineDash([4, 4]); ctx.lineWidth = 1; ctx.strokeStyle = `rgba(${CONSTANTS.colors.s1.rgb}, 0.4)`;
+                ctx.beginPath(); ctx.moveTo(this.slitX, s1Y); ctx.lineTo(this.screenX, tY); ctx.stroke();
+                if (State.app.slits === 2) { ctx.strokeStyle = `rgba(${CONSTANTS.colors.s2.rgb}, 0.4)`; ctx.beginPath(); ctx.moveTo(this.slitX, s2Y); ctx.lineTo(this.screenX, tY); ctx.stroke(); }
+                ctx.setLineDash([2, 6]); ctx.strokeStyle = CONSTANTS.colors.geom;
+                ctx.beginPath(); ctx.moveTo(this.slitX, this.centerY); ctx.lineTo(this.screenX, this.centerY); ctx.stroke(); ctx.setLineDash([]);
+            },
+
+            drawWavefronts(s1Y, s2Y) {
+                const ctx = this.ctx, p = State.physics, omegaT = (State.time.current * 2 * Math.PI) % (2 * Math.PI), baseR = (omegaT / (2 * Math.PI)) * p.lambda;
+                ctx.save(); ctx.beginPath(); ctx.rect(this.slitX, 0, this.screenX - this.slitX, this.h); ctx.clip(); ctx.lineWidth = 1;
+                for (let r = baseR; r < this.w; r += p.lambda) {
+                    if (r < 2) continue;
+                    const alpha = Math.max(0, 1 - (r / this.w));
+                    ctx.strokeStyle = `rgba(${CONSTANTS.colors.s1.rgb}, ${alpha * 0.4})`; ctx.beginPath(); ctx.arc(this.slitX, s1Y, r, 0, Math.PI*2); ctx.stroke();
+                    if (State.app.slits === 2) {
+                        ctx.strokeStyle = `rgba(${CONSTANTS.colors.s2.rgb}, ${alpha * 0.4})`; ctx.beginPath(); 
+                        const rShift = r - (State.time.phaseDrift / (2 * Math.PI)) * p.lambda;
+                        if (rShift > 0) { ctx.arc(this.slitX, s2Y, rShift, 0, Math.PI*2); ctx.stroke(); }
+                    }
+                } ctx.restore();
+            },
+
+            drawTravelingWaves(s1Y, s2Y) {
+                const tY = this.centerY + State.physics.y, r1 = Math.hypot(State.physics.L, tY - s1Y);
+                if (State.app.waveRep === 'sine') {
+                    this._drawSine(this.slitX, s1Y, this.screenX, tY, r1, CONSTANTS.colors.s1.hex, 0);
+                    if (State.app.slits === 2) this._drawSine(this.slitX, s2Y, this.screenX, tY, Math.hypot(State.physics.L, tY - s2Y), CONSTANTS.colors.s2.hex, State.time.phaseDrift);
+                } else {
+                    this._drawField(this.slitX, s1Y, this.screenX, tY, r1, CONSTANTS.colors.s1.rgb, 0);
+                    if (State.app.slits === 2) this._drawField(this.slitX, s2Y, this.screenX, tY, Math.hypot(State.physics.L, tY - s2Y), CONSTANTS.colors.s2.rgb, State.time.phaseDrift);
+                }
+            },
+
+            _drawSine(x1, y1, x2, y2, dist, color, phaseOffset) {
+                const k = (2 * Math.PI) / State.physics.lambda, wt = State.time.current * 2 * Math.PI, dx = (x2 - x1) / dist, dy = (y2 - y1) / dist;
+                this.ctx.strokeStyle = color; this.ctx.lineWidth = 2; this.ctx.beginPath();
+                for (let t = 0; t <= dist; t += 2) {
+                    const disp = 12 * Math.sin(k * t - wt + phaseOffset);
+                    const px = x1 + dx * t - dy * disp, py = y1 + dy * t + dx * disp;
+                    if (t === 0) this.ctx.moveTo(px, py); else this.ctx.lineTo(px, py);
+                } this.ctx.stroke();
+            },
+
+            _drawField(x1, y1, x2, y2, dist, colorRGB, phaseOffset) {
+                const k = (2 * Math.PI) / State.physics.lambda, wt = State.time.current * 2 * Math.PI, dx = (x2 - x1) / dist, dy = (y2 - y1) / dist;
+                this.ctx.strokeStyle = `rgba(${colorRGB}, 0.15)`; this.ctx.lineWidth = 1; this.ctx.beginPath(); this.ctx.moveTo(x1, y1); this.ctx.lineTo(x2, y2); this.ctx.stroke();
+                for (let t = 0; t <= dist; t += 3) {
+                    const amp = Math.max(0, (Math.cos(k * t - wt + phaseOffset) + 1) / 2); 
+                    if (amp > 0.1) {
+                        this.ctx.fillStyle = `rgba(${colorRGB}, ${amp * 0.8})`; this.ctx.beginPath(); this.ctx.arc(x1 + dx * t, y1 + dy * t, 1.5 + amp * 2, 0, Math.PI*2); this.ctx.fill();
+                    }
+                }
+            },
+
+            drawObservationPoint(tY) {
+                const ctx = this.ctx; ctx.fillStyle = CONSTANTS.colors.point;
+                ctx.beginPath(); ctx.arc(this.screenX, tY, State.interaction.isDraggingPoint ? 8 : 5, 0, Math.PI * 2); ctx.fill();
+                if (State.interaction.isDraggingPoint) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke(); ctx.beginPath(); ctx.arc(this.screenX, tY, 14, 0, Math.PI * 2); ctx.stroke(); }
+            },
+
+            drawPhaseVisualizer(pData) {
+                const ctx = this.ctx, tY = this.centerY + State.physics.y, vizX = this.screenX + 100, vizY = Math.max(70, Math.min(this.h - 70, tY)), radius = 35;
+                const k = (2 * Math.PI) / State.physics.lambda, wt = State.time.current * 2 * Math.PI, p1 = k * pData.r1 - wt, amp = radius * 0.45;
+
+                ctx.beginPath(); ctx.arc(vizX, vizY, radius, 0, Math.PI * 2); ctx.fillStyle = CONSTANTS.colors.bg; ctx.fill(); 
+                ctx.strokeStyle = CONSTANTS.colors.barrier; ctx.lineWidth = 2; ctx.stroke(); ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(vizX - radius, vizY); ctx.lineTo(vizX + radius, vizY); ctx.moveTo(vizX, vizY - radius); ctx.lineTo(vizX, vizY + radius); ctx.stroke();
+
+                if (State.app.slits === 1) {
+                    this._drawVector(vizX, vizY, p1, amp, CONSTANTS.colors.s1.hex, 2);
+                    ctx.fillStyle = '#8b949e'; ctx.textAlign = 'center'; ctx.font = '11px sans-serif'; ctx.fillText('Amplitude', vizX, vizY - radius - 10);
+                } else {
+                    const p2 = k * pData.r2 - wt + State.time.phaseDrift;
+                    const rx = Math.cos(p1)*amp + Math.cos(p2)*amp, ry = Math.sin(p1)*amp + Math.sin(p2)*amp;
+                    
+                    State.interaction.phasorTrace.push({ x: rx, y: ry, age: 0 }); ctx.beginPath();
+                    State.interaction.phasorTrace.forEach((pt, i) => { if (i === 0) ctx.moveTo(vizX + pt.x, vizY + pt.y); else ctx.lineTo(vizX + pt.x, vizY + pt.y); });
+                    ctx.strokeStyle = `rgba(0, 230, 255, 0.3)`; ctx.lineWidth = 3; ctx.stroke();
+                    State.interaction.phasorTrace.forEach(pt => pt.age += (State.time.speed * 1000)); State.interaction.phasorTrace = State.interaction.phasorTrace.filter(pt => pt.age < 150);
+
+                    this._drawVector(vizX, vizY, p1, amp, CONSTANTS.colors.s1.hex, 2); this._drawVector(vizX, vizY, p2, amp, CONSTANTS.colors.s2.hex, 2);
+                    this._drawVector(vizX, vizY, Math.atan2(ry, rx), Math.hypot(rx, ry), CONSTANTS.colors.result.hex, 3);
+                    ctx.fillStyle = '#8b949e'; ctx.textAlign = 'center'; ctx.font = '11px sans-serif'; ctx.fillText('Complex Plane', vizX, vizY - radius - 10);
+                } ctx.fillText('at P', vizX, vizY + radius + 18);
+            },
+
+            _drawVector(x, y, a, l, c, w) {
+                this.ctx.beginPath(); this.ctx.moveTo(x, y); const ex = x + Math.cos(a)*l, ey = y + Math.sin(a)*l;
+                this.ctx.lineTo(ex, ey); this.ctx.strokeStyle = c; this.ctx.lineWidth = w; this.ctx.stroke();
+                this.ctx.beginPath(); this.ctx.arc(ex, ey, w + 1.5, 0, Math.PI*2); this.ctx.fillStyle = c; this.ctx.fill();
+            },
+
+            drawLabels(s1Y, s2Y) {
+                const ctx = this.ctx; ctx.fillStyle = CONSTANTS.colors.geom; ctx.font = '12px Arial'; ctx.textAlign = 'right';
+                ctx.fillStyle = CONSTANTS.colors.s1.hex; ctx.fillText('S₁', this.slitX - 15, s1Y + 4);
+                if (State.app.slits === 2) { ctx.fillStyle = CONSTANTS.colors.s2.hex; ctx.fillText('S₂', this.slitX - 15, s2Y + 4); }
+                if (State.app.layers.traveling) { ctx.textAlign = 'left'; ctx.fillStyle = CONSTANTS.colors.point; ctx.fillText('P', this.screenX + 22, this.centerY + State.physics.y - 12); }
+                if (State.app.layers.geometry) {
+                    ctx.textAlign = 'center'; ctx.fillStyle = '#8b949e'; ctx.fillText('L', this.slitX + State.physics.L/2, this.centerY - 10);
+                    ctx.beginPath(); ctx.moveTo(this.screenX + 35, this.centerY); ctx.lineTo(this.screenX + 35, this.centerY + State.physics.y);
+                    ctx.strokeStyle = CONSTANTS.colors.geom; ctx.lineWidth = 1; ctx.setLineDash([2, 2]); ctx.stroke(); ctx.setLineDash([]);
+                    ctx.fillText('y', this.screenX + 45, this.centerY + State.physics.y/2 + 4);
+                }
+            }
+        };
+
+        // --- UI BINDINGS ---
+        const UI = {
+            bindEvents() {
+                const els = ['sl-lambda', 'sl-a', 'sl-d', 'sl-L', 'sl-y', 'sl-coh', 'sl-speed'].map(id => document.getElementById(id));
+                els.forEach(el => el.addEventListener('input', () => this.readParameters()));
+                document.getElementById('inp-n').addEventListener('input', () => State.flags.theoryDirty = true);
+
+                const container = document.getElementById('canvas-container');
+                container.addEventListener('mousedown', (e) => {
+                    const r = container.getBoundingClientRect();
+                    if (Math.abs((e.clientX - r.left) - Render2D.screenX) < 50 && Math.abs((e.clientY - r.top) - (Render2D.centerY + State.physics.y)) < 50) {
+                        State.interaction.isDraggingPoint = true; State.interaction.phasorTrace = [];
+                    }
+                });
+                window.addEventListener('mousemove', (e) => {
+                    if (!State.interaction.isDraggingPoint) return;
+                    State.physics.y = Math.max(-300, Math.min(300, (e.clientY - container.getBoundingClientRect().top) - Render2D.centerY)); 
+                    document.getElementById('sl-y').value = -State.physics.y; this.readParameters();
+                });
+                window.addEventListener('mouseup', () => State.interaction.isDraggingPoint = false);
+            },
+
+            readParameters() {
+                const old = { ...State.physics };
+                State.physics.lambda = parseFloat(document.getElementById('sl-lambda').value) / 10;
+                State.physics.a = parseFloat(document.getElementById('sl-a').value);
+                State.physics.d = parseFloat(document.getElementById('sl-d').value);
+                State.physics.L = parseFloat(document.getElementById('sl-L').value);
+                State.physics.y = -parseFloat(document.getElementById('sl-y').value);
+                State.physics.gamma = parseFloat(document.getElementById('sl-coh').value);
+                State.time.speed = parseFloat(document.getElementById('sl-speed').value);
+
+                document.getElementById('lbl-lambda').innerText = `${document.getElementById('sl-lambda').value} nm`;
+                document.getElementById('lbl-a').innerText = `${State.physics.a} µm`;
+                document.getElementById('lbl-d').innerText = `${State.physics.d} µm`;
+                document.getElementById('lbl-L').innerText = `${State.physics.L} mm`;
+                document.getElementById('lbl-y').innerText = `${(-State.physics.y).toFixed(1)} mm`;
+                document.getElementById('lbl-coh').innerHTML = `${State.physics.gamma.toFixed(2)} &gamma;`;
+                document.getElementById('lbl-speed').innerText = `${(State.time.speed / 0.002).toFixed(1)}x`;
+
+                if (old.lambda !== State.physics.lambda || old.a !== State.physics.a || old.d !== State.physics.d || old.gamma !== State.physics.gamma || old.L !== State.physics.L) {
+                    State.flags.parametersDirty = true; State.flags.theoryDirty = true;
+                }
+            },
+
+            setSlits(num) {
+                State.app.slits = num;
+                document.getElementById('btn-slit-1').classList.toggle('active', num === 1); document.getElementById('btn-slit-2').classList.toggle('active', num === 2);
+                document.getElementById('row-d').style.opacity = num === 1 ? '0.3' : '1'; document.getElementById('row-d').style.pointerEvents = num === 1 ? 'none' : 'auto';
+                document.getElementById('row-coh').style.opacity = num === 1 ? '0.3' : '1'; document.getElementById('row-coh').style.pointerEvents = num === 1 ? 'none' : 'auto';
+                State.interaction.phasorTrace = []; State.flags.parametersDirty = true; State.flags.theoryDirty = true; this.readParameters();
+            },
+            setRep(type) {
+                State.app.waveRep = type;
+                document.getElementById('btn-rep-sine').classList.toggle('active', type === 'sine'); document.getElementById('btn-rep-field').classList.toggle('active', type === 'field');
+            },
+            setMode(modeId) {
+                document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active-mode')); document.getElementById('btn-mode-' + modeId).classList.add('active-mode');
+                State.app.layers = { traveling: ['waves', 'path', 'full'].includes(modeId), geometry: ['path', 'full'].includes(modeId), wavefronts: ['interference', 'full'].includes(modeId), field: ['interference', 'full'].includes(modeId) };
+                State.flags.parametersDirty = true;
+            },
+
+            updatePanels() {
+                const pData = PhysicsCore.evaluateAt(Render2D.centerY + State.physics.y, Render2D.centerY);
+                const elBody = document.getElementById('math-panel-body'), elStatus = document.getElementById('fringe-status');
+
+                if (State.app.slits === 1) {
+                    const isMin = Math.abs(pData.envelope) < 0.05 && Math.abs(State.physics.y) > 5;
+                    elBody.innerHTML = `<div class="flex justify-between items-center text-gray-300"><span>Diffraction Term ($I_{env}$)</span><span class="font-mono text-[#00e6ff]">${(pData.envelope * 100).toFixed(1)}%</span></div>`;
+                    elStatus.innerText = isMin ? "Diffraction Minimum" : "Diffraction Envelope";
+                    elStatus.className = isMin ? "text-center font-bold text-[11px] py-1 rounded bg-gray-800 text-gray-400" : "text-center font-bold text-[11px] py-1 rounded bg-cyan-900/40 text-cyan-400";
+                } else {
+                    elBody.innerHTML = `
+                        <div class="flex justify-between text-gray-400"><span>Phase Ratio ($m$)</span><span class="font-mono">${pData.m.toFixed(2)} &lambda;</span></div>
+                        <div class="flex justify-between text-gray-300"><span>Fringe Visibility</span><span class="font-mono">${(State.physics.gamma*100).toFixed(0)}%</span></div>
+                        <div class="flex justify-between text-gray-300"><span>Diffraction Env.</span><span class="font-mono">${(pData.envelope*100).toFixed(0)}%</span></div>
+                        <div class="flex justify-between border-t border-gray-800 pt-1 mt-1"><span class="text-white">Avg. Intensity ($\bar{I}$)</span><span class="font-mono text-[#00e6ff] font-bold">${(pData.totalIntensity * 100).toFixed(1)}%</span></div>`;
+                    
+                    if (State.physics.gamma < 0.1) {
+                        elStatus.innerText = "Incoherent (Washed Out)"; elStatus.className = "text-center font-bold text-[11px] py-1 rounded bg-[#161b22] text-gray-500 border border-gray-800";
+                    } else {
+                        const isBright = Math.abs(pData.m - Math.round(pData.m)) < 0.15, isDark = Math.abs(pData.m - (Math.floor(pData.m) + 0.5)) < 0.15;
+                        if (pData.envelope < 0.1) { elStatus.innerText = "Suppressed by Envelope"; elStatus.className = "text-center font-bold text-[11px] py-1 rounded bg-gray-800 text-gray-500 border border-gray-700"; }
+                        else if (isBright) { elStatus.innerText = Math.round(pData.m) === 0 ? "Central Maximum" : `${Math.round(pData.m)}° Bright Fringe`; elStatus.className = "text-center font-bold text-[11px] py-1 rounded bg-cyan-900/40 text-cyan-400 border border-cyan-800"; }
+                        else if (isDark) { elStatus.innerText = "Interference Minimum"; elStatus.className = "text-center font-bold text-[11px] py-1 rounded bg-gray-800 text-gray-400 border border-gray-700"; }
+                        else { elStatus.innerText = "Partial Interference"; elStatus.className = "text-center font-bold text-[11px] py-1 rounded bg-[#161b22] text-gray-500 border border-gray-800"; }
+                    }
+                }
+
+                if (State.flags.theoryDirty) {
+                    let n = parseInt(document.getElementById('inp-n').value) || 1;
+                    const lambda_nm = parseFloat(document.getElementById('sl-lambda').value), L_mm = State.physics.L, a_um = State.physics.a, d_um = State.physics.d;
+                    if (State.app.slits === 1) {
+                        const min_mm = (lambda_nm * L_mm / a_um) * 1e-3;
+                        document.getElementById('lbl-fringe-width').innerHTML = "Central Max (2&Delta;y)"; document.getElementById('out-fringe-width').innerHTML = (2 * min_mm).toFixed(2) + " mm";
+                        document.getElementById('lbl-nth-1').innerHTML = `${n}-th Min (y<sub>${n}</sub>)`; document.getElementById('out-nth-1').innerHTML = (n * min_mm).toFixed(2) + " mm";
+                        document.getElementById('row-nth-2').style.display = 'none';
+                    } else {
+                        const w_mm = (lambda_nm * L_mm / d_um) * 1e-3;
+                        document.getElementById('lbl-fringe-width').innerHTML = "Spacing (&Delta;y)"; document.getElementById('out-fringe-width').innerHTML = w_mm.toFixed(2) + " mm";
+                        document.getElementById('lbl-nth-1').innerHTML = `${n}-th Bright (y<sub>${n}</sub>)`; document.getElementById('out-nth-1').innerHTML = (n * w_mm).toFixed(2) + " mm";
+                        document.getElementById('row-nth-2').style.display = 'flex'; document.getElementById('lbl-nth-2').innerHTML = `${n}-th Dark (y<sub>${n}-0.5</sub>)`; document.getElementById('out-nth-2').innerHTML = ((n - 0.5) * w_mm).toFixed(2) + " mm";
+                    }
+                    State.flags.theoryDirty = false;
+                }
+            }
+        };
+
+        // --- MAIN ENGINE ---
+        const Engine = {
+            UI, 
+            init() {
+                GLManager.init('glCanvas'); Render2D.init('simCanvas'); UI.bindEvents();
+                const resize = () => {
+                    const rect = document.getElementById('canvas-container').getBoundingClientRect();
+                    const dpr = window.devicePixelRatio || 1;
+                    Render2D.resize(rect.width, rect.height, dpr); GLManager.resize(rect.width, rect.height, dpr);
+                };
+                window.addEventListener('resize', resize); resize(); UI.readParameters(); this.loop(0);
+            },
+
+            loop(timestamp) {
+                if (!State.time.lastRender) State.time.lastRender = timestamp;
+                const dt = timestamp - State.time.lastRender; State.time.lastRender = timestamp;
+
+                State.time.current = (State.time.current + dt * State.time.speed) % 1000;
+                
+                // Ornstein-Uhlenbeck AR(1) Phase Drift Process
+                if (State.app.slits === 2 && State.physics.gamma < 1.0) {
+                    const noise = (Math.random() - 0.5) * 2.0; // [-1, 1]
+                    const variance = (1.0 - State.physics.gamma) * 0.15;
+                    State.time.phaseDrift = State.time.phaseDrift * 0.98 + noise * variance; // Mean-reverting random walk
+                } else { State.time.phaseDrift *= 0.9; }
+
+                if (State.flags.parametersDirty) GLManager.syncUniforms(Render2D.w, Render2D.h, window.devicePixelRatio || 1);
+                
+                UI.updatePanels(); // Only evaluates a single CPU point now!
+                Render2D.drawFrame();
+
+                requestAnimationFrame((t) => this.loop(t));
+            }
+        };
+
+        window.onload = () => Engine.init();
+
+    </script>
+</body>
+</html>
+
+
