@@ -6,14 +6,11 @@
     <title>AFEED</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide for icons (e.g., play button, book, zap) -->
+    <!-- Lucide for icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Google Fonts: Inter (English) and Noto Sans Bengali (Bangla) -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Noto+Sans+Bengali:wght@400;700&display=swap" rel="stylesheet">
     
-    <!-- ========================================== -->
-    <!-- CUSTOM CSS STYLES (Do not change unless modifying design) -->
-    <!-- ========================================== -->
     <style>
         body {
             font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
@@ -28,7 +25,6 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.1);
         }
-        /* Styling for chapters that don't have simulations yet */
         .chapter-card.planned {
             opacity: 0.55;
             filter: grayscale(80%);
@@ -38,13 +34,27 @@
             opacity: 0.8;
             filter: grayscale(40%);
         }
-        /* Glassmorphism effect for the top navigation bar */
+        /* Subject Tab Animations */
+        .subject-tab {
+            transition: all 0.2s ease;
+        }
+        .subject-tab.active {
+            background-color: rgba(99, 102, 241, 0.2);
+            border-color: #6366f1;
+            color: #818cf8;
+            box-shadow: 0 0 15px -3px rgba(99, 102, 241, 0.3);
+        }
+        .subject-tab:not(.active):hover {
+            background-color: rgba(30, 41, 59, 0.8);
+            border-color: #475569;
+        }
+        /* Glassmorphism */
         .glass {
             background: rgba(15, 23, 42, 0.8);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
-        /* Smooth expand/collapse animation classes for the dropdown list */
+        /* Smooth expand/collapse animation */
         .sim-list-container {
             display: grid;
             grid-template-rows: 0fr;
@@ -56,7 +66,7 @@
         .sim-list-content {
             overflow: hidden;
         }
-        /* AFEED Brand specific styling (Purple/Indigo gradient) */
+        /* Brand text */
         .brand-text {
             font-family: 'Inter', sans-serif;
             font-weight: 900;
@@ -67,227 +77,350 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        /* Hide scrollbar for the "Continue Learning" horizontal list */
+        /* Hide scrollbar */
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
         .no-scrollbar {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-300 selection:bg-indigo-500/30">
 
-    <!-- ========================================== -->
     <!-- TOP NAVIGATION BAR -->
-    <!-- ========================================== -->
     <nav class="sticky top-0 z-50 border-b border-slate-800 glass">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <span class="brand-text text-2xl tracking-tight brand-gradient">AFEED</span>
             </div>
-            <!-- Quick links to scroll down to Paper 1 or Paper 2 -->
-            <div class="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-300">
-                <a href="#paper1" class="hover:text-indigo-400 transition-colors">1st Paper</a>
-                <a href="#paper2" class="hover:text-indigo-400 transition-colors">2nd Paper</a>
+            <!-- Dynamic Nav Links (Injected by JS) -->
+            <div id="dynamic-nav-links" class="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-300">
+                <!-- Links will appear here based on subject -->
             </div>
         </div>
     </nav>
 
-    <!-- ========================================== -->
-    <!-- HERO SECTION (Big Logo & Search Bar) -->
-    <!-- ========================================== -->
-    <header class="relative py-20 px-4 overflow-hidden">
-        <!-- Background blurred color blobs -->
+    <!-- HERO SECTION -->
+    <header class="relative py-16 px-4 overflow-hidden">
         <div class="absolute inset-0 z-0 pointer-events-none">
             <div class="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px]"></div>
             <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px]"></div>
         </div>
         
         <div class="relative z-10 max-w-4xl mx-auto text-center">
-            <!-- Main Title -->
-            <h1 class="brand-text text-6xl md:text-[6rem] mb-10 text-white leading-none">
+            <h1 class="brand-text text-6xl md:text-[6rem] mb-8 text-white leading-none">
                 <span class="brand-gradient">AFEED</span>
             </h1>
 
             <!-- Advanced Search Bar -->
-            <div class="max-w-xl mx-auto relative group">
+            <div class="max-w-xl mx-auto relative group mb-10">
                 <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors"></i>
                 <input 
                     type="text" 
                     id="searchBar"
-                    placeholder="Search chapters, topics, or keywords (e.g. Light, Vector)..." 
+                    placeholder="Search chapters, topics, or keywords..." 
                     class="w-full bg-slate-900/80 backdrop-blur-sm border border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all shadow-2xl"
                 >
+            </div>
+
+            <!-- DYNAMIC SUBJECT SELECTOR (Tabs) -->
+            <div id="subject-selector" class="flex flex-wrap justify-center gap-3 max-w-2xl mx-auto">
+                <!-- Tabs will be injected here via JS -->
             </div>
         </div>
     </header>
 
     <main class="max-w-6xl mx-auto px-6 pb-24">
         
-        <!-- ========================================== -->
         <!-- "CONTINUE LEARNING" MODULE -->
-        <!-- (This is hidden by default and only shows up via JavaScript 
-             if the user has clicked on a simulation previously) -->
-        <!-- ========================================== -->
         <section id="recent-module" class="mb-16 hidden">
             <div class="flex items-center gap-2 mb-4">
                 <i data-lucide="clock" class="w-5 h-5 text-indigo-400"></i>
                 <h3 class="text-lg font-bold text-white tracking-tight">Continue Learning</h3>
             </div>
-            <!-- Horizontal scrolling grid for recent history -->
             <div id="recent-grid" class="flex gap-4 overflow-x-auto pb-4 no-scrollbar snap-x">
                 <!-- Javascript will inject recent cards here -->
             </div>
         </section>
 
-        <!-- ========================================== -->
-        <!-- 1ST PAPER SECTION -->
-        <!-- ========================================== -->
-        <section id="paper1" class="mb-24">
-            <!-- Section Header -->
-            <div class="flex items-center gap-4 mb-8">
-                <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-lg shadow-blue-500/5">
-                    <i data-lucide="book-open" class="w-6 h-6 text-blue-400"></i>
-                </div>
-                <div>
-                    <h2 class="text-3xl font-bold text-white tracking-tight">Physics 1st Paper</h2>
-                    <p class="text-sm text-slate-400 mt-1">পদার্থবিজ্ঞান প্রথম পত্র</p>
-                </div>
-            </div>
-
-            <!-- Grid container where Javascript will inject 1st Paper Chapters -->
-            <div id="paper1Grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-            </div>
-        </section>
-
-        <!-- ========================================== -->
-        <!-- 2ND PAPER SECTION -->
-        <!-- ========================================== -->
-        <section id="paper2">
-            <!-- Section Header -->
-            <div class="flex items-center gap-4 mb-8">
-                <div class="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20 shadow-lg shadow-orange-500/5">
-                    <i data-lucide="zap" class="w-6 h-6 text-orange-400"></i>
-                </div>
-                <div>
-                    <h2 class="text-3xl font-bold text-white tracking-tight">Physics 2nd Paper</h2>
-                    <p class="text-sm text-slate-400 mt-1">পদার্থবিজ্ঞান দ্বিতীয় পত্র</p>
-                </div>
-            </div>
-
-            <!-- Grid container where Javascript will inject 2nd Paper Chapters -->
-            <div id="paper2Grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-            </div>
-        </section>
+        <!-- DYNAMIC PAPERS CONTAINER -->
+        <div id="papers-container" class="space-y-24">
+            <!-- Sections inject here based on selected subject -->
+        </div>
 
     </main>
     
-    <!-- ========================================== -->
     <!-- FOOTER -->
-    <!-- ========================================== -->
     <footer class="border-t border-slate-800 py-12 text-center">
         <div class="flex items-center justify-center gap-2 mb-4">
             <span class="brand-text text-xl brand-gradient">AFEED</span>
-            <span class="text-slate-500 font-semibold">| Operating System for Physics</span>
+            <span class="text-slate-500 font-semibold">| Operating System for Science</span>
         </div>
         <p class="text-slate-600 text-sm">Organized systematically. Stored locally.</p>
     </footer>
 
     <!-- ========================================================================= -->
-    <!-- JAVASCRIPT LOGIC & CURRICULUM DATA -->
-    <!-- THIS IS THE ONLY PART YOU NEED TO EDIT TO ADD SIMULATIONS -->
+    <!-- DATABASE & LOGIC -->
     <!-- ========================================================================= -->
     <script>
-        /* ======================================================================
-           HOW TO ADD A NEW SIMULATION
-           ======================================================================
-           Example: You want to add a simulation to "Physical World" (p1c1).
+        /* ==========================================================================================
+           TUTORIAL: HOW TO MODIFY THE DATABASE (SUBJECTS, PAPERS, CHAPTERS, SIMULATIONS)
+           ==========================================================================================
            
-           Currently it looks like this:
-           { id: "p1c1", name: "Physical World", bn: "ভৌত জগৎ", status: "planned", keywords: [...] }
+           1. HOW TO ADD A NEW SUBJECT:
+           ----------------------------
+           Add a new key-value pair inside the `database` object. For example, to add Biology:
            
-           Change it to look like this:
-           { 
-             id: "p1c1", 
-             name: "Physical World", 
-             bn: "ভৌত জগৎ", 
-             status: "available",   // 1. Change status to "available"
-             icon: "globe",         // 2. Add an icon (find names at lucide.dev)
-             keywords: ["units", "measurements", "errors"],
-             simulations: [         // 3. Add the simulations array
-                 { title: "My New Simulation", link: "My_Simulation_File.html" }
-             ] 
+           biology: {
+               name: "Biology",          // The name that appears on the top tab
+               icon: "dna",              // Icon name from lucide.dev
+               itemLabel: "Simulation",  // What to call the activities (e.g. Simulation, Interaction)
+               papers: [                 
+                   // ... paper objects go here ...
+               ]
            }
 
-           To add a SECOND simulation to an already active chapter, just add a 
-           new `{ title: "...", link: "..." }` to its simulations array!
-           ======================================================================
-        */
+           2. HOW TO ADD A NEW PAPER TO A SUBJECT:
+           ---------------------------------------
+           Inside the `papers` array of a subject, add an object like this:
+           
+           {
+               id: "bio_paper1",         // MUST BE UNIQUE! Used for scrolling navigation.
+               title: "Biology 1st Paper", 
+               bn: "জীববিজ্ঞান প্রথম পত্র",      
+               themeColor: "emerald",    // Available colors: blue, orange, emerald, teal, rose, pink, cyan
+               chapters: [               
+                   // ... chapter objects go here ...
+               ]
+           }
 
-        const curriculum = {
-            paper1: [
-                // PLANNED CHAPTER (No simulations yet)
-                { id: "p1c1", name: "Physical World", bn: "ভৌত জগৎ", status: "planned", keywords: ["units", "measurements", "errors"] },
-                
-                // AVAILABLE CHAPTER (Has simulations)
-                { id: "p1c2", name: "Vectors", bn: "ভেক্টর", status: "available", icon: "move", keywords: ["direction", "scalar", "dot", "cross", "calculus", "field"], 
-                  simulations: [
-                      { title: "Vector Calculus & Fields", link: "Vector Calculus Simulation.html" }
-                  ] 
-                },
-                
-                { id: "p1c3", name: "Dynamics", bn: "গতিবিদ্যা", status: "planned", keywords: ["motion", "projectile", "velocity", "acceleration"] },
-                { id: "p1c4", name: "Newtonian Mechanics", bn: "নিউটনিয়ান বলবিদ্যা", status: "planned", keywords: ["force", "friction", "momentum", "torque"] },
-                { id: "p1c5", name: "Work, Energy & Power", bn: "কাজ, শক্তি ও ক্ষমতা", status: "planned", keywords: ["kinetic", "potential", "conservation"] },
-                { id: "p1c6", name: "Gravitation", bn: "মহাকর্ষ ও অভিকর্ষ", status: "planned", keywords: ["gravity", "kepler", "escape velocity", "satellite"] },
-                { id: "p1c7", name: "Structural Properties", bn: "পদার্থের গাঠনিক ধর্ম", status: "planned", keywords: ["elasticity", "stress", "strain", "fluids", "viscosity"] },
-                
-                // AVAILABLE CHAPTER WITH MULTIPLE SIMULATIONS
-                { id: "p1c8", name: "Periodic Motion", bn: "পর্যাবৃত্ত গতি", status: "available", icon: "metronome", keywords: ["shm", "pendulum", "spring", "oscillation"],
-                  simulations: [
-                      { title: "SHM Pendulum Dynamics", link: "SHM Pendulum Simulation.html" },
-                      { title: "Basic Harmonic Oscillators", link: "Simple harmonic motion Simulation.html" }
-                      // <-- Want a third simulation here? Just add a comma above and put a new { title: "...", link: "..." } here!
-                  ] 
-                },
-                
-                { id: "p1c9", name: "Waves", bn: "তরঙ্গ", status: "available", icon: "waves", keywords: ["sound", "interference", "superposition", "beats"],
-                  simulations: [{ title: "Superposition & Interference", link: "Superposition of wave Simulation.html" }] 
-                },
-                { id: "p1c10", name: "Ideal Gas", bn: "আদর্শ গ্যাস ও গতিতত্ত্ব", status: "planned", keywords: ["pressure", "temperature", "rms", "kinetic theory"] }
-            ],
-            paper2: [
-                { id: "p2c1", name: "Thermodynamics", bn: "তাপগতিবিদ্যা", status: "planned", keywords: ["heat", "entropy", "carnot", "engine"] },
-                { id: "p2c2", name: "Static Electricity", bn: "স্থির তড়িৎ", status: "planned", icon:"battery", keywords: ["charge", "coulomb", "electric field", "capacitor"] },
-                { id: "p2c3", name: "Current Electricity", bn: "চল তড়িৎ", status: "planned", icon:"plug", keywords: ["circuit", "ohm", "kirchhoff", "resistance"] },
-                { id: "p2c4", name: "Magnetic Effect", bn: "চৌম্বক ক্রিয়া", status: "planned", icon:"magnet", keywords: ["magnet", "biot savart", "ampere", "lorentz"] },
-                { id: "p2c5", name: "Electromagnetic Induction", bn: "তড়িৎ চৌম্বক আবেশ", status: "planned", icon:"heater", keywords: ["faraday", "lenz", "ac current", "transformer"] },
-                
-                { id: "p2c6", name: "Geometric Optics", bn: "জ্যামিতিক আলোকবিজ্ঞান", status: "available", icon: "lens-concave", keywords: ["light", "lens", "prism", "ray", "refraction", "mirror"],
-                  simulations: [
-                      { title: "Lens Ray Tracing & Focals", link: "Lens visual Simulation.html" },
-                      { title: "Prism Deviation Angle", link: "Deviation Angle of Prism Simulation.html" }
-                  ] 
-                },
-                
-                { id: "p2c7", name: "Physical Optics", bn: "ভৌত আলোকবিজ্ঞান", status: "available", icon: "stretch-vertical", keywords: ["interference", "diffraction", "polarization", "double slit"],
-                 simulations: [
-                {title: "Double-Slit Experiment", link: "Double-Slit Experiment Simulation.html"}
+           3. HOW TO ADD A NEW CHAPTER (PLANNED/LOCKED):
+           ---------------------------------------------
+           Inside the `chapters` array, add a chapter object. Default status is "planned".
+           
+           { 
+               id: "b1c1",               // MUST BE UNIQUE! (e.g., bio 1st paper chapter 1)
+               name: "Cell Division",    
+               bn: "কোষ বিভাজন",           
+               status: "planned",        // "planned" means locked and grayed out
+               icon: "microscope",       
+               keywords: ["mitosis", "meiosis"] 
+           }
+
+           4. HOW TO ACTIVATE A CHAPTER & ADD YOUR HTML FILES:
+           ---------------------------------------------------
+           Change the status from "planned" to "available", and add the `simulations` array.
+           Inside the simulations array, put the exact name of your HTML file in the `link`.
+           
+           { 
+               id: "b1c1", 
+               name: "Cell Division", 
+               bn: "কোষ বিভাজন", 
+               status: "available",      // <--- CHANGED TO "available"
+               icon: "microscope", 
+               keywords: ["mitosis", "meiosis"],
+               simulations: [            // <--- ADDED THIS ARRAY
+                   { title: "Mitosis Phase Viewer", link: "mitosis_sim.html" },
+                   { title: "Meiosis Cross-over", link: "meiosis_sim.html" }
+               ] 
+           }
+           ========================================================================================== */
+
+        const database = {
+            physics: {
+                name: "Physics",
+                icon: "atom",
+                itemLabel: "Simulation", // Physics calls them Simulations
+                papers: [
+                    {
+                        id: "paper1",
+                        title: "Physics 1st Paper",
+                        bn: "পদার্থবিজ্ঞান প্রথম পত্র",
+                        themeColor: "blue",
+                        chapters: [
+                            { id: "p1c1", name: "Physical World", bn: "ভৌত জগৎ", status: "planned", icon: "globe", keywords: ["units", "measurements", "errors"] },
+                            { id: "p1c2", name: "Vectors", bn: "ভেক্টর", status: "available", icon: "move", keywords: ["direction", "scalar", "dot", "cross", "calculus", "field"], 
+                              simulations: [{ title: "Vector Calculus & Fields", link: "Vector Calculus Simulation.html" }] 
+                            },
+                            { id: "p1c3", name: "Dynamics", bn: "গতিবিদ্যা", status: "planned", icon: "rocket", keywords: ["motion", "projectile", "velocity", "acceleration"] },
+                            { id: "p1c4", name: "Newtonian Mechanics", bn: "নিউটনিয়ান বলবিদ্যা", status: "planned", icon: "apple", keywords: ["force", "friction", "momentum", "torque"] },
+                            { id: "p1c5", name: "Work, Energy & Power", bn: "কাজ, শক্তি ও ক্ষমতা", status: "planned", icon: "battery-charging", keywords: ["kinetic", "potential", "conservation"] },
+                            { id: "p1c6", name: "Gravitation", bn: "মহাকর্ষ ও অভিকর্ষ", status: "planned", icon: "moon", keywords: ["gravity", "kepler", "escape velocity", "satellite"] },
+                            { id: "p1c7", name: "Structural Properties", bn: "পদার্থের গাঠনিক ধর্ম", status: "planned", icon: "layers", keywords: ["elasticity", "stress", "strain", "fluids", "viscosity"] },
+                            { id: "p1c8", name: "Periodic Motion", bn: "পর্যাবৃত্ত গতি", status: "available", icon: "metronome", keywords: ["shm", "pendulum", "spring", "oscillation"],
+                              simulations: [
+                                  { title: "SHM Pendulum Dynamics", link: "SHM Pendulum Simulation.html" },
+                                  { title: "Basic Harmonic Oscillators", link: "Simple harmonic motion Simulation.html" }
+                              ] 
+                            },
+                            { id: "p1c9", name: "Waves", bn: "তরঙ্গ", status: "available", icon: "waves", keywords: ["sound", "interference", "superposition", "beats"],
+                              simulations: [{ title: "Superposition & Interference", link: "Superposition of wave Simulation.html" }] 
+                            },
+                            { id: "p1c10", name: "Ideal Gas", bn: "আদর্শ গ্যাস ও গতিতত্ত্ব", status: "planned", icon: "wind", keywords: ["pressure", "temperature", "rms", "kinetic theory"] }
+                        ]
+                    },
+                    {
+                        id: "paper2",
+                        title: "Physics 2nd Paper",
+                        bn: "পদার্থবিজ্ঞান দ্বিতীয় পত্র",
+                        themeColor: "orange",
+                        chapters: [
+                            { id: "p2c1", name: "Thermodynamics", bn: "তাপগতিবিদ্যা", status: "planned", icon: "thermometer", keywords: ["heat", "entropy", "carnot", "engine"] },
+                            { id: "p2c2", name: "Static Electricity", bn: "স্থির তড়িৎ", status: "planned", icon: "zap", keywords: ["charge", "coulomb", "electric field", "capacitor"] },
+                            { id: "p2c3", name: "Current Electricity", bn: "চল তড়িৎ", status: "planned", icon: "plug", keywords: ["circuit", "ohm", "kirchhoff", "resistance"] },
+                            { id: "p2c4", name: "Magnetic Effect", bn: "চৌম্বক ক্রিয়া", status: "planned", icon: "magnet", keywords: ["magnet", "biot savart", "ampere", "lorentz"] },
+                            { id: "p2c5", name: "Electromagnetic Induction", bn: "তড়িৎ চৌম্বক আবেশ", status: "planned", icon: "heater", keywords: ["faraday", "lenz", "ac current", "transformer"] },
+                            { id: "p2c6", name: "Geometric Optics", bn: "জ্যামিতিক আলোকবিজ্ঞান", status: "available", icon: "lens-concave", keywords: ["light", "lens", "prism", "ray", "refraction", "mirror"],
+                              simulations: [
+                                  { title: "Lens Ray Tracing & Focals", link: "Lens visual Simulation.html" },
+                                  { title: "Prism Deviation Angle", link: "Deviation Angle of Prism Simulation.html" }
+                              ] 
+                            },
+                            { id: "p2c7", name: "Physical Optics", bn: "ভৌত আলোকবিজ্ঞান", status: "available", icon: "stretch-vertical", keywords: ["interference", "diffraction", "polarization", "double slit"],
+                             simulations: [
+                                  {title: "Double-Slit Experiment", link: "Double-Slit Experiment Simulation.html"}
+                              ]
+                            },
+                            { id: "p2c8", name: "Modern Physics", bn: "আধুনিক পদার্থবিজ্ঞান", status: "planned", icon: "orbit", keywords: ["relativity", "photoelectric", "compton", "quantum"] },
+                            { id: "p2c9", name: "Atomic Physics", bn: "পরমাণু মডেল ও নিউক্লিয়ার", status: "planned", icon: "radiation", keywords: ["bohr", "radioactivity", "half life", "fusion", "fission"] },
+                            { id: "p2c10", name: "Semiconductors", bn: "সেমিকন্ডাক্টর ও ইলেকট্রনিক্স", status: "partial", icon: "cpu", keywords: ["diode", "transistor", "logic gates", "band theory"] }
+                        ]
+                    }
                 ]
-                },
-                { id: "p2c8", name: "Modern Physics", bn: "আধুনিক পদার্থবিজ্ঞান", status: "planned", icon:"rocket", keywords: ["relativity", "photoelectric", "compton", "quantum"] },
-                { id: "p2c9", name: "Atomic Physics", bn: "পরমাণু মডেল ও নিউক্লিয়ার", status: "planned", icon:"radiation", keywords: ["bohr", "radioactivity", "half life", "fusion", "fission"] },
-                { id: "p2c10", name: "Semiconductors", bn: "সেমিকন্ডাক্টর ও ইলেকট্রনিক্স", status: "partial", icon: "cpu", keywords: ["diode", "transistor", "logic gates", "band theory"] }
-            ]
+            },
+            chemistry: {
+                name: "Chemistry",
+                icon: "flask-conical",
+                itemLabel: "Interaction", // Chemistry calls them Interactions
+                papers: [
+                    {
+                        id: "chem_paper1",
+                        title: "Chemistry 1st Paper",
+                        bn: "রসায়ন প্রথম পত্র",
+                        themeColor: "emerald",
+                        chapters: [
+                            { id: "c1c1", name: "Safe Use of Laboratory", bn: "ল্যাবরেটরির নিরাপদ ব্যবহার", status: "planned", icon: "shield-alert", keywords: ["safety", "glassware", "measurements"] },
+                            { id: "c1c2", name: "Qualitative Chemistry", bn: "গুণগত রসায়ন", status: "planned", icon: "microscope", keywords: ["atom", "bohr", "quantum", "solubility", "ions"] },
+                            
+                            // UPDATED: Chemistry Chapter 3 is now Available with the Super Periodic Table Interaction
+                            { id: "c1c3", name: "Periodic Properties", bn: "মৌলসমূহের পর্যাবৃত্ত ধর্ম", status: "available", icon: "table-2", keywords: ["bonds", "hybridization", "periodic table"],
+                              simulations: [
+                                  { title: "Super Periodic Table", link: "Super Periodic Table.html" }
+                              ]
+                            },
+                            
+                            { id: "c1c4", name: "Chemical Changes", bn: "রাসায়নিক পরিবর্তন", status: "planned", icon: "flame", keywords: ["equilibrium", "ph", "titration", "rate"] },
+                            { id: "c1c5", name: "Working Chemistry", bn: "কর্মমুখী রসায়ন", status: "planned", icon: "briefcase", keywords: ["food", "preservatives", "vinegar"] }
+                        ]
+                    },
+                    {
+                        id: "chem_paper2",
+                        title: "Chemistry 2nd Paper",
+                        bn: "রসায়ন দ্বিতীয় পত্র",
+                        themeColor: "teal",
+                        chapters: [
+                            { id: "c2c1", name: "Environmental Chemistry", bn: "পরিবেশ রসায়ন", status: "planned", icon: "leaf", keywords: ["gas laws", "pollution", "water", "atmosphere"] },
+                            { id: "c2c2", name: "Organic Chemistry", bn: "জৈব রসায়ন", status: "planned", icon: "hexagon", keywords: ["hydrocarbons", "benzene", "alcohol", "reaction mechanism"] },
+                            { id: "c2c3", name: "Quantitative Chemistry", bn: "পরিমাণগত রসায়ন", status: "planned", icon: "scale", keywords: ["molarity", "redox", "titration", "concentration"] },
+                            { id: "c2c4", name: "Electrochemistry", bn: "তড়িৎ রসায়ন", status: "planned", icon: "battery-charging", keywords: ["cells", "faraday", "galvanic", "electrolysis"] },
+                            { id: "c2c5", name: "Economic Chemistry", bn: "অর্থনৈতিক রসায়ন", status: "planned", icon: "factory", keywords: ["industry", "coal", "gas", "ceramics"] }
+                        ]
+                    }
+                ]
+            },
+            math: {
+                name: "Math",
+                icon: "calculator",
+                itemLabel: "Simulation",
+                papers: [
+                    {
+                        id: "math_paper1",
+                        title: "Higher Math 1st Paper",
+                        bn: "উচ্চতর গণিত প্রথম পত্র",
+                        themeColor: "rose",
+                        chapters: [
+                            { id: "m1c1", name: "Matrices & Determinants", bn: "ম্যাট্রিক্স ও নির্ণায়ক", status: "planned", icon: "grid-3x3", keywords: ["matrix", "array", "determinant"] },
+                            { id: "m1c2", name: "Vectors", bn: "ভেক্টর", status: "planned", icon: "arrow-up-right", keywords: ["vector", "direction", "magnitude"] },
+                            { id: "m1c3", name: "Straight Lines", bn: "সরলরেখা", status: "planned", icon: "ruler", keywords: ["geometry", "slope", "coordinates"] },
+                            { id: "m1c4", name: "Circles", bn: "বৃত্ত", status: "planned", icon: "circle", keywords: ["geometry", "radius", "center"] },
+                            { id: "m1c5", name: "Permutations & Combinations", bn: "বিন্যাস ও সমাবেশ", status: "planned", icon: "shuffle", keywords: ["factorial", "arrangement", "selection"] },
+                            { id: "m1c6", name: "Trigonometric Ratio", bn: "ত্রিকোণমিতিক অনুপাত", status: "planned", icon: "triangle-right", keywords: ["sine", "cosine", "tangent"] },
+                            { id: "m1c7", name: "Trigonometric Ratio of Associated Angles", bn: "সংযুক্ত কোণের ত্রিকোণমিতিক অনুপাত", status: "planned", icon: "drafting-compass", keywords: ["angles", "compound", "identities"] },
+                            { id: "m1c8", name: "Functions & Graphs", bn: "ফাংশন ও ফাংশনের লেখচিত্র", status: "planned", icon: "function-square", keywords: ["domain", "range", "plot"] },
+                            { id: "m1c9", name: "Differentiation", bn: "অন্তরীকরণ", status: "planned", icon: "trending-up", keywords: ["calculus", "derivative", "limits"] },
+                            { id: "m1c10", name: "Integration", bn: "যোগজীকরণ", status: "planned", icon: "sigma", keywords: ["calculus", "integral", "area"] }
+                        ]
+                    },
+                    {
+                        id: "math_paper2",
+                        title: "Higher Math 2nd Paper",
+                        bn: "উচ্চতর গণিত দ্বিতীয় পত্র",
+                        themeColor: "pink",
+                        chapters: [
+                            { id: "m2c1", name: "Real Numbers & Inequalities", bn: "বাস্তব সংখ্যা ও অসমতা", status: "planned", icon: "infinity", keywords: ["number line", "absolute value"] },
+                            { id: "m2c2", name: "Linear Programming", bn: "যোগাশ্রয়ী প্রোগ্রামিং", status: "planned", icon: "target", keywords: ["optimization", "constraints", "graphs"] },
+                            { id: "m2c3", name: "Complex Numbers", bn: "জটিল সংখ্যা", status: "planned", icon: "compass", keywords: ["argand", "imaginary", "modulus", "argument"] },
+                            { id: "m2c4", name: "Polynomials & Equations", bn: "বহুপদী ও বহুপদী সমীকরণ", status: "planned", icon: "braces", keywords: ["roots", "quadratic", "algebra"] },
+                            { id: "m2c5", name: "Binomial Expansion", bn: "দ্বিপদী বিস্তৃতি", status: "planned", icon: "pyramid", keywords: ["expansion", "pascal", "coefficients"] },
+                            { id: "m2c6", name: "Conics", bn: "কণিক", status: "planned", icon: "cone", keywords: ["parabola", "ellipse", "hyperbola"] },
+                            { id: "m2c7", name: "Inverse Trigonometry", bn: "বিপরীত ত্রিকোণমিতিক ফাংশন ও সমীকরণ", status: "planned", icon: "rotate-ccw", keywords: ["arcsin", "arccos", "equations"] },
+                            { id: "m2c8", name: "Statics", bn: "স্থিতিবিদ্যা", status: "planned", icon: "scale", keywords: ["forces", "equilibrium", "moments"] },
+                            { id: "m2c9", name: "Dynamics", bn: "সমতলে বস্তুকণার গতি", status: "planned", icon: "rocket", keywords: ["motion", "velocity", "acceleration", "projectile"] },
+                            { id: "m2c10", name: "Measure of Dispersion & Probability", bn: "বিস্তার পরিমাপ ও সম্ভাবনা", status: "planned", icon: "dices", keywords: ["statistics", "variance", "chance", "events"] }
+                        ]
+                    }
+                ]
+            },
+            ict: {
+                name: "ICT",
+                icon: "laptop",
+                itemLabel: "Simulation",
+                papers: [
+                    {
+                        id: "ict_paper",
+                        title: "Information & Communication Technology",
+                        bn: "তথ্য ও যোগাযোগ প্রযুক্তি",
+                        themeColor: "cyan",
+                        chapters: [
+                            { id: "i1c1", name: "World & Bangladesh Perspective", bn: "বিশ্ব ও বাংলাদেশ প্রেক্ষিত", status: "planned", icon: "globe-2", keywords: ["virtual reality", "ai", "biometrics", "robotics"] },
+                            { id: "i1c2", name: "Communication Systems & Networking", bn: "কমিউনিকেশন সিস্টেমস ও নেটওয়ার্কিং", status: "planned", icon: "network", keywords: ["topology", "bandwidth", "fiber optic", "wireless"] },
+                            { id: "i1c3", name: "Number Systems & Digital Devices", bn: "সংখ্যা পদ্ধতি ও ডিজিটাল ডিভাইস", status: "planned", icon: "binary", keywords: ["binary", "logic gates", "boolean", "encoder", "decoder"] },
+                            { id: "i1c4", name: "Web Design & HTML", bn: "ওয়েব ডিজাইন পরিচিতি এবং HTML", status: "planned", icon: "layout-template", keywords: ["website", "tags", "hyperlink", "tables"] },
+                            { id: "i1c5", name: "Programming Language (C)", bn: "প্রোগ্রামিং ভাষা", status: "planned", icon: "code", keywords: ["loops", "functions", "array", "algorithm", "flowchart"] },
+                            { id: "i1c6", name: "Database Management System", bn: "ডেটাবেজ ম্যানেজমেন্ট সিস্টেম", status: "planned", icon: "database", keywords: ["dbms", "sql", "keys", "relations", "sorting"] }
+                        ]
+                    }
+                ]
+            }
         };
 
-        /* ========================================================================= */
-        /* SYSTEM LOGIC BELOW (Do not edit below this line unless changing features) */
-        /* ========================================================================= */
+        // State Management
+        let currentSubject = 'physics';
 
-        // Function: Determines the color and text of the status badge (Available vs Planned)
+        // Switch subject and trigger re-render
+        window.switchSubject = function(subjectKey) {
+            currentSubject = subjectKey;
+            document.getElementById('searchBar').value = ''; // Clear search
+            renderApp();
+        };
+
+        // Determine color classes based on theme
+        function getThemeClasses(themeColor) {
+            const maps = {
+                blue: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20', shadow: 'shadow-blue-500/5' },
+                orange: { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/20', shadow: 'shadow-orange-500/5' },
+                emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20', shadow: 'shadow-emerald-500/5' },
+                teal: { bg: 'bg-teal-500/10', text: 'text-teal-400', border: 'border-teal-500/20', shadow: 'shadow-teal-500/5' },
+                rose: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20', shadow: 'shadow-rose-500/5' },
+                pink: { bg: 'bg-pink-500/10', text: 'text-pink-400', border: 'border-pink-500/20', shadow: 'shadow-pink-500/5' },
+                cyan: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/20', shadow: 'shadow-cyan-500/5' }
+            };
+            return maps[themeColor] || maps.blue;
+        }
+
+        // Determines the status badge
         function getStatusBadge(status, simCount = 0) {
             if (status === 'available') {
                 return `<span class="bg-indigo-500/10 text-indigo-400 text-[10px] px-2.5 py-1 rounded-md border border-indigo-500/20 font-bold uppercase tracking-wide flex items-center gap-1.5 shadow-sm">${simCount} Active Labs <i data-lucide="flask-conical" class="w-3 h-3"></i></span>`;
@@ -297,7 +430,7 @@
             return '<span class="bg-slate-800/80 text-slate-500 text-[10px] px-2.5 py-1 rounded-md border border-slate-700/50 font-bold uppercase tracking-wide">Planned</span>';
         }
 
-        // Function: Remembers which chapter menus you left open even after refreshing
+        // Expanded State Management
         function saveExpandedState(id, isExpanded) {
             let expanded = JSON.parse(localStorage.getItem('afeed_expanded') || '[]');
             if (isExpanded && !expanded.includes(id)) expanded.push(id);
@@ -305,16 +438,16 @@
             localStorage.setItem('afeed_expanded', JSON.stringify(expanded));
         }
 
-        // Function: Saves clicked simulations to history for the "Continue Learning" section
-        function trackRecentLearning(simTitle, simLink, chapterName) {
+        // History Management
+        window.trackRecentLearning = function(simTitle, simLink, chapterName) {
             let recent = JSON.parse(localStorage.getItem('afeed_recent') || '[]');
-            recent = recent.filter(item => item.link !== simLink); // Remove duplicate
-            recent.unshift({ title: simTitle, link: simLink, chapter: chapterName }); // Add to top
-            if (recent.length > 4) recent.pop(); // Keep only 4 recent
+            recent = recent.filter(item => item.link !== simLink);
+            recent.unshift({ title: simTitle, link: simLink, chapter: chapterName });
+            if (recent.length > 4) recent.pop();
             localStorage.setItem('afeed_recent', JSON.stringify(recent));
         }
 
-        // Function: Handles the click event to open/close a chapter card
+        // Toggle Chapter Card
         window.toggleChapter = function(chapterId) {
             const container = document.getElementById(`sim-container-${chapterId}`);
             const chevron = document.getElementById(`chevron-${chapterId}`);
@@ -323,29 +456,27 @@
             const isExpanding = !container.classList.contains('expanded');
 
             if (isExpanding) {
-                // Open chapter
                 container.classList.add('expanded');
                 chevron.style.transform = 'rotate(180deg)';
                 card.classList.add('bg-slate-800/80', 'ring-1', 'ring-indigo-500/50');
                 card.classList.remove('bg-slate-900');
             } else {
-                // Close chapter
                 container.classList.remove('expanded');
                 chevron.style.transform = 'rotate(0deg)';
                 card.classList.remove('bg-slate-800/80', 'ring-1', 'ring-indigo-500/50');
                 card.classList.add('bg-slate-900');
             }
-            saveExpandedState(chapterId, isExpanding); // Save state
+            saveExpandedState(chapterId, isExpanding);
         };
 
-        // Function: Generates the actual HTML code for a single chapter card
-        function createCard(chapter, expandedState) {
+        // Create Individual Chapter Card
+        // Now accepts `itemLabel` so we can dynamically call them "Simulations" or "Interactions"
+        function createCard(chapter, expandedState, itemLabel = 'Simulation') {
             const isAvailable = chapter.status === 'available' || chapter.status === 'partial';
             const isExpanded = expandedState.includes(chapter.id);
             const iconName = chapter.icon || 'file-text';
             const simCount = chapter.simulations ? chapter.simulations.length : 0;
             
-            // Build the inner list of simulations if they exist
             let simulationsHtml = '';
             if (simCount > 0) {
                 simulationsHtml = chapter.simulations.map(sim => `
@@ -361,21 +492,18 @@
                 `).join('');
             }
 
-            // Determine styles based on if it's available or expanded
             const activeClass = isAvailable ? 'active cursor-pointer bg-slate-900 border-slate-800' : 'planned bg-slate-900/50 border-transparent';
             const initialExpandedClass = isExpanded ? 'expanded' : '';
             const initialCardStyle = isExpanded ? 'bg-slate-800/80 ring-1 ring-indigo-500/50' : '';
             const chevronRotation = isExpanded ? 'transform: rotate(180deg)' : '';
 
-            // Attach search metadata to DOM element for fast filtering (Combines English, Bangla, and keywords)
+            // Combine metadata for search indexing
             const searchMetadata = `${chapter.name} ${chapter.bn} ${chapter.keywords ? chapter.keywords.join(' ') : ''}`.toLowerCase();
 
-            // Return the full HTML string for the card
             return `
                 <div id="card-${chapter.id}" class="chapter-card border rounded-2xl overflow-hidden ${activeClass} ${initialCardStyle}" 
                      data-search="${searchMetadata}"
                      onclick="${isAvailable ? `toggleChapter('${chapter.id}')` : ''}">
-                    
                     <div class="p-5 flex flex-col justify-between">
                         <div>
                             <div class="flex justify-between items-start mb-5">
@@ -390,13 +518,12 @@
                         
                         <div class="mt-4 flex items-center justify-between">
                             ${isAvailable ? 
-                                `<span class="text-indigo-400 text-xs font-semibold uppercase tracking-wider">${simCount} Simulation${simCount > 1 ? 's' : ''}</span>
+                                `<span class="text-indigo-400 text-xs font-semibold uppercase tracking-wider">${simCount} ${itemLabel}${simCount > 1 ? 's' : ''}</span>
                                  <i id="chevron-${chapter.id}" data-lucide="chevron-down" class="w-4 h-4 text-indigo-400 transition-transform duration-300" style="${chevronRotation}"></i>` : 
-                                `<span class="text-slate-600 text-xs font-semibold uppercase tracking-wider">Simulation Locked</span>`
+                                `<span class="text-slate-600 text-xs font-semibold uppercase tracking-wider">${itemLabel} Locked</span>`
                             }
                         </div>
                     </div>
-
                     ${isAvailable ? `
                     <div id="sim-container-${chapter.id}" class="sim-list-container bg-slate-800/30 border-t border-slate-800/80 ${initialExpandedClass}">
                         <div class="sim-list-content">
@@ -410,23 +537,70 @@
             `;
         }
 
-        // Function: Loops through the curriculum data and injects the cards into the HTML grids
-        function renderCurriculum() {
-            const p1Grid = document.getElementById('paper1Grid');
-            const p2Grid = document.getElementById('paper2Grid');
-            const expandedState = JSON.parse(localStorage.getItem('afeed_expanded') || '[]');
+        // Render Tabs
+        function renderSubjectTabs() {
+            const container = document.getElementById('subject-selector');
+            let html = '';
             
-            // Render Paper 1 Flat List
-            p1Grid.innerHTML = curriculum.paper1.map(ch => createCard(ch, expandedState)).join('');
-
-            // Render Paper 2 Flat List
-            p2Grid.innerHTML = curriculum.paper2.map(ch => createCard(ch, expandedState)).join('');
-
-            renderRecentModule(); // Render history
-            lucide.createIcons(); // Initialize icons
+            for (const [key, data] of Object.entries(database)) {
+                const isActive = key === currentSubject;
+                const activeClass = isActive ? 'active' : 'text-slate-400 border border-slate-700 bg-slate-800/40';
+                
+                html += `
+                    <button onclick="switchSubject('${key}')" 
+                            class="subject-tab flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm outline-none ${activeClass}">
+                        <i data-lucide="${data.icon}" class="w-4 h-4"></i>
+                        ${data.name}
+                    </button>
+                `;
+            }
+            container.innerHTML = html;
         }
 
-        // Function: Renders the "Continue Learning" section using saved history
+        // Main App Render (Nav, Sections, Cards)
+        function renderApp() {
+            renderSubjectTabs();
+
+            const subjectData = database[currentSubject];
+            const papersContainer = document.getElementById('papers-container');
+            const navContainer = document.getElementById('dynamic-nav-links');
+            const expandedState = JSON.parse(localStorage.getItem('afeed_expanded') || '[]');
+
+            let papersHtml = '';
+            let navHtml = '';
+
+            subjectData.papers.forEach((paper) => {
+                const theme = getThemeClasses(paper.themeColor);
+                
+                navHtml += `<a href="#${paper.id}" class="hover:text-indigo-400 transition-colors">${paper.title.split(' ')[paper.title.split(' ').length - 2]} ${paper.title.split(' ')[paper.title.split(' ').length - 1]}</a>`;
+
+                // Render paper section
+                papersHtml += `
+                    <section id="${paper.id}">
+                        <div class="flex items-center gap-4 mb-8">
+                            <div class="w-12 h-12 rounded-xl ${theme.bg} flex items-center justify-center border ${theme.border} shadow-lg ${theme.shadow}">
+                                <i data-lucide="book-open" class="w-6 h-6 ${theme.text}"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-3xl font-bold text-white tracking-tight">${paper.title}</h2>
+                                <p class="text-sm text-slate-400 mt-1">${paper.bn}</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+                            ${paper.chapters.map(ch => createCard(ch, expandedState, subjectData.itemLabel || 'Simulation')).join('')}
+                        </div>
+                    </section>
+                `;
+            });
+
+            papersContainer.innerHTML = papersHtml;
+            navContainer.innerHTML = navHtml;
+
+            renderRecentModule();
+            lucide.createIcons();
+        }
+
+        // Render "Continue Learning"
         function renderRecentModule() {
             const recentItems = JSON.parse(localStorage.getItem('afeed_recent') || '[]');
             const container = document.getElementById('recent-module');
@@ -443,18 +617,18 @@
                         <h4 class="text-white font-semibold text-sm line-clamp-1">${item.title}</h4>
                     </a>
                 `).join('');
+            } else {
+                container.classList.add('hidden');
             }
         }
 
-        // Event Listener: Advanced Search Logic
+        // Live Search Logic
         document.getElementById('searchBar').addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase().trim();
             const cards = document.querySelectorAll('.chapter-card');
             
             cards.forEach(card => {
-                // Check if the search term exists in the card's hidden data-search attribute
                 const metadata = card.getAttribute('data-search');
-                // Use empty string to let CSS grid handle the display, 'none' to hide
                 if (term === '' || metadata.includes(term)) {
                     card.style.display = ''; 
                 } else {
@@ -463,10 +637,8 @@
             });
         });
 
-        // Initialize Platform when the page loads
-        window.onload = renderCurriculum;
+        // Initialize Platform
+        window.onload = renderApp;
     </script>
 </body>
 </html>
-
-
