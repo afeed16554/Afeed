@@ -1,42 +1,68 @@
-# Physics Simulations 🚀
+# AFEED: Operating System for Science 🧬⚛️📐
 
-An interactive collection of 2D and 3D physics simulations designed for students in Grades 11 and 12 (HSC level). These tools are built to help visualize complex physical concepts through real-time web-based simulations.
+Welcome to **AFEED**, your interactive, locally-stored hub for science and math simulations. This platform is designed specifically for HSC Bangladesh students to explore textbook concepts through interactive labs, simulations, and visual tools.
 
-## 🌐 Live Demo
-You can access all the simulations here:
-**[View Simulations Live](https://afeed16554.github.io/Physics-Simulation-/)**
+This guide will walk you through how to navigate the home page and use the platform effectively.
 
 ---
 
-## 🛠 Featured Simulations
+## 🧭 Navigating the Home Page
 
-### 1. Vector Calculus Simulation
-Visualizing vector fields and operations in a 2D/3D space.
-![Vector Calculus Screenshot](screenshots/vector_calculus.png)
+The AFEED dashboard is designed to be fast and intuitive. Here is how to find what you are looking for:
 
-### 2. Superposition of Wave Simulation
-Interactive wave interference, constructive/destructive patterns, and standing waves.
-![Wave Superposition Screenshot](screenshots/wave_superposition.png)
+### 1. Switching Subjects
+Right below the main search bar, you will find the **Subject Selector Tabs**. 
+* Click on **Physics**, **Chemistry**, **Math**, or **ICT** to instantly switch the entire platform to that subject's curriculum.
+* The colors, icons, and chapter lists will automatically adapt to your selected subject.
 
-### 3. Simple Harmonic Motion (SHM)
-Real-time simulation of oscillators and pendulums to understand frequency and phase.
-![SHM Simulation Screenshot](screenshots/shm.png)
+### 2. Searching for Topics
+Looking for a specific topic? Use the **Advanced Search Bar** at the top of the page.
+* You can type in English (e.g., "Vectors"), Bengali (e.g., "ভেক্টর"), or by keyword (e.g., "dot product").
+* The chapter grid will filter instantly as you type, hiding anything that doesn't match your search.
 
-### 4. Lens Visual Simulation
-Ray tracing and image formation for convex and concave lenses using geometric optics.
-![Lens Optics Screenshot](screenshots/lens_optics.png)
+### 3. Quick Navigation Links
+If you just want to browse, look at the top-right corner of the navigation bar. You will see quick links (like **1st Paper** and **2nd Paper**). Clicking these will smoothly scroll you down to that specific section.
 
 ---
 
-## 📖 How to Use
+## 📚 Understanding Chapter Cards
 
-1.  **Visit the Website**: Open the live link provided above.
-2.  **Select a Topic**: Click on the specific simulation you wish to explore.
-3.  **Interact**: Use the on-screen controls to modify variables like frequency or focal length.
+The main area of the website is filled with **Chapter Cards**. These represent the chapters in your syllabus.
 
-## 💻 Tech Stack
-* **HTML5 / CSS3**
-* **JavaScript (Canvas API)**
+* **Available Chapters (Bright & Clickable):** If a chapter card is brightly colored and says something like *"2 Active Labs"*, it means interactive content is available. 
+* **Planned Chapters (Grayed Out):** If a chapter card is gray and says *"Planned"*, it means simulations for this chapter are currently in development and are locked for now.
 
-## 📜 License
-This project is licensed under the MIT License.
+---
+
+## 🔬 How to Open a Simulation / Interaction
+
+When you want to start learning:
+
+1. Click on any **Available** chapter card.
+2. The card will expand downward, revealing a list of available simulations (in Physics/Math) or interactions (in Chemistry).
+3. Click on the title of the simulation you want to view. It will open the interactive lab file in your browser so you can start experimenting.
+4. To close the chapter list, simply click the chapter card again.
+
+---
+
+## ⏱️ Continue Learning (Recent Labs)
+
+Once you open your first simulation, a new **Continue Learning** section will appear near the top of the page (just below the search area). 
+
+* This section acts as your recent history. 
+* It saves the last few labs you opened, allowing you to instantly jump back into an experiment without having to search for it again.
+* You can swipe or scroll horizontally through this list if you have opened multiple labs.
+
+---
+
+## 📝 License
+
+This project is licensed under the **MIT License**.
+
+Copyright (c) 2026
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
