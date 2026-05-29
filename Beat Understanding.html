@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Beat & Tartini Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+
+        canvas {
+            background: #020617;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+            border-radius: 0.75rem;
+            width: 100%;
+            height: 300px;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+        
+        /* Volume Slider Customization */
+        #masterVolume::-webkit-slider-thumb { background: #a855f7; box-shadow: 0 0 10px rgba(168, 85, 247, 0.6); }
+        
+        /* Number Input Customization for better typing experience */
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        
+        .glow-text { text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Hide the default HTML details arrow */
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
+
+    <div class="w-full max-w-6xl space-y-6">
+        <!-- Header -->
+        <div class="text-center space-y-2">
+            <h1 class="text-3xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 glow-text">
+                Beats & Wave Interference
+            </h1>
+            <p class="text-slate-400">Visualizing wave physics and human perception</p>
+        </div>
+
+        <!-- Canvas Display -->
+        <div class="relative glass-panel p-2 rounded-xl">
+            <canvas id="waveCanvas" width="1200" height="300"></canvas>
+            
+            <!-- Dynamic Psychoacoustic Display -->
+            <div class="absolute top-4 right-6 text-right bg-slate-900/80 p-3 rounded-lg border border-slate-700 backdrop-blur-md">
+                <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">Difference / Beat Freq</div>
+                <div class="text-4xl font-mono font-bold text-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]">
+                    <span id="beatDisplay">4.00</span> <span class="text-xl">Hz</span>
+                </div>
+                <div id="psychoText" class="mt-2 text-sm font-semibold text-cyan-300 animate-pulse">
+                    Countable Beats (Wah-Wah)
+                </div>
+            </div>
+
+            <div class="absolute bottom-4 left-6 flex gap-4 text-xs font-semibold uppercase tracking-wider">
+                <div class="flex items-center gap-2"><div class="w-4 h-0.5 border-t-2 border-dashed border-cyan-400"></div> Wave 1</div>
+                <div class="flex items-center gap-2"><div class="w-4 h-0.5 border-t-2 border-dashed border-pink-400"></div> Wave 2</div>
+                <div class="flex items-center gap-2"><div class="w-4 h-1 bg-yellow-400 rounded shadow-[0_0_8px_rgba(250,204,21,1)]"></div> Net Wave</div>
+            </div>
+        </div>
+
+        <!-- Global Controls -->
+        <div class="flex flex-col md:flex-row justify-between items-center glass-panel p-4 rounded-xl gap-6">
+            <div class="flex items-center gap-6 w-full md:w-auto">
+                <button id="toggleSoundBtn" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-8 rounded-full shadow-[0_0_15px_rgba(79,70,229,0.5)] transition-all transform hover:scale-105 active:scale-95 flex items-center gap-2 flex-shrink-0">
+                    <svg id="playIcon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" fill-rule="evenodd"></path></svg>
+                    <svg id="stopIcon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd"></path></svg>
+                    <span id="btnText">Listen</span>
+                </button>
+
+                <div class="flex-1 min-w-[150px]">
+                    <div class="flex justify-between text-xs text-slate-300 mb-1">
+                        <span>Volume</span>
+                        <span id="volDisplay">15%</span>
+                    </div>
+                    <input type="range" id="masterVolume" min="0" max="0.5" step="0.01" value="0.15">
+                </div>
+            </div>
+
+            <label class="flex items-center gap-3 cursor-pointer group">
+                <div class="flex flex-col text-right">
+                    <span class="font-semibold text-slate-200">Lock Medium (Velocity)</span>
+                    <span class="text-xs text-slate-400">Locks v₁ = v₂.</span>
+                </div>
+                <div class="relative">
+                    <input type="checkbox" id="lockVelocity" class="sr-only" checked>
+                    <div class="block bg-slate-600 w-12 h-6 rounded-full transition group-hover:bg-slate-500"></div>
+                    <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform translate-x-6 bg-cyan-400 shadow-[0_0_10px_cyan]"></div>
+                </div>
+            </label>
+        </div>
+
+        <!-- ADVANCED: TARTINI PRESETS (Collapsible) -->
+        <details class="glass-panel rounded-xl border border-purple-500/30 group">
+            <summary class="p-4 cursor-pointer flex items-center justify-between text-purple-400 font-bold outline-none">
+                <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    Advanced: Psychoacoustics & Tartini Presets
+                </div>
+                <svg class="w-5 h-5 transition-transform duration-300 group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </summary>
+            
+            <div class="p-4 border-t border-purple-500/30 bg-slate-800/40 rounded-b-xl">
+                <div class="flex flex-col md:flex-row items-center gap-6">
+                    <p class="text-sm text-slate-300 flex-1">
+                        <strong>Tartini Tones</strong> (Difference Tones) are auditory illusions generated physically inside your inner ear when listening to two loud, high frequencies. Turn up the volume slightly and use these presets to hear a phantom 3rd bass note that doesn't actually exist!
+                    </p>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="loadPreset(1000, 1200)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-sm rounded-lg border border-purple-500/50 hover:border-purple-400 transition-colors shadow-lg">
+                            Classic Tartini (Phantom 200Hz)
+                        </button>
+                        <button onclick="loadPreset(800, 1100)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-sm rounded-lg border border-purple-500/50 hover:border-purple-400 transition-colors shadow-lg">
+                            Deep Hum (Phantom 300Hz)
+                        </button>
+                        <button onclick="loadPreset(440, 444)" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-sm rounded-lg border border-cyan-500/50 hover:border-cyan-400 transition-colors shadow-lg">
+                            Classic Beats (4Hz)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <!-- Wave Controls Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- WAVE 1 -->
+            <div class="glass-panel p-6 rounded-xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-cyan-400 shadow-[0_0_10px_cyan]"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-cyan-400">Wave 1</h2>
+                    <span class="text-xs text-slate-400 italic">Type values or drag sliders</span>
+                </div>
+                <div class="space-y-5">
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-sm font-medium text-slate-300">Frequency (f)</label>
+                            <input type="number" id="w1_f_num" class="w-28 bg-slate-900/80 text-white text-right px-2 py-1.5 rounded-lg border border-slate-600 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/30 outline-none font-mono transition-all shadow-inner" min="10" max="2500" step="0.1">
+                        </div>
+                        <input type="range" id="w1_f_slide" min="100" max="2000" step="0.1">
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-sm font-medium text-slate-300">Velocity (v)</label>
+                            <input type="number" id="w1_v_num" class="w-28 bg-slate-900/80 text-white text-right px-2 py-1.5 rounded-lg border border-slate-600 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/30 outline-none font-mono transition-all shadow-inner" min="10" max="2000" step="1">
+                        </div>
+                        <input type="range" id="w1_v_slide" min="200" max="500" step="1">
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-sm font-medium text-slate-300">Wavelength (λ)</label>
+                            <input type="number" id="w1_l_num" class="w-28 bg-slate-900/80 text-white text-right px-2 py-1.5 rounded-lg border border-slate-600 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/30 outline-none font-mono transition-all shadow-inner" min="0.01" max="10" step="0.001">
+                        </div>
+                        <input type="range" id="w1_l_slide" min="0.1" max="2.0" step="0.001">
+                    </div>
+                </div>
+            </div>
+
+            <!-- WAVE 2 -->
+            <div class="glass-panel p-6 rounded-xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-pink-400 shadow-[0_0_10px_pink]"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-pink-400">Wave 2</h2>
+                    <span class="text-xs text-slate-400 italic">Type values or drag sliders</span>
+                </div>
+                <div class="space-y-5">
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-sm font-medium text-slate-300">Frequency (f)</label>
+                            <input type="number" id="w2_f_num" class="w-28 bg-slate-900/80 text-white text-right px-2 py-1.5 rounded-lg border border-slate-600 focus:border-pink-400 focus:ring-2 focus:ring-pink-500/30 outline-none font-mono transition-all shadow-inner" min="10" max="2500" step="0.1">
+                        </div>
+                        <input type="range" id="w2_f_slide" min="100" max="2000" step="0.1">
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-sm font-medium text-slate-300">Velocity (v)</label>
+                            <input type="number" id="w2_v_num" class="w-28 bg-slate-900/80 text-white text-right px-2 py-1.5 rounded-lg border border-slate-600 focus:border-pink-400 focus:ring-2 focus:ring-pink-500/30 outline-none font-mono transition-all shadow-inner" min="10" max="2000" step="1">
+                        </div>
+                        <input type="range" id="w2_v_slide" min="200" max="500" step="1">
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-sm font-medium text-slate-300">Wavelength (λ)</label>
+                            <input type="number" id="w2_l_num" class="w-28 bg-slate-900/80 text-white text-right px-2 py-1.5 rounded-lg border border-slate-600 focus:border-pink-400 focus:ring-2 focus:ring-pink-500/30 outline-none font-mono transition-all shadow-inner" min="0.01" max="10" step="0.001">
+                        </div>
+                        <input type="range" id="w2_l_slide" min="0.1" max="2.0" step="0.001">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Educational Explanation Section -->
+        <div class="glass-panel p-6 md:p-8 rounded-xl border-t-4 border-yellow-400 mt-8 shadow-lg">
+            <h3 class="text-2xl font-bold text-yellow-400 mb-4">Why do we still hear a "beat" above 10 Hz?</h3>
+            <div class="text-slate-300 text-sm md:text-base leading-relaxed space-y-4">
+                <p>
+                    Many physics textbooks state that humans can only hear beats when the frequency difference ($\Delta f$) is less than 10 Hz to 15 Hz. <strong>This is an oversimplification!</strong> What they actually mean is that our brains can only resolve <em>distinct, countable pulses</em> (the slow "wah-wah-wah" sound) up to about 15 times per second. It is a limitation of human temporal resolution, not a limit of the physical waves.
+                </p>
+                <p>
+                    So what happens when the difference gets larger than 10 Hz? The physical sound waves <em>continue</em> to interfere and modulate in amplitude exactly as they did before. However, our perception changes:
+                </p>
+                <ul class="list-disc pl-6 space-y-2 text-slate-200">
+                    <li><strong>15 Hz to 50 Hz (Roughness):</strong> Your ear can no longer count the individual pulses because they happen too fast. Instead, your brain interprets this rapid fluttering as a harsh, buzzing, or "rough" sound texture.</li>
+                    <li><strong>Above 50 Hz (Difference Tones / Tartini Tones):</strong> As the difference grows even larger and the volume is sufficiently loud, a fascinating biological phenomenon occurs. The non-linear mechanical properties of your inner ear (specifically inside the cochlea) literally distort the incoming sound. This distortion generates a brand new, continuous "phantom" pitch inside your ear equal to $f_1 - f_2$. You aren't hearing a rhythm anymore; you are hearing a completely new musical note!</li>
+                </ul>
+                <p class="text-cyan-400 font-semibold mt-2">
+                    In short: The mathematical wave interference never stops—only the way your brain interprets it changes!
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    // --- STATE MANAGEMENT ---
+    const state = {
+        lockV: true,
+        w1: { f: 440, v: 343, l: 343/440 },
+        w2: { f: 444, v: 343, l: 343/444 },
+        volume: 0.15
+    };
+
+    const els = {
+        lockV: document.getElementById('lockVelocity'),
+        beatDisplay: document.getElementById('beatDisplay'),
+        psychoText: document.getElementById('psychoText'),
+        volSlider: document.getElementById('masterVolume'),
+        volDisplay: document.getElementById('volDisplay'),
+        w1: {
+            f_num: document.getElementById('w1_f_num'), f_slide: document.getElementById('w1_f_slide'),
+            v_num: document.getElementById('w1_v_num'), v_slide: document.getElementById('w1_v_slide'),
+            l_num: document.getElementById('w1_l_num'), l_slide: document.getElementById('w1_l_slide')
+        },
+        w2: {
+            f_num: document.getElementById('w2_f_num'), f_slide: document.getElementById('w2_f_slide'),
+            v_num: document.getElementById('w2_v_num'), v_slide: document.getElementById('w2_v_slide'),
+            l_num: document.getElementById('w2_l_num'), l_slide: document.getElementById('w2_l_slide')
+        }
+    };
+
+    // --- LOGIC ---
+    function setLockUI(isLocked) {
+        state.lockV = isLocked;
+        els.lockV.checked = isLocked;
+        const dot = els.lockV.parentElement.querySelector('.dot');
+        if (isLocked) {
+            dot.classList.add('translate-x-6', 'bg-cyan-400', 'shadow-[0_0_10px_cyan]');
+            dot.classList.remove('translate-x-1', 'bg-slate-400', 'shadow-none');
+            state.w2.v = state.w1.v;
+            state.w2.l = state.w2.v / state.w2.f;
+        } else {
+            dot.classList.remove('translate-x-6', 'bg-cyan-400', 'shadow-[0_0_10px_cyan]');
+            dot.classList.add('translate-x-1', 'bg-slate-400', 'shadow-none');
+        }
+        updateAllUI();
+    }
+
+    els.lockV.addEventListener('change', (e) => setLockUI(e.target.checked));
+
+    function updateF(w, val) {
+        if(val <= 0.1) val = 0.1;
+        state[w].f = val;
+        state[w].l = state[w].v / state[w].f;
+    }
+
+    function updateV(w, val) {
+        if(val <= 0.1) val = 0.1;
+        state[w].v = val;
+        state[w].l = state[w].v / state[w].f;
+        if (state.lockV) {
+            const otherW = w === 'w1' ? 'w2' : 'w1';
+            state[otherW].v = val;
+            state[otherW].l = state[otherW].v / state[otherW].f;
+        }
+    }
+
+    function updateL(w, val) {
+        if(val <= 0.001) val = 0.001;
+        state[w].l = val;
+        state[w].f = state[w].v / state[w].l;
+    }
+
+    // Bind Event Listeners
+    ['w1', 'w2'].forEach(w => {
+        // Handle Typing Gracefully
+        const handleTyping = (updateFn) => (e) => {
+            const val = parseFloat(e.target.value);
+            if (!isNaN(val)) {
+                updateFn(w, val);
+                updateAllUI();
+            }
+        };
+
+        // Real-time updates while typing
+        els[w].f_num.addEventListener('input', handleTyping(updateF));
+        els[w].v_num.addEventListener('input', handleTyping(updateV));
+        els[w].l_num.addEventListener('input', handleTyping(updateL));
+
+        // Format to neat decimals when user clicks away
+        els[w].f_num.addEventListener('blur', () => updateAllUI());
+        els[w].v_num.addEventListener('blur', () => updateAllUI());
+        els[w].l_num.addEventListener('blur', () => updateAllUI());
+
+        // Handle Sliders
+        els[w].f_slide.addEventListener('input', (e) => { updateF(w, parseFloat(e.target.value)); updateAllUI(); });
+        els[w].v_slide.addEventListener('input', (e) => { updateV(w, parseFloat(e.target.value)); updateAllUI(); });
+        els[w].l_slide.addEventListener('input', (e) => { updateL(w, parseFloat(e.target.value)); updateAllUI(); });
+    });
+
+    // Volume Logic
+    els.volSlider.addEventListener('input', (e) => {
+        state.volume = parseFloat(e.target.value);
+        els.volDisplay.textContent = Math.round(state.volume * 100) + '%';
+        if (gainNode) gainNode.gain.setTargetAtTime(state.volume, audioCtx.currentTime, 0.05);
+    });
+
+    // Presets
+    window.loadPreset = function(f1, f2) {
+        setLockUI(false); 
+        updateF('w1', f1);
+        updateF('w2', f2);
+        
+        // Auto-play sound if off to demonstrate
+        if(!isPlaying) document.getElementById('toggleSoundBtn').click();
+        
+        updateAllUI();
+    };
+
+    function updateAllUI() {
+        ['w1', 'w2'].forEach(w => {
+            // Only format the text inputs if the user IS NOT currently typing in them
+            if (document.activeElement !== els[w].f_num) els[w].f_num.value = state[w].f.toFixed(1);
+            if (document.activeElement !== els[w].v_num) els[w].v_num.value = state[w].v.toFixed(0);
+            if (document.activeElement !== els[w].l_num) els[w].l_num.value = state[w].l.toFixed(3);
+
+            els[w].f_slide.value = state[w].f;
+            els[w].v_slide.value = state[w].v;
+            els[w].l_slide.value = state[w].l;
+
+            if (state.lockV && w === 'w2') {
+                els[w].v_num.disabled = true; els[w].v_slide.disabled = true;
+                els[w].v_num.classList.add('opacity-50', 'cursor-not-allowed');
+                els[w].v_slide.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                els[w].v_num.disabled = false; els[w].v_slide.disabled = false;
+                els[w].v_num.classList.remove('opacity-50', 'cursor-not-allowed');
+                els[w].v_slide.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        });
+
+        const beatFreq = Math.abs(state.w1.f - state.w2.f);
+        els.beatDisplay.textContent = beatFreq.toFixed(2);
+
+        // Psychoacoustic Text Update
+        els.psychoText.classList.remove('text-cyan-300', 'text-orange-400', 'text-purple-400');
+        if (beatFreq < 15) {
+            els.psychoText.textContent = "Countable Beats (Wah-Wah)";
+            els.psychoText.classList.add('text-cyan-300');
+        } else if (beatFreq < 50) {
+            els.psychoText.textContent = "Roughness / Buzzing";
+            els.psychoText.classList.add('text-orange-400');
+        } else {
+            els.psychoText.textContent = `Phantom Tartini Tone Active (~${beatFreq.toFixed(0)}Hz)`;
+            els.psychoText.classList.add('text-purple-400');
+        }
+
+        updateAudio();
+    }
+
+    // --- AUDIO SYSTEM ---
+    let audioCtx, osc1, osc2, gainNode;
+    let isPlaying = false;
+
+    const btn = document.getElementById('toggleSoundBtn');
+    const playIcon = document.getElementById('playIcon');
+    const stopIcon = document.getElementById('stopIcon');
+    const btnText = document.getElementById('btnText');
+
+    btn.addEventListener('click', () => {
+        if (!isPlaying) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            osc1 = audioCtx.createOscillator();
+            osc2 = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+            osc1.type = "sine"; osc2.type = "sine";
+            osc1.frequency.value = state.w1.f; osc2.frequency.value = state.w2.f;
+            gainNode.gain.value = state.volume;
+            osc1.connect(gainNode); osc2.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            osc1.start(); osc2.start();
+            isPlaying = true;
+            btnText.textContent = "Stop Sound";
+            playIcon.classList.add('hidden'); stopIcon.classList.remove('hidden');
+            btn.classList.add('from-red-600', 'to-pink-600');
+            btn.classList.remove('from-blue-600', 'to-indigo-600');
+        } else {
+            if (osc1) osc1.stop(); if (osc2) osc2.stop();
+            isPlaying = false;
+            btnText.textContent = "Listen";
+            stopIcon.classList.add('hidden'); playIcon.classList.remove('hidden');
+            btn.classList.remove('from-red-600', 'to-pink-600');
+            btn.classList.add('from-blue-600', 'to-indigo-600');
+        }
+    });
+
+    function updateAudio() {
+        if (isPlaying && audioCtx) {
+            osc1.frequency.setTargetAtTime(state.w1.f, audioCtx.currentTime, 0.05);
+            osc2.frequency.setTargetAtTime(state.w2.f, audioCtx.currentTime, 0.05);
+        }
+    }
+
+    // --- CANVAS DRAWING ---
+    const canvas = document.getElementById("waveCanvas");
+    const ctx = canvas.getContext("2d", { alpha: false });
+    const physicalViewWidth = 80;
+    let simulationTime = 0;
+    
+    function draw() {
+        ctx.fillStyle = "#020617";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Adjust simulation speed based on frequency so high freqs don't just look like solid blocks
+        const maxF = Math.max(state.w1.f, state.w2.f);
+        let speedFactor = 0.1;
+        if (maxF > 200) speedFactor = 0.01; // Slow down high frequencies visually
+        
+        simulationTime += 0.016 * speedFactor; 
+
+        const w = canvas.width, h = canvas.height, centerY = h / 2, amp = h * 0.2;
+        const k1 = (2 * Math.PI) / state.w1.l, k2 = (2 * Math.PI) / state.w2.l;
+        const omega1 = 2 * Math.PI * state.w1.f, omega2 = 2 * Math.PI * state.w2.f;
+
+        ctx.lineWidth = 2;
+
+        // Wave 1
+        ctx.beginPath();
+        for (let px = 0; px <= w; px += 2) {
+            const x = (px / w) * physicalViewWidth;
+            const y = amp * Math.sin(k1 * x - omega1 * simulationTime);
+            if (px === 0) ctx.moveTo(px, centerY - y); else ctx.lineTo(px, centerY - y);
+        }
+        ctx.strokeStyle = "rgba(34, 211, 238, 0.6)"; ctx.setLineDash([5, 5]); ctx.stroke();
+
+        // Wave 2
+        ctx.beginPath();
+        for (let px = 0; px <= w; px += 2) {
+            const x = (px / w) * physicalViewWidth;
+            const y = amp * Math.sin(k2 * x - omega2 * simulationTime);
+            if (px === 0) ctx.moveTo(px, centerY - y); else ctx.lineTo(px, centerY - y);
+        }
+        ctx.strokeStyle = "rgba(244, 114, 182, 0.6)"; ctx.stroke();
+
+        // Net Wave
+        ctx.beginPath();
+        for (let px = 0; px <= w; px += 2) {
+            const x = (px / w) * physicalViewWidth;
+            const y1 = amp * Math.sin(k1 * x - omega1 * simulationTime);
+            const y2 = amp * Math.sin(k2 * x - omega2 * simulationTime);
+            if (px === 0) ctx.moveTo(px, centerY - (y1 + y2)); else ctx.lineTo(px, centerY - (y1 + y2));
+        }
+        ctx.setLineDash([]); ctx.lineWidth = 3; ctx.strokeStyle = "#facc15";
+        ctx.shadowBlur = 15; ctx.shadowColor = "rgba(250, 204, 21, 0.8)";
+        ctx.stroke(); ctx.shadowBlur = 0;
+
+        requestAnimationFrame(draw);
+    }
+
+    updateAllUI();
+    draw();
+
+</script>
+</body>
+</html>
