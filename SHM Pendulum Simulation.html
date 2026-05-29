@@ -6,7 +6,7 @@
     <title>Pendulum Dynamics & Models</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght=400;500;600&family=JetBrains+Mono:wght=400;500;700&display=swap');
         
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
         .mono { font-family: 'JetBrains Mono', monospace; }
@@ -260,7 +260,7 @@
                 }
             });
 
-            // Fullscreen Icon update event listener (optional UX touch)
+            // Fullscreen Icon update event listener
             document.addEventListener('fullscreenchange', () => {
                 if (document.fullscreenElement) {
                     UI.btnFullscreen.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 21m0 0h6m-6 0v-6m15-6l-6 6m0 0h-6m6 0v6" /></svg>`;
@@ -638,14 +638,30 @@
                 const Ft = V.renderPerspective === 'ideal' ? -P.m * P.g * activeTh : -P.m * P.g * sinT;
                 const Fr = -(P.m * P.L * activeOm * activeOm); 
                 const Fx = Ft * cosT + Fr * sinT; const Fy = Ft * (-sinT) + Fr * cosT;
-                drawArrow(c, bx, by, bx + adaptScale(Fx, bSc), by + adaptScale(Fy, bSc), '#fb7185', 'thick', 'ΣF', labels);
+                
+                // Fix wobble: scale the magnitude together, maintaining vector direction
+                const magF = Math.sqrt(Fx * Fx + Fy * Fy);
+                if (magF > 0.001) {
+                    const scaledMag = adaptScale(magF, bSc);
+                    const Fx_scaled = (Fx / magF) * scaledMag;
+                    const Fy_scaled = (Fy / magF) * scaledMag;
+                    drawArrow(c, bx, by, bx + Fx_scaled, by + Fy_scaled, '#fb7185', 'thick', 'ΣF', labels);
+                }
             }
 
             if (V.showAccel) {
                 const at = V.renderPerspective === 'ideal' ? -P.g * activeTh : -P.g * sinT;
                 const ac = -(P.L * activeOm * activeOm); 
                 const ax = at * cosT + ac * sinT; const ay = at * (-sinT) + ac * cosT;
-                drawArrow(c, bx, by, bx + adaptScale(ax, bSc), by + adaptScale(ay, bSc), '#60a5fa', 'dotted', 'a', labels);
+                
+                // Fix wobble: scale the magnitude together, maintaining vector direction
+                const magA = Math.sqrt(ax * ax + ay * ay);
+                if (magA > 0.001) {
+                    const scaledMag = adaptScale(magA, bSc);
+                    const ax_scaled = (ax / magA) * scaledMag;
+                    const ay_scaled = (ay / magA) * scaledMag;
+                    drawArrow(c, bx, by, bx + ax_scaled, by + ay_scaled, '#60a5fa', 'dotted', 'a', labels);
+                }
             }
 
             if (V.showVel) {
