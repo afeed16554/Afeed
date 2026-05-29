@@ -12,12 +12,15 @@
             overflow: hidden;
             background-color: #050505;
             font-family: 'JetBrains Mono', monospace;
-            touch-action: none; /* Crucial for preventing pull-to-refresh and system zooming */
             -webkit-user-select: none;
             user-select: none;
         }
 
-        canvas { display: block; }
+        /* Crucial: Disable native gestures ONLY on the canvas to allow UI panel scrolling */
+        #simCanvas { 
+            display: block; 
+            touch-action: none; 
+        }
 
         /* HUD Styling */
         .hud-panel {
@@ -25,7 +28,19 @@
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+            transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.4s ease;
+        }
+
+        /* Full Hide for Eye Button */
+        .hud-hidden {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        @media (min-width: 768px) {
+            .hud-hidden { transform: translateX(-120%) !important; }
+        }
+        @media (max-width: 767px) {
+            .hud-hidden { transform: translateY(120%) !important; }
         }
 
         /* Tool Toggle Switch */
@@ -101,20 +116,27 @@
         <canvas id="simCanvas"></canvas>
     </div>
 
-    <!-- Zoom Controls Floating Widget -->
-    <div class="fixed top-6 right-6 md:right-8 z-20 flex flex-col gap-1 bg-black/50 backdrop-blur-md border border-white/10 rounded-xl p-1.5 shadow-2xl pointer-events-auto">
+    <!-- Eye Toggle Button (Top Left) -->
+    <div class="fixed top-4 left-4 md:top-6 md:left-6 z-20 pointer-events-auto">
+        <button onclick="toggleVisibility()" id="eye-btn" class="w-10 h-10 flex items-center justify-center bg-black/60 backdrop-blur-md border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white rounded-xl shadow-2xl transition-all" title="Toggle Sidebar">
+            <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+    </div>
+
+    <!-- Zoom Controls Floating Widget (Top Right) -->
+    <div class="fixed top-4 right-4 md:top-6 md:right-8 z-20 flex flex-col gap-1 bg-black/60 backdrop-blur-md border border-white/10 rounded-xl p-1.5 shadow-2xl pointer-events-auto">
         <button onclick="setZoom(camera.zoom * 1.3)" class="w-10 h-10 flex items-center justify-center text-gray-300 hover:bg-white/10 hover:text-white rounded-lg font-bold text-xl transition-colors">+</button>
         <button onclick="setZoom(1)" class="w-10 h-8 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white rounded-lg text-[11px] font-mono font-bold transition-colors" id="zoom-label">1.0x</button>
         <button onclick="setZoom(camera.zoom / 1.3)" class="w-10 h-10 flex items-center justify-center text-gray-300 hover:bg-white/10 hover:text-white rounded-lg font-bold text-xl transition-colors">−</button>
     </div>
 
     <!-- Main UI Wrapper -->
-    <div class="fixed inset-0 z-10 pointer-events-none flex flex-col justify-end md:justify-start md:flex-row p-0 md:p-6 overflow-hidden">
+    <div class="fixed inset-0 z-10 pointer-events-none flex flex-col justify-end md:justify-start md:flex-row p-0 md:p-6 overflow-hidden mt-16 md:mt-0">
         
         <!-- Interactive HUD Panel -->
         <div id="hud-container" class="hud-panel pointer-events-auto w-full md:w-80 rounded-t-3xl md:rounded-xl p-5 md:p-6 flex flex-col gap-5 shadow-[0_-15px_40px_rgba(0,0,0,0.5)] md:shadow-2xl relative pb-8 md:pb-6 max-h-[85vh] md:max-h-[90vh] overflow-visible md:overflow-y-auto custom-scroll">
             
-            <!-- Mobile Toggle Handle -->
+            <!-- Mobile Toggle Handle (Hidden on Desktop) -->
             <button onclick="toggleUI()" class="md:hidden absolute -top-12 left-1/2 transform -translate-x-1/2 bg-[rgba(10,10,15,0.85)] backdrop-blur-[16px] border border-white/10 border-b-0 rounded-t-xl px-8 py-3 flex items-center justify-center text-gray-400 hover:text-white transition-colors cursor-pointer pointer-events-auto">
                 <div class="w-10 h-1.5 bg-gray-500 rounded-full mb-1"></div>
                 <svg id="toggle-icon" class="w-5 h-5 absolute transition-transform duration-300" style="margin-top: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -125,7 +147,7 @@
                 <header class="border-b border-white/10 pb-4 shrink-0">
                     <h1 class="text-xl md:text-2xl font-bold text-white tracking-wider">FIELD MAKER</h1>
                     <div class="text-xs text-gray-500 mt-1.5 flex justify-between items-center">
-                        <span>v.8.0 Zoom</span>
+                        <span>v.10.0 Immersive</span>
                         <button onclick="clearField()" class="bg-red-900/40 text-red-400 border border-red-500/30 px-3 py-1 rounded hover:bg-red-900/60 transition-colors font-bold tracking-wider">RESET</button>
                     </div>
                 </header>
@@ -178,12 +200,12 @@
                     </div>
 
                     <div class="mt-3 text-xs text-gray-300 bg-black/40 border border-white/5 p-3.5 rounded-lg leading-relaxed shadow-inner" id="analysis-text">
-                        Tap/Drag on the canvas to add entities. Use 2 fingers to zoom.
+                        Tap/Drag on the canvas to paint entities. Use 2 fingers or wheel to zoom.
                     </div>
                 </div>
                 
                 <div class="text-[11px] text-gray-500 text-center italic mt-2 shrink-0 pb-4 md:pb-0">
-                    Tip: Pinch canvas or use wheel to zoom.
+                    Tip: You can drag to paint continuous lines!
                 </div>
             </div>
         </div>
@@ -195,7 +217,12 @@
         const ctx = canvas.getContext('2d');
         const hudContainer = document.getElementById('hud-container');
         const toggleIcon = document.getElementById('toggle-icon');
+        const eyeBtn = document.getElementById('eye-btn');
         
+        // Eye SVGs
+        const eyeOpenSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+        const eyeClosedSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>`;
+
         // --- State & Camera ---
         let width, height;
         let camera = { zoom: 1 };
@@ -203,15 +230,19 @@
         let entities = []; 
         let activeTool = 'div'; 
         let currentStrength = 25;
-        let isUiCollapsed = false;
+        
+        let isUiCollapsed = false; // For the mobile drag handle
+        let isHudVisible = true;   // For the eye button
 
-        // Inputs
+        // Input & Drag State
+        let isDragging = false;
         let mouse = { x: -1000, y: -1000, active: false }; // Screen space
+        let lastPlaced = { x: null, y: null }; // World space of last painted entity
         let initialPinchDist = null;
         let initialZoom = 1;
 
         const CONFIG = {
-            particleCount: window.innerWidth < 768 ? 1500 : 3000,
+            particleCount: window.innerWidth < 768 ? 1200 : 3000, // Balanced for mobile
             speed: 1.0,
             decay: 500 
         };
@@ -227,7 +258,6 @@
         const zoomLabel = document.getElementById('zoom-label');
 
         // --- Camera & World Space Mappers ---
-        // Converts World (Physics) coordinates to Screen (Pixel) coordinates
         function toScreen(wx, wy) {
             return {
                 x: (wx - width/2) * camera.zoom + width/2,
@@ -235,7 +265,6 @@
             };
         }
         
-        // Converts Screen coordinates back to World coordinates
         function toWorld(sx, sy) {
             return {
                 x: (sx - width/2) / camera.zoom + width/2,
@@ -244,15 +273,15 @@
         }
 
         window.setZoom = function(v) {
-            camera.zoom = Math.max(0.2, Math.min(v, 4.0)); // Clamp Zoom
+            camera.zoom = Math.max(0.2, Math.min(v, 5.0)); // Clamp Zoom
             zoomLabel.innerText = camera.zoom.toFixed(1) + 'x';
         }
 
         // --- Classes ---
         class Entity {
             constructor(x, y, div, curl) {
-                this.x = x;       // World Space X
-                this.y = y;       // World Space Y
+                this.x = x;       
+                this.y = y;       
                 this.div = div;   
                 this.curl = curl; 
                 this.phase = 0; 
@@ -263,7 +292,6 @@
             constructor() { this.reset(); }
             
             reset() {
-                // Spawn particles randomly on the VISIBLE screen, then map to world
                 const sx = Math.random() * width;
                 const sy = Math.random() * height;
                 const w = toWorld(sx, sy);
@@ -292,9 +320,8 @@
                 this.y += this.vy * CONFIG.speed;
                 this.life--;
 
-                // If particle leaves the visible screen, reset it
                 const s = toScreen(this.x, this.y);
-                if (s.x < 0 || s.x > width || s.y < 0 || s.y > height || this.life <= 0) {
+                if (s.x < -50 || s.x > width + 50 || s.y < -50 || s.y > height + 50 || this.life <= 0) {
                     this.reset();
                 }
             }
@@ -309,7 +336,6 @@
                 const s = toScreen(this.x, this.y);
                 
                 ctx.fillStyle = `hsl(${h}, 90%, ${l}%)`;
-                // Keep particle visually absolute size (2x2) regardless of zoom
                 ctx.fillRect(s.x, s.y, 2, 2); 
             }
         }
@@ -317,14 +343,13 @@
         // --- Physics Engine ---
         function getFieldAt(x, y) {
             let tx = 0, ty = 0;
-
             if (entities.length === 0) return { x: 0, y: 0 };
 
             for (let e of entities) {
                 const dx = x - e.x;
                 const dy = y - e.y;
                 let rSq = dx*dx + dy*dy;
-                if (rSq < 100) rSq = 100; // Singularity protection
+                if (rSq < 100) rSq = 100; 
                 
                 const factor = CONFIG.decay / rSq;
 
@@ -332,7 +357,6 @@
                     tx += dx * e.div * factor;
                     ty += dy * e.div * factor;
                 }
-
                 if (e.curl !== 0) {
                     tx += -dy * e.curl * factor;
                     ty += dx * e.curl * factor;
@@ -346,35 +370,43 @@
             resize();
             window.addEventListener('resize', resize);
             
-            // Mouse Events
+            // --- DESKTOP (Mouse) EVENTS ---
             canvas.addEventListener('mousedown', (e) => {
+                if (e.button === 2) { clearField(); return; } // Right click = clear
+                
                 const r = canvas.getBoundingClientRect();
                 mouse.x = e.clientX - r.left;
                 mouse.y = e.clientY - r.top;
                 mouse.active = true;
-                handleInput(e);
+                isDragging = true;
+                placeEntity();
             });
+            
             canvas.addEventListener('mousemove', (e) => {
                 const r = canvas.getBoundingClientRect();
                 mouse.x = e.clientX - r.left;
                 mouse.y = e.clientY - r.top;
+                
+                if(isDragging) {
+                    placeEntity();
+                }
             });
-            canvas.addEventListener('mouseup', () => mouse.active = false); 
             
-            // Mouse Wheel Zoom
+            // Desktop zoom
             canvas.addEventListener('wheel', (e) => {
                 e.preventDefault();
                 const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
                 setZoom(camera.zoom * zoomFactor);
             }, {passive: false});
-            
-            // Touch Events (Pinch to zoom + Placement)
+
+            // --- MOBILE (Touch) EVENTS ---
             canvas.addEventListener('touchstart', (e) => {
-                e.preventDefault();
+                e.preventDefault(); // Prevents canvas from scrolling the page
                 const r = canvas.getBoundingClientRect();
                 
                 if (e.touches.length === 2) {
-                    // Start Pinch Zoom
+                    // Pinch Zoom Started
+                    isDragging = false;
                     mouse.active = false;
                     initialPinchDist = Math.hypot(
                         e.touches[0].clientX - e.touches[1].clientX,
@@ -382,15 +414,16 @@
                     );
                     initialZoom = camera.zoom;
                 } else if (e.touches.length === 1) {
-                    // Start Placing
+                    // Drawing Started
                     mouse.x = e.touches[0].clientX - r.left;
                     mouse.y = e.touches[0].clientY - r.top;
                     mouse.active = true;
+                    isDragging = true;
                     
-                    if(!isUiCollapsed && window.innerWidth < 768 && entities.length === 0) {
+                    if(!isUiCollapsed && isHudVisible && window.innerWidth < 768 && entities.length === 0) {
                         toggleUI();
                     }
-                    handleInput(e);
+                    placeEntity();
                 }
             }, {passive: false});
 
@@ -399,32 +432,41 @@
                 const r = canvas.getBoundingClientRect();
                 
                 if (e.touches.length === 2 && initialPinchDist) {
-                    // Update Pinch Zoom
+                    // Pinch Zooming
                     const dist = Math.hypot(
                         e.touches[0].clientX - e.touches[1].clientX,
                         e.touches[0].clientY - e.touches[1].clientY
                     );
                     setZoom(initialZoom * (dist / initialPinchDist));
-                } else if (e.touches.length === 1) {
-                    // Update Mouse coordinates
+                } else if (e.touches.length === 1 && isDragging) {
+                    // Drawing (Dragging)
                     mouse.x = e.touches[0].clientX - r.left;
                     mouse.y = e.touches[0].clientY - r.top;
+                    placeEntity();
                 }
             }, {passive: false});
 
-            canvas.addEventListener('touchend', (e) => {
-                e.preventDefault();
+            // --- GLOBAL STOP EVENTS (Guards against dragging off screen) ---
+            window.addEventListener('mouseup', endInteraction);
+            window.addEventListener('touchend', (e) => {
                 if (e.touches.length < 2) initialPinchDist = null;
-                if (e.touches.length === 0) mouse.active = false;
-            }, {passive: false});
+                if (e.touches.length === 0) endInteraction();
+            });
 
+            // Prevent context menu
             canvas.addEventListener('contextmenu', e => e.preventDefault());
-
             slider.addEventListener('input', updateUI);
             
+            // Initialization
             updateUI();
             for(let i=0; i<CONFIG.particleCount; i++) particles.push(new Particle());
             loop();
+        }
+
+        function endInteraction() {
+            isDragging = false;
+            mouse.active = false;
+            lastPlaced = { x: null, y: null };
         }
 
         function resize() {
@@ -434,6 +476,7 @@
             canvas.height = height;
         }
 
+        // Toggles the Mobile Drag Handle
         window.toggleUI = function() {
             isUiCollapsed = !isUiCollapsed;
             if (isUiCollapsed) {
@@ -442,6 +485,18 @@
             } else {
                 hudContainer.classList.remove('translate-y-full');
                 toggleIcon.classList.remove('rotate-180');
+            }
+        }
+
+        // Entirely Hides/Shows the UI (Eye Button)
+        window.toggleVisibility = function() {
+            isHudVisible = !isHudVisible;
+            if (isHudVisible) {
+                hudContainer.classList.remove('hud-hidden');
+                eyeBtn.innerHTML = eyeOpenSvg;
+            } else {
+                hudContainer.classList.add('hud-hidden');
+                eyeBtn.innerHTML = eyeClosedSvg;
             }
         }
 
@@ -485,35 +540,37 @@
             updateUI();
         }
 
-        function handleInput(e) {
-            if (e.button === 2) { 
-                entities = [];
-                analyzeField();
-                return;
-            }
+        function placeEntity() {
+            if (currentStrength === 0 || !isDragging) return;
 
-            if (currentStrength === 0) return;
-
-            // Map UI screen coordinates to world coordinates
             const w = toWorld(mouse.x, mouse.y);
             
+            // Drag-Painting Cooldown: Space out entities while dragging
+            if (lastPlaced.x !== null) {
+                const distFromLast = Math.hypot(w.x - lastPlaced.x, w.y - lastPlaced.y);
+                if (distFromLast < (30 / camera.zoom)) {
+                    return; 
+                }
+            }
+
             const div = activeTool === 'div' ? currentStrength : 0;
             const curl = activeTool === 'curl' ? currentStrength : 0;
             
-            // Check merge proximity in Screen Space for UI consistency
             let merged = false;
             for(let ent of entities) {
-                const sEnt = toScreen(ent.x, ent.y);
-                const dist = Math.hypot(sEnt.x - mouse.x, sEnt.y - mouse.y);
-                if (dist < 30) { 
+                const distToEnt = Math.hypot(ent.x - w.x, ent.y - w.y);
+                if (distToEnt < (30 / camera.zoom)) { 
                     if (activeTool === 'div') ent.div += currentStrength;
                     if (activeTool === 'curl') ent.curl += currentStrength;
                     merged = true;
+                    lastPlaced = { x: ent.x, y: ent.y };
+                    break;
                 }
             }
 
             if (!merged) {
                 entities.push(new Entity(w.x, w.y, div, curl));
+                lastPlaced = { x: w.x, y: w.y };
             }
             
             analyzeField();
@@ -523,7 +580,7 @@
             entities = [];
             analyzeField();
             particles.forEach(p => p.reset());
-            setZoom(1); // Reset zoom on clear
+            setZoom(1); 
         }
 
         function analyzeField() {
@@ -532,7 +589,7 @@
                 badgeSol.querySelector('span:last-child').innerText = "-";
                 badgeIrr.className = "status-badge bg-gray-800 border-gray-600 text-gray-400";
                 badgeIrr.querySelector('span:last-child').innerText = "-";
-                analysisText.innerText = "Tap/Drag on the canvas to add entities. Use 2 fingers to zoom.";
+                analysisText.innerText = "Tap/Drag on the canvas to paint entities. Use 2 fingers or wheel to zoom.";
                 return;
             }
 
@@ -577,9 +634,8 @@
 
             for (let e of entities) {
                 e.phase += 0.05;
-                const s = toScreen(e.x, e.y); // Get screen coords for drawing
+                const s = toScreen(e.x, e.y); 
                 
-                // Scale rendering by zoom
                 const baseRad = 10 * camera.zoom;
 
                 if (e.div !== 0) {
@@ -602,7 +658,6 @@
                 if (e.curl !== 0) {
                     ctx.save();
                     ctx.translate(s.x, s.y);
-                    const rotSpeed = e.curl > 0 ? -0.1 : 0.1;
                     ctx.rotate(e.phase * (e.curl/10)); 
                     
                     ctx.beginPath();
@@ -617,7 +672,7 @@
                 }
             }
 
-            // Ghost Cursor (Fixed Screen Size for UI clarity)
+            // Ghost Cursor
             if (mouse.active && mouse.x > 0 && mouse.y > 0) {
                 ctx.beginPath();
                 ctx.arc(mouse.x, mouse.y, 25, 0, Math.PI*2);
@@ -644,4 +699,3 @@
     </script>
 </body>
 </html>
-
