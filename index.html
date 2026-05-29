@@ -1,144 +1,301 @@
+
 <!DOCTYPE html>
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AFEED</title>
-    <!-- Tailwind CSS for styling -->
+    <!-- Tailwind CSS with Dark Mode Class enabled -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans Bengali', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
     <!-- Lucide for icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Noto+Sans+Bengali:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
+        :root {
+            --ease-smooth: cubic-bezier(0.2, 0.8, 0.2, 1);
+            
+            /* Light Mode - Warm Orange Spotlights (Boosted visibility) */
+            --spotlight-color: rgba(249, 115, 22, 0.42);
+            --global-spotlight: rgba(249, 115, 22, 0.22);
+            --hover-shadow: 0 20px 40px -5px rgba(249, 115, 22, 0.15);
+        }
+
+        .dark {
+            /* Dark Mode - Neon Indigo Spotlights */
+            --spotlight-color: rgba(99, 102, 241, 0.18);
+            --global-spotlight: rgba(99, 102, 241, 0.08);
+            --hover-shadow: 0 20px 40px -5px rgba(99, 102, 241, 0.25);
+        }
+
         body {
             font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
             scroll-behavior: smooth;
+            overflow-x: hidden;
         }
-        /* Chapter card hover animations */
+
+        /* ======================================================================
+           UNIVERSAL 3D HOVER ENGINE & SPOTLIGHT 
+         ====================================================================== 
+        */
+        .hover-3d {
+            transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s var(--ease-smooth);
+            transform-style: preserve-3d;
+            perspective: 1200px;
+            position: relative;
+            will-change: transform;
+            touch-action: manipulation;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            
+            /* Stable Stacking Context Fixes */
+            overflow: hidden;
+            isolation: isolate;
+            transform: translateZ(0);
+        }
+
+        .hover-3d::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(
+                450px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+                var(--spotlight-color),
+                transparent 65%
+            );
+            opacity: var(--spotlight-opacity, 0);
+            transition: opacity 0.35s var(--ease-smooth);
+            pointer-events: none;
+            z-index: 5;
+            mix-blend-mode: screen;
+        }
+        
+        .hover-3d:hover { box-shadow: var(--hover-shadow); }
+
+        /* Global Ambient Glow Layer */
+        #global-glow {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background: radial-gradient(
+                900px circle at var(--global-x, 50%) var(--global-y, 50%),
+                var(--global-spotlight),
+                transparent 70%
+            );
+            transition: opacity 0.5s ease;
+        }
+
+        /* ======================================================================
+           COMPONENT STYLING
+         ====================================================================== 
+        */
+        
+        .smooth-transition {
+            transition: all 0.5s var(--ease-smooth);
+        }
+
+        /* Accessibility Focus States */
+        .chapter-card:focus-visible, .subject-tab:focus-visible {
+            outline: 2px solid #f97316;
+            outline-offset: 4px;
+        }
+        .dark .chapter-card:focus-visible, .dark .subject-tab:focus-visible {
+            outline: 2px solid #818cf8;
+        }
+
         .chapter-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: border-color 0.4s var(--ease-smooth), background-color 0.4s var(--ease-smooth);
+            text-align: left;
+            width: 100%;
+            transform-style: preserve-3d;
         }
-        .chapter-card.active:hover {
-            border-color: #6366f1; /* Indigo 500 */
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.1);
-        }
+
         .chapter-card.planned {
-            opacity: 0.55;
-            filter: grayscale(80%);
-            cursor: default;
+            opacity: 0.5;
+            filter: grayscale(85%);
+            cursor: not-allowed;
+            transition: opacity 0.4s var(--ease-smooth), filter 0.4s var(--ease-smooth);
         }
         .chapter-card.planned:hover {
-            opacity: 0.8;
+            opacity: 0.7;
             filter: grayscale(40%);
         }
-        /* Subject Tab Animations */
+
         .subject-tab {
-            transition: all 0.2s ease;
+            transition: background-color 0.4s var(--ease-smooth), border-color 0.4s var(--ease-smooth), color 0.4s var(--ease-smooth);
         }
-        .subject-tab.active {
+        .dark .subject-tab.active {
             background-color: rgba(99, 102, 241, 0.2);
             border-color: #6366f1;
             color: #818cf8;
-            box-shadow: 0 0 15px -3px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 0 20px -3px rgba(99, 102, 241, 0.4);
         }
-        .subject-tab:not(.active):hover {
-            background-color: rgba(30, 41, 59, 0.8);
-            border-color: #475569;
+        .light .subject-tab.active {
+            background-color: rgba(249, 115, 22, 0.08);
+            border-color: #ea580c;
+            color: #ea580c;
+            box-shadow: 0 8px 25px -5px rgba(249, 115, 22, 0.2);
         }
-        /* Glassmorphism */
+
         .glass {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
         }
-        /* Smooth expand/collapse animation */
+        .dark .glass { background: rgba(15, 23, 42, 0.8); }
+        .light .glass { background: rgba(255, 253, 250, 0.85); }
+
         .sim-list-container {
             display: grid;
             grid-template-rows: 0fr;
-            transition: grid-template-rows 0.3s ease-out;
+            transition: grid-template-rows 0.5s var(--ease-smooth), background-color 0.4s var(--ease-smooth);
         }
-        .sim-list-container.expanded {
-            grid-template-rows: 1fr;
-        }
-        .sim-list-content {
-            overflow: hidden;
-        }
-        /* Brand text */
+        .sim-list-container.expanded { grid-template-rows: 1fr; }
+        .sim-list-content { overflow: hidden; }
+
         .brand-text {
             font-family: 'Inter', sans-serif;
             font-weight: 900;
             letter-spacing: -0.05em;
         }
-        .brand-gradient {
+        .dark .brand-gradient {
             background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        /* Hide scrollbar */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
+        .light .brand-gradient {
+            background: linear-gradient(135deg, #ea580c 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+
+        .hero-logo-container {
+            display: inline-block;
+            border-radius: 2rem;
+            padding: 1rem 3rem;
+            background: transparent;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ======================================================================
+           GPU MERCY: REDUCED MOTION SUPPORT 
+         ====================================================================== 
+        */
+        @media (prefers-reduced-motion: reduce) {
+            .hover-3d {
+                transition: none !important;
+                transform: none !important;
+                box-shadow: none !important;
+            }
+            .hover-3d::after, #global-glow, .absolute.inset-0.z-0 {
+                display: none !important;
+            }
+            .smooth-transition, .chapter-card, .subject-tab, .sim-list-container {
+                transition: none !important;
+            }
+            .glass {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                background: var(--tw-bg-opacity, 1) rgba(15, 23, 42, 0.98) !important;
+            }
+            .light .glass {
+                background: rgba(255, 253, 250, 0.98) !important;
+            }
         }
     </style>
+    <script>
+        // Set default theme to dark directly on HTML tag to prevent page flashing on load
+        (function() {
+            const savedTheme = localStorage.getItem('afeed_theme') || 'dark';
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+                document.documentElement.classList.remove('light');
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.classList.add('light');
+            }
+        })();
+    </script>
 </head>
-<body class="min-h-screen bg-slate-950 text-slate-300 selection:bg-indigo-500/30">
+<body class="min-h-screen bg-[#fffdfa] text-slate-700 dark:bg-slate-950 dark:text-slate-300 selection:bg-orange-500/20 dark:selection:bg-indigo-500/30 transition-colors duration-500 relative">
+
+    <!-- GLOBAL AMBIENT POINTER LIGHT -->
+    <div id="global-glow"></div>
 
     <!-- TOP NAVIGATION BAR -->
-    <nav class="sticky top-0 z-50 border-b border-slate-800 glass">
+    <nav class="sticky top-0 z-50 border-b border-orange-100 dark:border-slate-800/80 glass transition-colors duration-500">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <span class="brand-text text-2xl tracking-tight brand-gradient">AFEED</span>
+                <span class="brand-text text-2xl tracking-tight brand-gradient hover-3d inline-block px-1" data-tilt="8" data-scale="1.05">AFEED</span>
             </div>
-            <!-- Dynamic Nav Links (Injected by JS) -->
-            <div id="dynamic-nav-links" class="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-300">
-                <!-- Links will appear here based on subject -->
+            
+            <div class="flex items-center gap-4 md:gap-6">
+                <div id="dynamic-nav-links" class="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-600 dark:text-slate-300"></div>
+                
+                <button id="theme-toggle" onclick="toggleTheme()" class="p-2.5 rounded-xl border border-orange-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-orange-50/50 dark:hover:bg-slate-800 text-orange-600 dark:text-slate-400 hover:text-orange-700 dark:hover:text-amber-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-500/30 dark:focus:ring-indigo-500/30 hover-3d" data-tilt="15" data-scale="1.1" aria-label="Toggle Theme">
+                    <span id="theme-icon-container" class="flex items-center justify-center relative z-10"></span>
+                </button>
             </div>
         </div>
     </nav>
 
     <!-- HERO SECTION -->
-    <header class="relative py-16 px-4 overflow-hidden">
+    <header class="relative py-16 px-4 overflow-hidden z-10">
         <div class="absolute inset-0 z-0 pointer-events-none">
-            <div class="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px]"></div>
-            <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px]"></div>
+            <div class="absolute top-0 left-1/4 w-96 h-96 bg-orange-400/10 dark:bg-indigo-600/10 rounded-full blur-[120px] transition-all duration-1000"></div>
+            <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-400/10 dark:bg-purple-600/10 rounded-full blur-[120px] transition-all duration-1000"></div>
         </div>
         
         <div class="relative z-10 max-w-4xl mx-auto text-center">
-            <h1 class="brand-text text-6xl md:text-[6rem] mb-8 text-white leading-none">
-                <span class="brand-gradient">AFEED</span>
-            </h1>
+            
+            <div class="hero-logo-container hover-3d mb-8" data-tilt="15" data-scale="1.08">
+                <h1 class="brand-text text-6xl md:text-[7.5rem] text-slate-900 dark:text-white leading-none">
+                    <span class="brand-gradient">AFEED</span>
+                </h1>
+            </div>
 
             <!-- Advanced Search Bar -->
-            <div class="max-w-xl mx-auto relative group mb-10">
-                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors"></i>
+            <div class="max-w-xl mx-auto relative group mb-10 hover-3d rounded-2xl" id="search-wrapper" data-tilt="4" data-scale="1.02">
+                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500 group-focus-within:text-orange-600 dark:group-focus-within:text-indigo-400 transition-colors duration-300 z-20 pointer-events-none"></i>
                 <input 
                     type="text" 
                     id="searchBar"
+                    aria-label="Search chapters, topics, or keywords"
                     placeholder="Search chapters, topics, or keywords..." 
-                    class="w-full bg-slate-900/80 backdrop-blur-sm border border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all shadow-2xl"
+                    class="w-full bg-white dark:bg-slate-900/80 backdrop-blur-sm border border-orange-100 dark:border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/40 dark:focus:ring-indigo-500/50 transition-all duration-500 relative z-10"
                 >
             </div>
 
             <!-- DYNAMIC SUBJECT SELECTOR (Tabs) -->
-            <div id="subject-selector" class="flex flex-wrap justify-center gap-3 max-w-2xl mx-auto">
+            <div id="subject-selector" class="flex flex-wrap justify-center gap-3 max-w-2xl mx-auto" role="tablist">
                 <!-- Tabs will be injected here via JS -->
             </div>
         </div>
     </header>
 
-    <main class="max-w-6xl mx-auto px-6 pb-24">
+    <main class="max-w-6xl mx-auto px-6 pb-24 relative z-10">
         
         <!-- "CONTINUE LEARNING" MODULE -->
-        <section id="recent-module" class="mb-16 hidden">
+        <section id="recent-module" class="mb-16 hidden" aria-labelledby="continue-learning-title">
             <div class="flex items-center gap-2 mb-4">
-                <i data-lucide="clock" class="w-5 h-5 text-indigo-400"></i>
-                <h3 class="text-lg font-bold text-white tracking-tight">Continue Learning</h3>
+                <i data-lucide="clock" class="w-5 h-5 text-orange-600 dark:text-indigo-400"></i>
+                <h3 id="continue-learning-title" class="text-lg font-bold text-slate-800 dark:text-white tracking-tight">Continue Learning</h3>
             </div>
             <div id="recent-grid" class="flex gap-4 overflow-x-auto pb-4 no-scrollbar snap-x">
                 <!-- Javascript will inject recent cards here -->
@@ -153,12 +310,12 @@
     </main>
     
     <!-- FOOTER -->
-    <footer class="border-t border-slate-800 py-12 text-center">
-        <div class="flex items-center justify-center gap-2 mb-4">
-            <span class="brand-text text-xl brand-gradient">AFEED</span>
-            <span class="text-slate-500 font-semibold">| Operating System for Science</span>
+    <footer class="border-t border-orange-100 dark:border-slate-800 py-12 text-center transition-colors duration-500 relative z-10">
+        <div class="flex items-center justify-center gap-2 mb-4 hover-3d p-2 rounded-xl inline-flex" data-tilt="10" data-scale="1.05">
+            <span class="brand-text text-xl brand-gradient relative z-10">AFEED</span>
+            <span class="text-slate-400 dark:text-slate-500 font-semibold relative z-10">| Operating System for Science</span>
         </div>
-        <p class="text-slate-600 text-sm">Organized systematically. Stored locally.</p>
+        <p class="text-slate-500 dark:text-slate-600 text-sm">Organized systematically. Stored locally.</p>
     </footer>
 
     <!-- ========================================================================= -->
@@ -166,64 +323,41 @@
     <!-- ========================================================================= -->
     <script>
         /* ==========================================================================================
-           TUTORIAL: HOW TO MODIFY THE DATABASE (SUBJECTS, PAPERS, CHAPTERS, SIMULATIONS)
+           🛠️ DATABASE MODIFICATION GUIDE: HOW TO ADD YOUR OWN CONTENT
            ==========================================================================================
            
-           1. HOW TO ADD A NEW SUBJECT:
-           ----------------------------
-           Add a new key-value pair inside the `database` object. For example, to add Biology:
-           
-           biology: {
-               name: "Biology",          // The name that appears on the top tab
-               icon: "dna",              // Icon name from lucide.dev
-               itemLabel: "Simulation",  // What to call the activities (e.g. Simulation, Interaction)
-               papers: [                 
-                   // ... paper objects go here ...
-               ]
-           }
+           The structure is deeply nested but simple: SUBJECT -> PAPER -> CHAPTER -> SIMULATION(S)
 
-           2. HOW TO ADD A NEW PAPER TO A SUBJECT:
-           ---------------------------------------
-           Inside the `papers` array of a subject, add an object like this:
-           
+           📍 1. HOW TO ADD A NEW PAPER:
+           Inside a subject (like `physics.papers`), add a new block inside the array:
            {
-               id: "bio_paper1",         // MUST BE UNIQUE! Used for scrolling navigation.
-               title: "Biology 1st Paper", 
-               bn: "জীববিজ্ঞান প্রথম পত্র",      
-               themeColor: "emerald",    // Available colors: blue, orange, emerald, teal, rose, pink, cyan
-               chapters: [               
-                   // ... chapter objects go here ...
+               id: "p3",                 // MUST BE UNIQUE! (e.g., p3 for physics paper 3)
+               title: "Physics 3rd Paper", 
+               bn: "পদার্থবিজ্ঞান তৃতীয় পত্র",
+               themeColor: "emerald",    // Options: blue, orange, emerald, teal, rose, pink, cyan
+               chapters: [               // List of chapters goes inside this array
+                   // ...
                ]
            }
 
-           3. HOW TO ADD A NEW CHAPTER (PLANNED/LOCKED):
-           ---------------------------------------------
-           Inside the `chapters` array, add a chapter object. Default status is "planned".
-           
+           📍 2. HOW TO ADD A NEW CHAPTER & SIMULATION:
+           Inside the `chapters: []` array of a paper, add a block like this:
            { 
-               id: "b1c1",               // MUST BE UNIQUE! (e.g., bio 1st paper chapter 1)
-               name: "Cell Division",    
-               bn: "কোষ বিভাজন",           
-               status: "planned",        // "planned" means locked and grayed out
-               icon: "microscope",       
-               keywords: ["mitosis", "meiosis"] 
-           }
-
-           4. HOW TO ACTIVATE A CHAPTER & ADD YOUR HTML FILES:
-           ---------------------------------------------------
-           Change the status from "planned" to "available", and add the `simulations` array.
-           Inside the simulations array, put the exact name of your HTML file in the `link`.
-           
-           { 
-               id: "b1c1", 
-               name: "Cell Division", 
-               bn: "কোষ বিভাজন", 
-               status: "available",      // <--- CHANGED TO "available"
-               icon: "microscope", 
-               keywords: ["mitosis", "meiosis"],
-               simulations: [            // <--- ADDED THIS ARRAY
-                   { title: "Mitosis Phase Viewer", link: "mitosis_sim.html" },
-                   { title: "Meiosis Cross-over", link: "meiosis_sim.html" }
+               id: "p3c1",               // MUST BE UNIQUE! (e.g., p3c1 for paper 3 chapter 1)
+               name: "Quantum Mechanics", 
+               bn: "কোয়ান্টাম মেকানিক্স", 
+               
+               // ⚠️ CRITICAL: STATUS MUST BE "available" FOR THE CARD TO BE CLICKABLE!
+               // Use "planned" if the simulations are not ready yet (it will be grayed out).
+               status: "available",      
+               
+               icon: "atom",             // Search for icon names at: https://lucide.dev/icons/
+               keywords: ["quantum", "physics", "planck"], // Helps with the search bar
+               
+               // 🔗 ADD YOUR HTML SIMULATION FILES HERE:
+               simulations: [            
+                   { title: "Schrödinger Equation", link: "schrodinger.html" },
+                   { title: "Wave Function App", link: "wave_function.html" }
                ] 
            }
            ========================================================================================== */
@@ -232,17 +366,23 @@
             physics: {
                 name: "Physics",
                 icon: "atom",
-                itemLabel: "Simulation", // Physics calls them Simulations
+                itemLabel: "Simulation",
                 papers: [
                     {
+                        // EXAMPLE OF A PAPER
                         id: "paper1",
                         title: "Physics 1st Paper",
                         bn: "পদার্থবিজ্ঞান প্রথম পত্র",
                         themeColor: "blue",
                         chapters: [
+                            // EXAMPLE OF A "PLANNED" (LOCKED) CHAPTER
                             { id: "p1c1", name: "Physical World", bn: "ভৌত জগৎ", status: "planned", icon: "globe", keywords: ["units", "measurements", "errors"] },
+                            
+                            // EXAMPLE OF AN "AVAILABLE" (CLICKABLE) CHAPTER WITH A SIMULATION
                             { id: "p1c2", name: "Vectors", bn: "ভেক্টর", status: "available", icon: "move", keywords: ["direction", "scalar", "dot", "cross", "calculus", "field"], 
-                              simulations: [{ title: "Vector Calculus & Fields", link: "Vector Calculus Simulation.html" }] 
+                              simulations: [
+                                  { title: "Vector Calculus & Fields", link: "Vector Calculus Simulation.html" }
+                              ] 
                             },
                             { id: "p1c3", name: "Dynamics", bn: "গতিবিদ্যা", status: "planned", icon: "rocket", keywords: ["motion", "projectile", "velocity", "acceleration"] },
                             { id: "p1c4", name: "Newtonian Mechanics", bn: "নিউটনিয়ান বলবিদ্যা", status: "planned", icon: "apple", keywords: ["force", "friction", "momentum", "torque"] },
@@ -296,7 +436,7 @@
             chemistry: {
                 name: "Chemistry",
                 icon: "flask-conical",
-                itemLabel: "Interaction", // Chemistry calls them Interactions
+                itemLabel: "Interaction", // Chemistry specific label
                 papers: [
                     {
                         id: "chem_paper1",
@@ -306,14 +446,11 @@
                         chapters: [
                             { id: "c1c1", name: "Safe Use of Laboratory", bn: "ল্যাবরেটরির নিরাপদ ব্যবহার", status: "planned", icon: "shield-alert", keywords: ["safety", "glassware", "measurements"] },
                             { id: "c1c2", name: "Qualitative Chemistry", bn: "গুণগত রসায়ন", status: "planned", icon: "microscope", keywords: ["atom", "bohr", "quantum", "solubility", "ions"] },
-                            
-                            // UPDATED: Chemistry Chapter 3 is now Available with the Super Periodic Table Interaction
-                            { id: "c1c3", name: "Periodic Properties", bn: "মৌলসমূহের পর্যাবৃত্ত ধর্ম", status: "available", icon: "table-2", keywords: ["bonds", "hybridization", "periodic table"],
+                            { id: "c1c3", name: "Periodic Properties", bn: "মৌলসমূহহের পর্যাবৃত্ত ধর্ম", status: "available", icon: "table-2", keywords: ["bonds", "hybridization", "periodic table"],
                               simulations: [
                                   { title: "Super Periodic Table", link: "Super Periodic Table.html" }
                               ]
                             },
-                            
                             { id: "c1c4", name: "Chemical Changes", bn: "রাসায়নিক পরিবর্তন", status: "planned", icon: "flame", keywords: ["equilibrium", "ph", "titration", "rate"] },
                             { id: "c1c5", name: "Working Chemistry", bn: "কর্মমুখী রসায়ন", status: "planned", icon: "briefcase", keywords: ["food", "preservatives", "vinegar"] }
                         ]
@@ -352,7 +489,7 @@
                             { id: "m1c6", name: "Trigonometric Ratio", bn: "ত্রিকোণমিতিক অনুপাত", status: "planned", icon: "triangle-right", keywords: ["sine", "cosine", "tangent"] },
                             { id: "m1c7", name: "Trigonometric Ratio of Associated Angles", bn: "সংযুক্ত কোণের ত্রিকোণমিতিক অনুপাত", status: "planned", icon: "drafting-compass", keywords: ["angles", "compound", "identities"] },
                             { id: "m1c8", name: "Functions & Graphs", bn: "ফাংশন ও ফাংশনের লেখচিত্র", status: "planned", icon: "function-square", keywords: ["domain", "range", "plot"] },
-                            { id: "m1c9", name: "Differentiation", bn: "অন্তরীকরণ", status: "planned", icon: "trending-up", keywords: ["calculus", "derivative", "limits"] },
+                            { id: "m1c9", name: "Differentiation", bn: "অন্টারীকরণ", status: "planned", icon: "trending-up", keywords: ["calculus", "derivative", "limits"] },
                             { id: "m1c10", name: "Integration", bn: "যোগজীকরণ", status: "planned", icon: "sigma", keywords: ["calculus", "integral", "area"] }
                         ]
                     },
@@ -369,7 +506,7 @@
                             { id: "m2c5", name: "Binomial Expansion", bn: "দ্বিপদী বিস্তৃতি", status: "planned", icon: "pyramid", keywords: ["expansion", "pascal", "coefficients"] },
                             { id: "m2c6", name: "Conics", bn: "কণিক", status: "planned", icon: "cone", keywords: ["parabola", "ellipse", "hyperbola"] },
                             { id: "m2c7", name: "Inverse Trigonometry", bn: "বিপরীত ত্রিকোণমিতিক ফাংশন ও সমীকরণ", status: "planned", icon: "rotate-ccw", keywords: ["arcsin", "arccos", "equations"] },
-                            { id: "m2c8", name: "Statics", bn: "স্থিতিবিদ্যা", status: "planned", icon: "scale", keywords: ["forces", "equilibrium", "moments"] },
+                            { id: "m2c8", name: "Statics", bn: "স্থিতবিদ্যা", status: "planned", icon: "scale", keywords: ["forces", "equilibrium", "moments"] },
                             { id: "m2c9", name: "Dynamics", bn: "সমতলে বস্তুকণার গতি", status: "planned", icon: "rocket", keywords: ["motion", "velocity", "acceleration", "projectile"] },
                             { id: "m2c10", name: "Measure of Dispersion & Probability", bn: "বিস্তার পরিমাপ ও সম্ভাবনা", status: "planned", icon: "dices", keywords: ["statistics", "variance", "chance", "events"] }
                         ]
@@ -401,39 +538,80 @@
 
         // State Management
         let currentSubject = 'physics';
+        let currentTheme = localStorage.getItem('afeed_theme') || 'dark';
 
-        // Switch subject and trigger re-render
-        window.switchSubject = function(subjectKey) {
-            currentSubject = subjectKey;
-            document.getElementById('searchBar').value = ''; // Clear search
+        // Utility: Debounce for Search Performance
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Apply Theme State
+        function applyTheme() {
+            const root = document.documentElement;
+            const themeIconContainer = document.getElementById('theme-icon-container');
+            
+            if (currentTheme === 'dark') {
+                root.classList.add('dark');
+                root.classList.remove('light');
+                if (themeIconContainer) {
+                    themeIconContainer.innerHTML = `<i data-lucide="sun" class="w-5 h-5 text-amber-400"></i>`;
+                }
+            } else {
+                root.classList.remove('dark');
+                root.classList.add('light');
+                if (themeIconContainer) {
+                    themeIconContainer.innerHTML = `<i data-lucide="moon" class="w-5 h-5 text-orange-600"></i>`;
+                }
+            }
+            localStorage.setItem('afeed_theme', currentTheme);
+            lucide.createIcons();
+        }
+
+        window.toggleTheme = function() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme();
             renderApp();
         };
 
-        // Determine color classes based on theme
+        window.switchSubject = function(subjectKey) {
+            currentSubject = subjectKey;
+            const searchBar = document.getElementById('searchBar');
+            searchBar.value = ''; 
+            renderApp();
+            // Resync filtering logic to empty state after the DOM rebuilds
+            searchBar.dispatchEvent(new Event('input'));
+        };
+
         function getThemeClasses(themeColor) {
             const maps = {
-                blue: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20', shadow: 'shadow-blue-500/5' },
-                orange: { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/20', shadow: 'shadow-orange-500/5' },
-                emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20', shadow: 'shadow-emerald-500/5' },
-                teal: { bg: 'bg-teal-500/10', text: 'text-teal-400', border: 'border-teal-500/20', shadow: 'shadow-teal-500/5' },
-                rose: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20', shadow: 'shadow-rose-500/5' },
-                pink: { bg: 'bg-pink-500/10', text: 'text-pink-400', border: 'border-pink-500/20', shadow: 'shadow-pink-500/5' },
-                cyan: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/20', shadow: 'shadow-cyan-500/5' }
+                blue: { bg: 'bg-blue-50/80 dark:bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-500/20', shadow: 'shadow-blue-500/5' },
+                orange: { bg: 'bg-orange-50/80 dark:bg-orange-500/10', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-200 dark:border-orange-500/20', shadow: 'shadow-orange-500/5' },
+                emerald: { bg: 'bg-emerald-50/80 dark:bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-500/20', shadow: 'shadow-emerald-500/5' },
+                teal: { bg: 'bg-teal-50/80 dark:bg-teal-500/10', text: 'text-teal-600 dark:text-teal-400', border: 'border-teal-200 dark:border-teal-500/20', shadow: 'shadow-teal-500/5' },
+                rose: { bg: 'bg-rose-50/80 dark:bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-200 dark:border-rose-500/20', shadow: 'shadow-rose-500/5' },
+                pink: { bg: 'bg-pink-50/80 dark:bg-pink-500/10', text: 'text-pink-600 dark:text-pink-400', border: 'border-pink-200 dark:border-pink-500/20', shadow: 'shadow-pink-500/5' },
+                cyan: { bg: 'bg-cyan-50/80 dark:bg-cyan-500/10', text: 'text-cyan-600 dark:text-cyan-400', border: 'border-cyan-200 dark:border-cyan-500/20', shadow: 'shadow-cyan-500/5' }
             };
             return maps[themeColor] || maps.blue;
         }
 
-        // Determines the status badge
         function getStatusBadge(status, simCount = 0) {
             if (status === 'available') {
-                return `<span class="bg-indigo-500/10 text-indigo-400 text-[10px] px-2.5 py-1 rounded-md border border-indigo-500/20 font-bold uppercase tracking-wide flex items-center gap-1.5 shadow-sm">${simCount} Active Labs <i data-lucide="flask-conical" class="w-3 h-3"></i></span>`;
+                return `<span class="bg-orange-50 dark:bg-indigo-500/10 text-orange-600 dark:text-indigo-400 text-[10px] px-2.5 py-1 rounded-md border border-orange-200 dark:border-indigo-500/20 font-bold uppercase tracking-wide flex items-center gap-1.5 shadow-sm smooth-transition">${simCount} Active Labs <i data-lucide="flask-conical" class="w-3.5 h-3.5"></i></span>`;
             } else if (status === 'partial') {
-                return '<span class="bg-amber-500/10 text-amber-500 text-[10px] px-2.5 py-1 rounded-md border border-amber-500/20 font-bold uppercase tracking-wide">Partial</span>';
+                return '<span class="bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500 text-[10px] px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-500/20 font-bold uppercase tracking-wide smooth-transition">Partial</span>';
             }
-            return '<span class="bg-slate-800/80 text-slate-500 text-[10px] px-2.5 py-1 rounded-md border border-slate-700/50 font-bold uppercase tracking-wide">Planned</span>';
+            return '<span class="bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 text-[10px] px-2.5 py-1 rounded-md border border-slate-200/60 dark:border-slate-700/50 font-bold uppercase tracking-wide smooth-transition">Planned</span>';
         }
 
-        // Expanded State Management
         function saveExpandedState(id, isExpanded) {
             let expanded = JSON.parse(localStorage.getItem('afeed_expanded') || '[]');
             if (isExpanded && !expanded.includes(id)) expanded.push(id);
@@ -441,7 +619,6 @@
             localStorage.setItem('afeed_expanded', JSON.stringify(expanded));
         }
 
-        // History Management
         window.trackRecentLearning = function(simTitle, simLink, chapterName) {
             let recent = JSON.parse(localStorage.getItem('afeed_recent') || '[]');
             recent = recent.filter(item => item.link !== simLink);
@@ -450,30 +627,60 @@
             localStorage.setItem('afeed_recent', JSON.stringify(recent));
         }
 
-        // Toggle Chapter Card
-        window.toggleChapter = function(chapterId) {
+        // ======================================================================
+        // DEDICATED ACCORDION CONTROLS
+        // ======================================================================
+        window.expandChapter = function(chapterId) {
             const container = document.getElementById(`sim-container-${chapterId}`);
             const chevron = document.getElementById(`chevron-${chapterId}`);
             const card = document.getElementById(`card-${chapterId}`);
 
-            const isExpanding = !container.classList.contains('expanded');
+            if (!container || container.classList.contains('expanded')) return;
 
-            if (isExpanding) {
-                container.classList.add('expanded');
-                chevron.style.transform = 'rotate(180deg)';
-                card.classList.add('bg-slate-800/80', 'ring-1', 'ring-indigo-500/50');
-                card.classList.remove('bg-slate-900');
-            } else {
-                container.classList.remove('expanded');
-                chevron.style.transform = 'rotate(0deg)';
-                card.classList.remove('bg-slate-800/80', 'ring-1', 'ring-indigo-500/50');
-                card.classList.add('bg-slate-900');
-            }
-            saveExpandedState(chapterId, isExpanding);
+            card.setAttribute('aria-expanded', 'true');
+            container.classList.add('expanded');
+            chevron.style.transform = 'rotate(180deg)';
+            card.classList.add('bg-orange-50/40', 'dark:bg-slate-800/80', 'ring-1', 'ring-orange-500/50', 'dark:ring-indigo-500/50');
+            card.classList.remove('bg-white', 'dark:bg-slate-900');
+            
+            saveExpandedState(chapterId, true);
         };
 
-        // Create Individual Chapter Card
-        // Now accepts `itemLabel` so we can dynamically call them "Simulations" or "Interactions"
+        window.collapseChapter = function(chapterId) {
+            const container = document.getElementById(`sim-container-${chapterId}`);
+            const chevron = document.getElementById(`chevron-${chapterId}`);
+            const card = document.getElementById(`card-${chapterId}`);
+
+            if (!container || !container.classList.contains('expanded')) return;
+
+            card.setAttribute('aria-expanded', 'false');
+            container.classList.remove('expanded');
+            chevron.style.transform = 'rotate(0deg)';
+            card.classList.remove('bg-orange-50/40', 'dark:bg-slate-800/80', 'ring-1', 'ring-orange-500/50', 'dark:ring-indigo-500/50');
+            card.classList.add('bg-white', 'dark:bg-slate-900');
+            
+            saveExpandedState(chapterId, false);
+        };
+
+        window.toggleChapter = function(chapterId) {
+            const container = document.getElementById(`sim-container-${chapterId}`);
+            if (!container) return;
+            
+            if (container.classList.contains('expanded')) {
+                collapseChapter(chapterId);
+            } else {
+                expandChapter(chapterId);
+            }
+        };
+
+        // ACCESSIBILITY: Keyboard Interaction for semantic div buttons
+        window.handleCardKeydown = function(event, chapterId) {
+            if(event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleChapter(chapterId);
+            }
+        };
+
         function createCard(chapter, expandedState, itemLabel = 'Simulation') {
             const isAvailable = chapter.status === 'available' || chapter.status === 'partial';
             const isExpanded = expandedState.includes(chapter.id);
@@ -483,54 +690,60 @@
             let simulationsHtml = '';
             if (simCount > 0) {
                 simulationsHtml = chapter.simulations.map(sim => `
-                    <a href="${sim.link}" onclick="trackRecentLearning('${sim.title}', '${sim.link}', '${chapter.name}')" class="flex items-center justify-between p-3 mb-2 rounded-lg bg-slate-950/80 border border-slate-800 hover:border-indigo-500 hover:bg-slate-900 transition-colors group">
+                    <a href="${sim.link}" tabindex="0" onclick="event.stopPropagation(); trackRecentLearning('${sim.title}', '${sim.link}', '${chapter.name}')" class="flex items-center justify-between p-3 mb-2 rounded-lg bg-white dark:bg-slate-950/80 border border-orange-100/50 dark:border-slate-800 hover:border-orange-400 dark:hover:border-indigo-400 hover:bg-orange-50/30 dark:hover:bg-slate-900 smooth-transition group relative z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500 dark:focus-visible:outline-indigo-400">
                         <div class="flex items-center gap-3">
-                            <div class="w-7 h-7 rounded-md bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                            <div class="w-7 h-7 rounded-md bg-orange-50 dark:bg-indigo-500/10 flex items-center justify-center text-orange-600 dark:text-indigo-400 group-hover:bg-orange-600 dark:group-hover:bg-indigo-500 group-hover:text-white smooth-transition">
                                 <i data-lucide="play" class="w-3.5 h-3.5 ml-0.5"></i>
                             </div>
-                            <span class="text-sm font-medium text-slate-300 group-hover:text-white transition-colors">${sim.title}</span>
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-orange-700 dark:group-hover:text-white smooth-transition">${sim.title}</span>
                         </div>
-                        <i data-lucide="arrow-up-right" class="w-4 h-4 text-slate-600 group-hover:text-indigo-400 transition-colors"></i>
+                        <i data-lucide="arrow-up-right" class="w-4 h-4 text-slate-400 dark:text-slate-600 group-hover:text-orange-600 dark:group-hover:text-indigo-400 smooth-transition"></i>
                     </a>
                 `).join('');
             }
 
-            const activeClass = isAvailable ? 'active cursor-pointer bg-slate-900 border-slate-800' : 'planned bg-slate-900/50 border-transparent';
+            const initialCardStyle = isExpanded ? 'bg-orange-50/40 dark:bg-slate-800/80 ring-1 ring-orange-500/50' : 'bg-white dark:bg-slate-900';
+            
+            // ACCESSIBILITY: Add button role, tabindex, and keyboard handlers
+            const accessibilityAttrs = isAvailable ? 
+                `role="button" tabindex="0" aria-expanded="${isExpanded}" onclick="toggleChapter('${chapter.id}')" onkeydown="handleCardKeydown(event, '${chapter.id}')"` : 
+                `role="region" aria-disabled="true"`;
+
+            const activeClass = isAvailable ? `active cursor-pointer border-orange-100/80 dark:border-slate-800 hover-3d ${initialCardStyle}` : 'planned bg-slate-50/50 dark:bg-slate-900/50 border-transparent';
             const initialExpandedClass = isExpanded ? 'expanded' : '';
-            const initialCardStyle = isExpanded ? 'bg-slate-800/80 ring-1 ring-indigo-500/50' : '';
             const chevronRotation = isExpanded ? 'transform: rotate(180deg)' : '';
 
-            // Combine metadata for search indexing
-            const searchMetadata = `${chapter.name} ${chapter.bn} ${chapter.keywords ? chapter.keywords.join(' ') : ''}`.toLowerCase();
+            // DEEP SEARCH: Simulation titles are mapped and appended into the searchable metadata footprint
+            const simulationTitles = chapter.simulations ? chapter.simulations.map(sim => sim.title).join(' ') : '';
+            const searchMetadata = `${chapter.name} ${chapter.bn} ${chapter.keywords ? chapter.keywords.join(' ') : ''} ${simulationTitles}`.toLowerCase();
 
             return `
-                <div id="card-${chapter.id}" class="chapter-card border rounded-2xl overflow-hidden ${activeClass} ${initialCardStyle}" 
-                     data-search="${searchMetadata}"
-                     onclick="${isAvailable ? `toggleChapter('${chapter.id}')` : ''}">
-                    <div class="p-5 flex flex-col justify-between">
+                <div id="card-${chapter.id}" class="chapter-card border rounded-2xl overflow-hidden ${activeClass}" 
+                     data-search="${searchMetadata}" data-tilt="6" data-scale="1.025" ${accessibilityAttrs}>
+                    <div class="p-5 flex flex-col justify-between h-full pointer-events-auto relative z-10">
                         <div>
                             <div class="flex justify-between items-start mb-5">
-                                <div class="w-10 h-10 rounded-xl bg-slate-800/80 flex items-center justify-center text-slate-300 shadow-inner">
+                                <div class="w-10 h-10 rounded-xl bg-orange-50/60 dark:bg-slate-800/80 flex items-center justify-center text-orange-600 dark:text-slate-300 shadow-inner smooth-transition">
                                     <i data-lucide="${iconName}" class="w-5 h-5"></i>
                                 </div>
                                 ${getStatusBadge(chapter.status, simCount)}
                             </div>
-                            <h3 class="text-lg text-white font-bold mb-1">${chapter.name}</h3>
-                            <p class="text-slate-500 text-sm mb-1">${chapter.bn}</p>
+                            <h3 class="text-lg text-slate-800 dark:text-white font-bold mb-1 smooth-transition">${chapter.name}</h3>
+                            <p class="text-slate-500 dark:text-slate-400 text-sm mb-1 smooth-transition">${chapter.bn}</p>
                         </div>
                         
                         <div class="mt-4 flex items-center justify-between">
                             ${isAvailable ? 
-                                `<span class="text-indigo-400 text-xs font-semibold uppercase tracking-wider">${simCount} ${itemLabel}${simCount > 1 ? 's' : ''}</span>
-                                 <i id="chevron-${chapter.id}" data-lucide="chevron-down" class="w-4 h-4 text-indigo-400 transition-transform duration-300" style="${chevronRotation}"></i>` : 
-                                `<span class="text-slate-600 text-xs font-semibold uppercase tracking-wider">${itemLabel} Locked</span>`
+                                `<span class="text-orange-600 dark:text-indigo-400 text-xs font-semibold uppercase tracking-wider smooth-transition">${simCount} ${itemLabel}${simCount > 1 ? 's' : ''}</span>
+                                 <i id="chevron-${chapter.id}" data-lucide="chevron-down" class="w-4 h-4 text-orange-600 dark:text-indigo-400 smooth-transition" style="${chevronRotation}"></i>` : 
+                                `<span class="text-slate-400 dark:text-slate-600 text-xs font-semibold uppercase tracking-wider smooth-transition">${itemLabel} Locked</span>`
                             }
                         </div>
                     </div>
                     ${isAvailable ? `
-                    <div id="sim-container-${chapter.id}" class="sim-list-container bg-slate-800/30 border-t border-slate-800/80 ${initialExpandedClass}">
+                    <div id="sim-container-${chapter.id}" class="sim-list-container bg-orange-50/10 dark:bg-slate-800/30 border-t border-orange-100 dark:border-slate-800/80 ${initialExpandedClass}" role="region" aria-label="Simulations for ${chapter.name}">
                         <div class="sim-list-content">
-                            <div class="p-4 pt-3">
+                            <div class="p-4 pt-3 relative z-20">
                                 ${simulationsHtml}
                             </div>
                         </div>
@@ -540,27 +753,26 @@
             `;
         }
 
-        // Render Tabs
         function renderSubjectTabs() {
             const container = document.getElementById('subject-selector');
             let html = '';
             
             for (const [key, data] of Object.entries(database)) {
                 const isActive = key === currentSubject;
-                const activeClass = isActive ? 'active' : 'text-slate-400 border border-slate-700 bg-slate-800/40';
+                const activeClass = isActive ? 'active' : 'text-slate-600 dark:text-slate-400 border border-orange-100 dark:border-slate-700 bg-white dark:bg-slate-800/40 hover:bg-orange-50/50 dark:hover:bg-slate-800';
                 
+                // ACCESSIBILITY: Proper tab roles
                 html += `
-                    <button onclick="switchSubject('${key}')" 
-                            class="subject-tab flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm outline-none ${activeClass}">
-                        <i data-lucide="${data.icon}" class="w-4 h-4"></i>
-                        ${data.name}
+                    <button role="tab" aria-selected="${isActive}" onclick="switchSubject('${key}')" data-tilt="4" data-scale="1.05"
+                            class="subject-tab hover-3d flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm outline-none ${activeClass}">
+                        <i data-lucide="${data.icon}" class="w-4 h-4 relative z-10"></i>
+                        <span class="relative z-10">${data.name}</span>
                     </button>
                 `;
             }
             container.innerHTML = html;
         }
 
-        // Main App Render (Nav, Sections, Cards)
         function renderApp() {
             renderSubjectTabs();
 
@@ -575,21 +787,20 @@
             subjectData.papers.forEach((paper) => {
                 const theme = getThemeClasses(paper.themeColor);
                 
-                navHtml += `<a href="#${paper.id}" class="hover:text-indigo-400 transition-colors">${paper.title.split(' ')[paper.title.split(' ').length - 2]} ${paper.title.split(' ')[paper.title.split(' ').length - 1]}</a>`;
+                navHtml += `<a href="#${paper.id}" class="hover:text-orange-600 dark:hover:text-indigo-400 text-slate-600 dark:text-slate-300 smooth-transition relative z-10">${paper.title.split(' ')[paper.title.split(' ').length - 2]} ${paper.title.split(' ')[paper.title.split(' ').length - 1]}</a>`;
 
-                // Render paper section
                 papersHtml += `
-                    <section id="${paper.id}">
-                        <div class="flex items-center gap-4 mb-8">
-                            <div class="w-12 h-12 rounded-xl ${theme.bg} flex items-center justify-center border ${theme.border} shadow-lg ${theme.shadow}">
+                    <section id="${paper.id}" class="smooth-transition">
+                        <div class="flex items-center gap-4 mb-8 hover-3d w-fit" data-tilt="12" data-scale="1.03">
+                            <div class="w-12 h-12 rounded-xl ${theme.bg} flex items-center justify-center border ${theme.border} shadow-lg ${theme.shadow} smooth-transition relative z-10">
                                 <i data-lucide="book-open" class="w-6 h-6 ${theme.text}"></i>
                             </div>
-                            <div>
-                                <h2 class="text-3xl font-bold text-white tracking-tight">${paper.title}</h2>
-                                <p class="text-sm text-slate-400 mt-1">${paper.bn}</p>
+                            <div class="relative z-10">
+                                <h2 class="text-3xl font-bold text-slate-800 dark:text-white tracking-tight smooth-transition">${paper.title}</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 smooth-transition">${paper.bn}</p>
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
                             ${paper.chapters.map(ch => createCard(ch, expandedState, subjectData.itemLabel || 'Simulation')).join('')}
                         </div>
                     </section>
@@ -601,9 +812,13 @@
 
             renderRecentModule();
             lucide.createIcons();
+            
+            // Wait for DOM paint to complete before calculating geometry for tilt effects
+            requestAnimationFrame(() => {
+                initGlobalHoverEngine(); 
+            });
         }
 
-        // Render "Continue Learning"
         function renderRecentModule() {
             const recentItems = JSON.parse(localStorage.getItem('afeed_recent') || '[]');
             const container = document.getElementById('recent-module');
@@ -612,12 +827,12 @@
             if (recentItems.length > 0) {
                 container.classList.remove('hidden');
                 grid.innerHTML = recentItems.map(item => `
-                    <a href="${item.link}" class="flex-none w-72 bg-slate-800/60 border border-indigo-500/20 rounded-xl p-4 snap-start hover:bg-slate-800 transition-colors group">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider">${item.chapter}</span>
-                            <i data-lucide="play-circle" class="w-4 h-4 text-slate-500 group-hover:text-white"></i>
+                    <a href="${item.link}" data-tilt="8" data-scale="1.03" class="hover-3d flex-none w-72 bg-white dark:bg-slate-800/60 border border-orange-100 dark:border-indigo-500/20 rounded-xl p-4 snap-start hover:bg-orange-50/30 dark:hover:bg-slate-800 smooth-transition group focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500 dark:focus-visible:outline-indigo-400">
+                        <div class="flex justify-between items-start mb-2 relative z-10">
+                            <span class="text-xs font-bold text-orange-600 dark:text-indigo-400 uppercase tracking-wider smooth-transition">${item.chapter}</span>
+                            <i data-lucide="play-circle" class="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-orange-600 dark:group-hover:text-white smooth-transition"></i>
                         </div>
-                        <h4 class="text-white font-semibold text-sm line-clamp-1">${item.title}</h4>
+                        <h4 class="text-slate-800 dark:text-white font-semibold text-sm line-clamp-1 smooth-transition relative z-10">${item.title}</h4>
                     </a>
                 `).join('');
             } else {
@@ -625,8 +840,83 @@
             }
         }
 
-        // Live Search Logic
-        document.getElementById('searchBar').addEventListener('input', (e) => {
+        // ======================================================================
+        // SYSTEMIC HOVER & TILT ENGINE (Bulletproof Touch Stability)
+        // ======================================================================
+        function initGlobalHoverEngine() {
+            // MOBILE FORM STABILIZATION: Strip 3D hover class from input wrappers if on touch devices
+            if (window.matchMedia("(pointer: coarse)").matches) {
+                const searchWrapper = document.getElementById('search-wrapper');
+                if (searchWrapper) {
+                    searchWrapper.classList.remove('hover-3d');
+                }
+            }
+
+            const interactiveElements = document.querySelectorAll('.hover-3d');
+            
+            interactiveElements.forEach(el => {
+                if(el.dataset.hoverEngineActive === "true") return;
+                el.dataset.hoverEngineActive = "true";
+
+                const maxTilt = parseFloat(el.getAttribute('data-tilt')) || 5;
+                const activeScale = parseFloat(el.getAttribute('data-scale')) || 1.02;
+
+                const resetHoverState = () => {
+                    el.style.transform = `perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+                    el.style.setProperty('--spotlight-opacity', '0');
+                };
+
+                el.addEventListener('pointerenter', () => {
+                    el.style.setProperty('--spotlight-opacity', '1');
+                });
+
+                el.addEventListener('pointermove', (e) => {
+                    const rect = el.getBoundingClientRect();
+                    let x = e.clientX - rect.left;
+                    let y = e.clientY - rect.top;
+
+                    if (e.pointerType === 'touch' && e.width === 1 && e.height === 1) {
+                        x = rect.width / 2;
+                        y = rect.height / 2;
+                    }
+                    
+                    el.style.setProperty('--mouse-x', `${x}px`);
+                    el.style.setProperty('--mouse-y', `${y}px`);
+                    el.style.setProperty('--spotlight-opacity', '1');
+
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    const tiltX = ((centerY - y) / centerY) * maxTilt;
+                    const tiltY = ((x - centerX) / centerX) * maxTilt;
+
+                    el.style.transform = `perspective(1200px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(${activeScale}, ${activeScale}, ${activeScale})`;
+                });
+
+                el.addEventListener('pointerdown', (e) => {
+                    const rect = el.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+
+                    el.style.setProperty('--mouse-x', `${x}px`);
+                    el.style.setProperty('--mouse-y', `${y}px`);
+                    el.style.setProperty('--spotlight-opacity', '1');
+
+                    el.style.transform = `perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(${activeScale}, ${activeScale}, ${activeScale})`;
+                });
+
+                el.addEventListener('pointerleave', resetHoverState);
+                el.addEventListener('pointercancel', resetHoverState);
+            });
+        }
+
+        document.addEventListener('pointermove', (e) => {
+            const body = document.body;
+            body.style.setProperty('--global-x', `${e.clientX}px`);
+            body.style.setProperty('--global-y', `${e.clientY}px`);
+        });
+
+        // PERFORMANCE: Debounced Live Search Logic with Auto-Expand Behavior
+        document.getElementById('searchBar').addEventListener('input', debounce((e) => {
             const term = e.target.value.toLowerCase().trim();
             const cards = document.querySelectorAll('.chapter-card');
             
@@ -634,14 +924,41 @@
                 const metadata = card.getAttribute('data-search');
                 if (term === '' || metadata.includes(term)) {
                     card.style.display = ''; 
+                    
+                    // AUTO EXPAND: If search is actively yielding this card, dynamically expand it to reveal matching simulations
+                    if (term !== '') {
+                        const chapterId = card.id.replace('card-', '');
+                        expandChapter(chapterId);
+                    }
+
                 } else {
                     card.style.display = 'none';
                 }
             });
-        });
+
+            const sections = document.querySelectorAll('#papers-container section');
+            sections.forEach(sec => {
+                const cardsInSection = sec.querySelectorAll('.chapter-card');
+                let visibleCount = 0;
+                cardsInSection.forEach(c => {
+                    if (c.style.display !== 'none') {
+                        visibleCount++;
+                    }
+                });
+                
+                if (visibleCount > 0 || term === '') {
+                    sec.style.display = '';
+                } else {
+                    sec.style.display = 'none';
+                }
+            });
+        }, 300)); // 300ms debounce
 
         // Initialize Platform
-        window.onload = renderApp;
+        window.onload = function() {
+            applyTheme();
+            renderApp();
+        };
     </script>
 </body>
 </html>
