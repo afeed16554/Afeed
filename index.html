@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="bn">
 <head>
@@ -65,6 +64,13 @@
             overflow: hidden;
             isolation: isolate;
             transform: translateZ(0);
+
+            /* Prevent selections and copy-paste highlights */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            -webkit-touch-callout: none;
         }
 
         .hover-3d::after {
@@ -171,7 +177,18 @@
             font-family: 'Inter', sans-serif;
             font-weight: 900;
             letter-spacing: -0.05em;
+            user-select: none;
+            -webkit-user-select: none;
         }
+
+        /* Display as inline-block and add padding to prevent italicized/extreme transforms from cutting off the letter 'D' */
+        .brand-gradient {
+            display: inline-block;
+            padding-right: 0.08em; 
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
         .dark .brand-gradient {
             background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
             -webkit-background-clip: text;
@@ -188,6 +205,7 @@
             border-radius: 2rem;
             padding: 1rem 3rem;
             background: transparent;
+            overflow: visible !important; /* Forces bounding container to allow full tilted text graphics */
         }
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -242,7 +260,8 @@
     <nav class="sticky top-0 z-50 border-b border-orange-100 dark:border-slate-800/80 glass transition-colors duration-500">
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <span class="brand-text text-2xl tracking-tight brand-gradient hover-3d inline-block px-1" data-tilt="8" data-scale="1.05">AFEED</span>
+                <!-- TOP-LEFT LOGO: Navigates back to top on click -->
+                <span onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="brand-text text-2xl tracking-tight brand-gradient hover-3d inline-block px-1 cursor-pointer" data-tilt="8" data-scale="1.05">AFEED</span>
             </div>
             
             <div class="flex items-center gap-4 md:gap-6">
@@ -322,46 +341,6 @@
     <!-- DATABASE & LOGIC -->
     <!-- ========================================================================= -->
     <script>
-        /* ==========================================================================================
-           🛠️ DATABASE MODIFICATION GUIDE: HOW TO ADD YOUR OWN CONTENT
-           ==========================================================================================
-           
-           The structure is deeply nested but simple: SUBJECT -> PAPER -> CHAPTER -> SIMULATION(S)
-
-           📍 1. HOW TO ADD A NEW PAPER:
-           Inside a subject (like `physics.papers`), add a new block inside the array:
-           {
-               id: "p3",                 // MUST BE UNIQUE! (e.g., p3 for physics paper 3)
-               title: "Physics 3rd Paper", 
-               bn: "পদার্থবিজ্ঞান তৃতীয় পত্র",
-               themeColor: "emerald",    // Options: blue, orange, emerald, teal, rose, pink, cyan
-               chapters: [               // List of chapters goes inside this array
-                   // ...
-               ]
-           }
-
-           📍 2. HOW TO ADD A NEW CHAPTER & SIMULATION:
-           Inside the `chapters: []` array of a paper, add a block like this:
-           { 
-               id: "p3c1",               // MUST BE UNIQUE! (e.g., p3c1 for paper 3 chapter 1)
-               name: "Quantum Mechanics", 
-               bn: "কোয়ান্টাম মেকানিক্স", 
-               
-               // ⚠️ CRITICAL: STATUS MUST BE "available" FOR THE CARD TO BE CLICKABLE!
-               // Use "planned" if the simulations are not ready yet (it will be grayed out).
-               status: "available",      
-               
-               icon: "atom",             // Search for icon names at: https://lucide.dev/icons/
-               keywords: ["quantum", "physics", "planck"], // Helps with the search bar
-               
-               // 🔗 ADD YOUR HTML SIMULATION FILES HERE:
-               simulations: [            
-                   { title: "Schrödinger Equation", link: "schrodinger.html" },
-                   { title: "Wave Function App", link: "wave_function.html" }
-               ] 
-           }
-           ========================================================================================== */
-
         const database = {
             physics: {
                 name: "Physics",
@@ -369,16 +348,12 @@
                 itemLabel: "Simulation",
                 papers: [
                     {
-                        // EXAMPLE OF A PAPER
                         id: "paper1",
                         title: "Physics 1st Paper",
                         bn: "পদার্থবিজ্ঞান প্রথম পত্র",
                         themeColor: "blue",
                         chapters: [
-                            // EXAMPLE OF A "PLANNED" (LOCKED) CHAPTER
                             { id: "p1c1", name: "Physical World", bn: "ভৌত জগৎ", status: "planned", icon: "globe", keywords: ["units", "measurements", "errors"] },
-                            
-                            // EXAMPLE OF AN "AVAILABLE" (CLICKABLE) CHAPTER WITH A SIMULATION
                             { id: "p1c2", name: "Vectors", bn: "ভেক্টর", status: "available", icon: "move", keywords: ["direction", "scalar", "dot", "cross", "calculus", "field"], 
                               simulations: [
                                   { title: "Vector Calculus & Fields", link: "Vector Calculus Simulation.html" }
@@ -436,7 +411,7 @@
             chemistry: {
                 name: "Chemistry",
                 icon: "flask-conical",
-                itemLabel: "Interaction", // Chemistry specific label
+                itemLabel: "Interaction", 
                 papers: [
                     {
                         id: "chem_paper1",
@@ -773,6 +748,9 @@
             container.innerHTML = html;
         }
 
+        // ======================================================================
+        // PAGE RENDER COMPOSITION
+        // ======================================================================
         function renderApp() {
             renderSubjectTabs();
 
@@ -865,6 +843,11 @@
                     el.style.transform = `perspective(1200px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
                     el.style.setProperty('--spotlight-opacity', '0');
                 };
+
+                // PREVENT DRAG EVENTS ON ACCIDENTAL MOUSE DRAG/SELECTION WHILST PRESS-HOLDING
+                el.addEventListener('dragstart', (e) => {
+                    e.preventDefault();
+                });
 
                 el.addEventListener('pointerenter', () => {
                     el.style.setProperty('--spotlight-opacity', '1');
