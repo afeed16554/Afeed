@@ -330,11 +330,39 @@
     
     <!-- FOOTER -->
     <footer class="border-t border-orange-100 dark:border-slate-800 py-12 text-center transition-colors duration-500 relative z-10">
-        <div class="flex items-center justify-center gap-2 mb-4 hover-3d p-2 rounded-xl inline-flex" data-tilt="10" data-scale="1.05">
-            <span class="brand-text text-xl brand-gradient relative z-10">AFEED</span>
-            <span class="text-slate-400 dark:text-slate-500 font-semibold relative z-10">| Operating System for Science</span>
+        <div class="flex flex-col items-center justify-center">
+            
+            <div class="flex items-center justify-center gap-2 mb-6 hover-3d p-2 rounded-xl inline-flex" data-tilt="10" data-scale="1.05">
+                <span class="brand-text text-xl brand-gradient relative z-10">AFEED</span>
+                <span class="text-slate-400 dark:text-slate-500 font-semibold relative z-10">| Operating System for Science</span>
+            </div>
+
+            <!-- Social Media & Contact Links (Fixed with target="_top" for iframe support) -->
+            <div class="flex items-center justify-center gap-4 md:gap-6 mb-8 relative z-10">
+                <a href="https://github.com/afeed16554" target="_top" rel="noopener noreferrer" 
+                   class="p-2.5 rounded-full border border-orange-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300 hover-3d" 
+                   data-tilt="15" data-scale="1.15" aria-label="GitHub">
+                    <i data-lucide="github" class="w-5 h-5 relative z-10"></i>
+                </a>
+                <a href="https://www.instagram.com/afeed16554/" target="_top" rel="noopener noreferrer" 
+                   class="p-2.5 rounded-full border border-orange-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 hover:text-pink-600 dark:hover:text-pink-400 hover:bg-pink-50 dark:hover:bg-slate-800 transition-all duration-300 hover-3d" 
+                   data-tilt="15" data-scale="1.15" aria-label="Instagram">
+                    <i data-lucide="instagram" class="w-5 h-5 relative z-10"></i>
+                </a>
+                <a href="https://www.facebook.com/fahmid.hossain.Afeed.16554" target="_top" rel="noopener noreferrer" 
+                   class="p-2.5 rounded-full border border-orange-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800 transition-all duration-300 hover-3d" 
+                   data-tilt="15" data-scale="1.15" aria-label="Facebook">
+                    <i data-lucide="facebook" class="w-5 h-5 relative z-10"></i>
+                </a>
+                <a href="mailto:fha16554@gmail.com" 
+                   class="p-2.5 rounded-full border border-orange-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-400 dark:text-slate-500 hover:text-orange-600 dark:hover:text-indigo-400 hover:bg-orange-50 dark:hover:bg-slate-800 transition-all duration-300 hover-3d" 
+                   data-tilt="15" data-scale="1.15" aria-label="Email">
+                    <i data-lucide="mail" class="w-5 h-5 relative z-10"></i>
+                </a>
+            </div>
+
+            <p class="text-slate-500 dark:text-slate-600 text-sm">Organized systematically. Stored locally.</p>
         </div>
-        <p class="text-slate-500 dark:text-slate-600 text-sm">Organized systematically. Stored locally.</p>
     </footer>
 
     <!-- ========================================================================= -->
@@ -474,7 +502,7 @@
                         bn: "উচ্চতর গণিত দ্বিতীয় পত্র",
                         themeColor: "pink",
                         chapters: [
-                            { id: "m2c1", name: "Real Numbers & Inequalities", bn: "বাস্তব সংখ্যা ও অসমতা", status: "planned", icon: "infinity", keywords: ["number line", "absolute value"] },
+                            { id: "m2c1", name: "Real Numbers & Inequalities", bn: "বাস্তব সংখ্যা text-pink-600", status: "planned", icon: "infinity", keywords: ["number line", "absolute value"] },
                             { id: "m2c2", name: "Linear Programming", bn: "যোগাশ্রয়ী প্রোগ্রামিং", status: "planned", icon: "target", keywords: ["optimization", "constraints", "graphs"] },
                             { id: "m2c3", name: "Complex Numbers", bn: "জটিল সংখ্যা", status: "planned", icon: "compass", keywords: ["argand", "imaginary", "modulus", "argument"] },
                             { id: "m2c4", name: "Polynomials & Equations", bn: "বহুপদী ও বহুপদী সমীকরণ", status: "planned", icon: "braces", keywords: ["roots", "quadratic", "algebra"] },
@@ -945,3 +973,5 @@
     </script>
 </body>
 </html>
+
+
