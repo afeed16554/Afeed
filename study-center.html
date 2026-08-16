@@ -34,22 +34,29 @@
         // ==========================================
         // 1. Google Web App URL (এখানে আপনার Apps Script থেকে পাওয়া লিংকটি দিন)
         // ==========================================
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxXChctISVU_ImeXddBD1q9rppb53BBHmBLdNrIrJSH9BtBYR3IFeCWRo5S1v-8VyT7/exec"; 
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxxLD3VoJ2lCxbFwedHwUD3YdVzgnhAejkvxXrjgXADntBI86jS_7quvS4pZGTDmL8_/exec"; 
         // উদাহরণ: "https://script.google.com/macros/s/AKfycb.../exec"
 
-        // ফলব্যাক ডেটা (যদি শিট লিংক না থাকে)
-        const rawTSVData = `Paper	Chapter No.	Chapter Title (English)	Chapter Title (Bangla)	Status	Theory / Lectures	Textbook & Notes	CQ Practice	MCQ Practice Score	Board Questions Solved	Revision Count	Confidence Level	Mock Test / Exam Marks	Notes & Weak Topics
-Physics - 1st Paper	1	Physical World and Measurement	ভৌতজগৎ ও পরিমাপ	Not Started						0	Low		
-Physics - 1st Paper	2	Vector	ভেক্টর	Not Started	Pending	Pending				0			
-Physics - 1st Paper	3	Dynamics	গতিবিদ্যা	Not Started						0			`;
-
+        // ফলব্যাক ডেটা পার্সিং (ফাঁকা কলাম ফিক্স সহ)
         const parseFallbackTSV = (tsv) => {
             const lines = tsv.trim().split('\n');
+            let lastSubject = 'Unknown';
+            let lastPaper = 'Unknown';
+
             return lines.slice(1).map((line, index) => {
                 const cols = line.split('\t');
-                const subjectParts = cols[0] ? cols[0].split(' - ') : ['Unknown', 'Unknown'];
+                const paperStr = cols[0] ? cols[0].trim() : '';
+
+                if (paperStr !== '') {
+                    const subjectParts = paperStr.split(' - ');
+                    lastSubject = subjectParts[0] ? subjectParts[0].trim() : 'Unknown';
+                    lastPaper = subjectParts[1] ? subjectParts[1].trim() : 'Unknown';
+                }
+
                 return {
-                    id: `ch-${index}`, rowNum: index + 2, subject: subjectParts[0] || 'Unknown', paper: subjectParts[1] || 'Unknown',
+                    id: `ch-${index}`, rowNum: index + 2, 
+                    subject: lastSubject, 
+                    paper: lastPaper,
                     chapterNo: cols[1] || '', titleEn: cols[2] || '', titleBn: cols[3] || '', status: cols[4] || 'Not Started',
                     milestones: { theory: cols[5] === 'Done', textbook: cols[6] === 'Done', written: cols[7] === 'Done', questionBank: false },
                     mcqScore: cols[8] || '', qbSolved: parseInt(cols[9]) || 0, revisions: parseInt(cols[10]) || 0,
@@ -57,6 +64,11 @@ Physics - 1st Paper	3	Dynamics	গতিবিদ্যা	Not Started						0			
                 };
             });
         };
+
+        const rawTSVData = `Paper	Chapter No.	Chapter Title (English)	Chapter Title (Bangla)	Status	Theory / Lectures	Textbook & Notes	CQ Practice	MCQ Practice Score	Board Questions Solved	Revision Count	Confidence Level	Mock Test / Exam Marks	Notes & Weak Topics
+Physics - 1st Paper	1	Physical World and Measurement	ভৌতজগৎ ও পরিমাপ	Not Started						0	Low		
+	2	Vector	ভেক্টর	Not Started	Pending	Pending				0			
+	3	Dynamics	গতিবিদ্যা	Not Started						0			`;
 
         function App() {
             const [chapters, setChapters] = useState([]);
@@ -175,7 +187,7 @@ Physics - 1st Paper	3	Dynamics	গতিবিদ্যা	Not Started						0			
                             <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm flex items-start gap-3">
                                <i className="fa-solid fa-triangle-exclamation mt-1"></i>
                                <div>
-                                  <strong>Live connection not active!</strong> You are viewing fallback data. Deploy the Google Apps Script and update <code>WEB_APP_URL</code>.
+                                  <strong>Live connection not active!</strong> Update <code>WEB_APP_URL</code> in code with your Google Apps Script Deployment URL.
                                </div>
                             </div>
                         )}
@@ -447,5 +459,3 @@ Physics - 1st Paper	3	Dynamics	গতিবিদ্যা	Not Started						0			
     </script>
 </body>
 </html>
-
-
