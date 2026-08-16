@@ -543,6 +543,43 @@
                         ]
                     }
                 ]
+            },
+            more: {
+                name: "More",
+                icon: "layout-grid",
+                itemLabel: "Resource",
+                papers: [
+                    {
+                        id: "more_tools",
+                        title: "Productivity Tools",
+                        bn: "উত্পাদনশীলতা সরঞ্জাম",
+                        themeColor: "blue",
+                        chapters: [
+                            { 
+                                id: "m_t1", 
+                                name: "Study Tracker", 
+                                bn: "স্টাডি ট্র্যাকার", 
+                                status: "available", 
+                                icon: "pie-chart", 
+                                keywords: ["study", "tracker", "sheet", "plan", "productivity", "spreadsheet"], 
+                                simulations: [
+                                    { title: "Open Study Tracker Sheet", link: "https://docs.google.com/spreadsheets/d/1cOMeJJ0lOsQT5W-tLXgYQg25274VLeMWt7azxgbiAho/edit?gid=63021223#gid=63021223" }
+                                ] 
+                            },
+                            { 
+                                id: "m_t2", 
+                                name: "Routine Planner", 
+                                bn: "রুটিন প্ল্যানার", 
+                                status: "available", 
+                                icon: "calendar-days", 
+                                keywords: ["routine", "planner", "schedule", "time management", "productivity"], 
+                                simulations: [
+                                    { title: "Open Routine Planner Sheet", link: "https://docs.google.com/spreadsheets/d/1Q98WitHrPaA82X0cvnphBnAIgIu-uLQKlfGfkf9Kmu0/edit?gid=1481639252#gid=1481639252" }
+                                ] 
+                            }
+                        ]
+                    }
+                ]
             }
         };
 
@@ -613,9 +650,10 @@
             return maps[themeColor] || maps.blue;
         }
 
-        function getStatusBadge(status, simCount = 0) {
+        function getStatusBadge(status, simCount = 0, label = 'Labs') {
+            const badgeIcon = label === 'Labs' ? 'flask-conical' : 'link';
             if (status === 'available') {
-                return `<span class="bg-orange-50 dark:bg-indigo-500/10 text-orange-600 dark:text-indigo-400 text-[10px] px-2.5 py-1 rounded-md border border-orange-200 dark:border-indigo-500/20 font-bold uppercase tracking-wide flex items-center gap-1.5 shadow-sm smooth-transition">${simCount} Active Labs <i data-lucide="flask-conical" class="w-3.5 h-3.5"></i></span>`;
+                return `<span class="bg-orange-50 dark:bg-indigo-500/10 text-orange-600 dark:text-indigo-400 text-[10px] px-2.5 py-1 rounded-md border border-orange-200 dark:border-indigo-500/20 font-bold uppercase tracking-wide flex items-center gap-1.5 shadow-sm smooth-transition">${simCount} Active ${label} <i data-lucide="${badgeIcon}" class="w-3.5 h-3.5"></i></span>`;
             } else if (status === 'partial') {
                 return '<span class="bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-500 text-[10px] px-2.5 py-1 rounded-md border border-amber-200 dark:border-amber-500/20 font-bold uppercase tracking-wide smooth-transition">Partial</span>';
             }
@@ -699,17 +737,19 @@
             
             let simulationsHtml = '';
             if (simCount > 0) {
-                simulationsHtml = chapter.simulations.map(sim => `
-                    <a href="${sim.link}" tabindex="0" onclick="event.stopPropagation(); trackRecentLearning('${sim.title}', '${sim.link}', '${chapter.name}')" class="flex items-center justify-between p-3 mb-2 rounded-lg bg-white dark:bg-slate-950/80 border border-orange-100/50 dark:border-slate-800 hover:border-orange-400 dark:hover:border-indigo-400 hover:bg-orange-50/30 dark:hover:bg-slate-900 smooth-transition group relative z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500 dark:focus-visible:outline-indigo-400">
+                simulationsHtml = chapter.simulations.map(sim => {
+                    const targetAttr = sim.link.startsWith('http') ? 'target="_blank" rel="noopener noreferrer"' : '';
+                    return `
+                    <a href="${sim.link}" ${targetAttr} tabindex="0" onclick="event.stopPropagation(); trackRecentLearning('${sim.title}', '${sim.link}', '${chapter.name}')" class="flex items-center justify-between p-3 mb-2 rounded-lg bg-white dark:bg-slate-950/80 border border-orange-100/50 dark:border-slate-800 hover:border-orange-400 dark:hover:border-indigo-400 hover:bg-orange-50/30 dark:hover:bg-slate-900 smooth-transition group relative z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500 dark:focus-visible:outline-indigo-400">
                         <div class="flex items-center gap-3">
                             <div class="w-7 h-7 rounded-md bg-orange-50 dark:bg-indigo-500/10 flex items-center justify-center text-orange-600 dark:text-indigo-400 group-hover:bg-orange-600 dark:group-hover:bg-indigo-500 group-hover:text-white smooth-transition">
-                                <i data-lucide="play" class="w-3.5 h-3.5 ml-0.5"></i>
+                                <i data-lucide="${targetAttr ? 'external-link' : 'play'}" class="w-3.5 h-3.5 ${targetAttr ? '' : 'ml-0.5'}"></i>
                             </div>
                             <span class="text-sm font-medium text-slate-700 dark:text-slate-300 group-hover:text-orange-700 dark:group-hover:text-white smooth-transition">${sim.title}</span>
                         </div>
                         <i data-lucide="arrow-up-right" class="w-4 h-4 text-slate-400 dark:text-slate-600 group-hover:text-orange-600 dark:group-hover:text-indigo-400 smooth-transition"></i>
                     </a>
-                `).join('');
+                `}).join('');
             }
 
             const initialCardStyle = isExpanded ? 'bg-orange-50/40 dark:bg-slate-800/80 ring-1 ring-orange-500/50' : 'bg-white dark:bg-slate-900';
@@ -736,7 +776,7 @@
                                 <div class="w-10 h-10 rounded-xl bg-orange-50/60 dark:bg-slate-800/80 flex items-center justify-center text-orange-600 dark:text-slate-300 shadow-inner smooth-transition">
                                     <i data-lucide="${iconName}" class="w-5 h-5"></i>
                                 </div>
-                                ${getStatusBadge(chapter.status, simCount)}
+                                ${getStatusBadge(chapter.status, simCount, itemLabel === 'Simulation' ? 'Labs' : itemLabel + 's')}
                             </div>
                             <h3 class="text-lg text-slate-800 dark:text-white font-bold mb-1 smooth-transition">${chapter.name}</h3>
                             <p class="text-slate-500 dark:text-slate-400 text-sm mb-1 smooth-transition">${chapter.bn}</p>
@@ -800,7 +840,7 @@
             subjectData.papers.forEach((paper) => {
                 const theme = getThemeClasses(paper.themeColor);
                 
-                navHtml += `<a href="#${paper.id}" class="hover:text-orange-600 dark:hover:text-indigo-400 text-slate-600 dark:text-slate-300 smooth-transition relative z-10">${paper.title.split(' ')[paper.title.split(' ').length - 2]} ${paper.title.split(' ')[paper.title.split(' ').length - 1]}</a>`;
+                navHtml += `<a href="#${paper.id}" class="hover:text-orange-600 dark:hover:text-indigo-400 text-slate-600 dark:text-slate-300 smooth-transition relative z-10">${paper.title.split(' ')[paper.title.split(' ').length - 2] || ''} ${paper.title.split(' ')[paper.title.split(' ').length - 1] || paper.title}</a>`;
 
                 papersHtml += `
                     <section id="${paper.id}" class="smooth-transition">
@@ -839,15 +879,17 @@
 
             if (recentItems.length > 0) {
                 container.classList.remove('hidden');
-                grid.innerHTML = recentItems.map(item => `
-                    <a href="${item.link}" data-tilt="8" data-scale="1.03" class="hover-3d flex-none w-72 bg-white dark:bg-slate-800/60 border border-orange-100 dark:border-indigo-500/20 rounded-xl p-4 snap-start hover:bg-orange-50/30 dark:hover:bg-slate-800 smooth-transition group focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500 dark:focus-visible:outline-indigo-400">
+                grid.innerHTML = recentItems.map(item => {
+                    const targetAttr = item.link.startsWith('http') ? 'target="_blank" rel="noopener noreferrer"' : '';
+                    return `
+                    <a href="${item.link}" ${targetAttr} data-tilt="8" data-scale="1.03" class="hover-3d flex-none w-72 bg-white dark:bg-slate-800/60 border border-orange-100 dark:border-indigo-500/20 rounded-xl p-4 snap-start hover:bg-orange-50/30 dark:hover:bg-slate-800 smooth-transition group focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500 dark:focus-visible:outline-indigo-400">
                         <div class="flex justify-between items-start mb-2 relative z-10">
                             <span class="text-xs font-bold text-orange-600 dark:text-indigo-400 uppercase tracking-wider smooth-transition">${item.chapter}</span>
-                            <i data-lucide="play-circle" class="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-orange-600 dark:group-hover:text-white smooth-transition"></i>
+                            <i data-lucide="${targetAttr ? 'external-link' : 'play-circle'}" class="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-orange-600 dark:group-hover:text-white smooth-transition"></i>
                         </div>
                         <h4 class="text-slate-800 dark:text-white font-semibold text-sm line-clamp-1 smooth-transition relative z-10">${item.title}</h4>
                     </a>
-                `).join('');
+                `}).join('');
             } else {
                 container.classList.add('hidden');
             }
