@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Study Command Center</title>
+    <title>Universal Study Command Center</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,10 +19,12 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        .custom-scrollbar::-webkit-scrollbar { height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .glass-panel { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
     </style>
 </head>
 <body class="bg-slate-50 font-sans text-slate-800">
@@ -32,11 +34,10 @@
         const { useState, useEffect, useMemo } = React;
 
         // ==========================================
-        // 1. Google Web App URL (এখানে আপনার Apps Script থেকে পাওয়া লিংকটি দিন)
+        // 1. Google Web App URL (আপনার Apps Script URL এখানে দিন)
         // ==========================================
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxxLD3VoJ2lCxbFwedHwUD3YdVzgnhAejkvxXrjgXADntBI86jS_7quvS4pZGTDmL8_/exec"; 
-        // উদাহরণ: "https://script.google.com/macros/s/AKfycb.../exec"
-
+        
         // ফলব্যাক ডেটা পার্সিং (ফাঁকা কলাম ফিক্স সহ)
         const parseFallbackTSV = (tsv) => {
             const lines = tsv.trim().split('\n');
@@ -70,13 +71,22 @@ Physics - 1st Paper	1	Physical World and Measurement	ভৌতজগৎ ও প�
 	2	Vector	ভেক্টর	Not Started	Pending	Pending				0			
 	3	Dynamics	গতিবিদ্যা	Not Started						0			`;
 
+        // ==========================================
+        // MAIN APPLICATION COMPONENT
+        // ==========================================
         function App() {
             const [chapters, setChapters] = useState([]);
-            const [activeSubject, setActiveSubject] = useState('Physics');
+            const [activeSubject, setActiveSubject] = useState('All Subjects');
+            const [activePaper, setActivePaper] = useState('All');
+            const [viewMode, setViewMode] = useState('tiles'); // 'tiles', 'table'
             const [searchTerm, setSearchTerm] = useState('');
+            const [statusFilter, setStatusFilter] = useState('All Statuses');
+            const [confidenceFilter, setConfidenceFilter] = useState('All Levels');
+            
             const [loading, setLoading] = useState(true);
             const [syncStatus, setSyncStatus] = useState('synced');
 
+            // Data Fetching
             useEffect(() => {
                 const fetchData = async () => {
                     if (WEB_APP_URL && WEB_APP_URL !== "YOUR_WEB_APP_URL_HERE") {
@@ -99,6 +109,7 @@ Physics - 1st Paper	1	Physical World and Measurement	ভৌতজগৎ ও প�
                 fetchData();
             }, []);
 
+            // Data Syncing Function
             const updateChapter = async (id, field, value) => {
                 const targetChapter = chapters.find(c => c.id === id);
                 let updatedFields = {};
@@ -132,23 +143,11 @@ Physics - 1st Paper	1	Physical World and Measurement	ভৌতজগৎ ও প�
                 }
             };
 
-            const filteredChapters = chapters.filter(ch => {
-                const matchesSubject = activeSubject === 'All Subjects' || ch.subject === activeSubject;
-                const matchesSearch = ch.titleEn.toLowerCase().includes(searchTerm.toLowerCase()) || ch.titleBn.includes(searchTerm);
-                return matchesSubject && matchesSearch;
-            });
-
-            const stats = useMemo(() => {
-                const total = filteredChapters.length;
-                const completed = filteredChapters.filter(ch => ch.status === 'Completed').length;
-                const inProgress = filteredChapters.filter(ch => ch.status === 'In Progress').length;
-                const qbSolves = filteredChapters.reduce((sum, ch) => sum + ch.qbSolved, 0);
-                const revisions = filteredChapters.reduce((sum, ch) => sum + ch.revisions, 0);
-                const progressPercent = total === 0 ? 0 : Math.round((completed / total) * 100);
-                return { total, completed, inProgress, qbSolves, revisions, progressPercent };
-            }, [filteredChapters]);
-
-            const subjectsList = ['All Subjects', ...Array.from(new Set(chapters.map(ch => ch.subject)))];
+            // Helpers
+            const subjectsList = Array.from(new Set(chapters.map(ch => ch.subject))).filter(s => s !== 'Unknown');
+            const papersList = activeSubject !== 'All Subjects' 
+                ? Array.from(new Set(chapters.filter(c => c.subject === activeSubject).map(c => c.paper))) 
+                : [];
 
             const getSubjectColor = (sub) => {
                 switch(sub) {
@@ -160,15 +159,42 @@ Physics - 1st Paper	1	Physical World and Measurement	ভৌতজগৎ ও প�
                 }
             };
 
-            const getHeaderGradient = (sub) => {
+            const getHeaderStyle = (sub) => {
                 switch(sub) {
-                    case 'Physics': return 'from-indigo-900 to-indigo-700';
-                    case 'Chemistry': return 'from-emerald-900 to-emerald-700';
-                    case 'Higher Math': return 'from-blue-900 to-blue-700';
-                    case 'Biology': return 'from-rose-900 to-rose-700';
-                    default: return 'from-slate-900 to-slate-700';
+                    case 'All Subjects': return 'bg-gradient-to-r from-blue-900 via-indigo-900 to-violet-900';
+                    case 'Physics': return 'bg-gradient-to-r from-indigo-900 to-indigo-700';
+                    case 'Chemistry': return 'bg-gradient-to-r from-emerald-900 to-teal-800';
+                    case 'Higher Math': return 'bg-gradient-to-r from-blue-900 to-cyan-800';
+                    case 'Biology': return 'bg-gradient-to-r from-rose-900 to-pink-800';
+                    default: return 'bg-gradient-to-r from-slate-900 to-slate-700';
                 }
             };
+
+            const getSubjectPrefix = (sub) => {
+                switch(sub) {
+                    case 'Physics': return 'PH';
+                    case 'Chemistry': return 'CH';
+                    case 'Higher Math': return 'HM';
+                    case 'Biology': return 'BI';
+                    default: return 'SUB';
+                }
+            };
+
+            // Filtering Logic for Subject View
+            const filteredChapters = chapters.filter(ch => {
+                if (activeSubject !== 'All Subjects' && ch.subject !== activeSubject) return false;
+                if (activePaper !== 'All' && ch.paper !== activePaper) return false;
+                if (statusFilter !== 'All Statuses' && ch.status !== statusFilter) return false;
+                if (confidenceFilter !== 'All Levels' && ch.confidence !== confidenceFilter) return false;
+                
+                const searchLower = searchTerm.toLowerCase();
+                return ch.titleEn.toLowerCase().includes(searchLower) || ch.titleBn.includes(searchLower);
+            });
+
+            // Action Needed Logic (For Universal Dashboard)
+            const actionQueueChapters = chapters.filter(ch => 
+                ch.status === 'In Progress' || ch.confidence === 'Low'
+            );
 
             if (loading) {
                 return (
@@ -181,8 +207,9 @@ Physics - 1st Paper	1	Physical World and Measurement	ভৌতজগৎ ও প�
 
             return (
                 <div className="pb-20">
-                    <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+                    <div className="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
                         
+                        {/* Status Warnings */}
                         {WEB_APP_URL === "YOUR_WEB_APP_URL_HERE" && (
                             <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm flex items-start gap-3">
                                <i className="fa-solid fa-triangle-exclamation mt-1"></i>
@@ -192,115 +219,383 @@ Physics - 1st Paper	1	Physical World and Measurement	ভৌতজগৎ ও প�
                             </div>
                         )}
 
-                        <div className={`bg-gradient-to-r ${getHeaderGradient(activeSubject)} rounded-2xl p-6 text-white shadow-lg relative`}>
-                            <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-medium">
-                               {syncStatus === 'syncing' ? <i className="fa-solid fa-spinner fa-spin text-blue-300"></i> 
-                                : syncStatus === 'error' ? <i className="fa-solid fa-cloud-bolt text-rose-400"></i> 
-                                : <i className="fa-solid fa-cloud-check text-emerald-400"></i>}
-                               {syncStatus === 'syncing' ? 'Saving...' 
-                                : syncStatus === 'error' ? 'Local Mode' 
-                                : 'Synced'}
-                            </div>
-
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                                <div className="mt-4 md:mt-0">
-                                    <div className="flex items-center gap-2 text-indigo-100 text-sm mb-3">
-                                        <button className="flex items-center gap-1 hover:text-white transition">
-                                            <i className="fa-solid fa-layer-group"></i> All Subjects
-                                        </button>
-                                        <span>/</span>
-                                        <span>{activeSubject} Command Center</span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-white/10 rounded-lg">
-                                            <i className="fa-solid fa-book-open text-xl text-indigo-100"></i>
-                                        </div>
-                                        <h1 className="text-2xl md:text-3xl font-bold">{activeSubject} Center</h1>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
-                                <StatCard title={`${activeSubject} Chapters`} value={stats.total} subtext="Total Modules" />
-                                <StatCard title="QB Solves Logged" value={stats.qbSolves} subtext="Total times solved" icon={<i className="fa-solid fa-clock-rotate-left text-yellow-400"></i>} />
-                                <StatCard title="Overall Progress" value={`${stats.progressPercent}%`} subtext={
-                                    <div className="w-full bg-white/20 h-1.5 rounded-full mt-2">
-                                        <div className="bg-green-400 h-1.5 rounded-full transition-all" style={{ width: `${stats.progressPercent}%` }}></div>
-                                    </div>
-                                } />
-                                <StatCard title="Status Overview" value={`${stats.completed} / ${stats.inProgress}`} subtext={`${stats.total - stats.completed - stats.inProgress} Not Started`} />
-                                <StatCard title="Total Revisions" value={stats.revisions} subtext="Keep it up!" icon={<i className="fa-solid fa-rotate-right text-blue-300"></i>} />
-                            </div>
-                        </div>
-
-                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 flex items-center gap-2 overflow-x-auto custom-scrollbar">
-                            <div className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-500 border-r border-slate-200">
-                                <i className="fa-solid fa-bookmark"></i> SUBJECTS:
-                            </div>
+                        {/* Top Subject Navigation Ribbon */}
+                        <div className="bg-white rounded-full shadow-sm border border-slate-200 p-1.5 flex items-center gap-1 overflow-x-auto custom-scrollbar">
+                            <button 
+                                onClick={() => { setActiveSubject('All Subjects'); setActivePaper('All'); }}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition whitespace-nowrap ${
+                                    activeSubject === 'All Subjects' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'
+                                }`}
+                            >
+                                <i className="fa-solid fa-layer-group"></i> All Subjects Hub
+                            </button>
+                            <div className="w-px h-6 bg-slate-200 mx-2"></div>
                             {subjectsList.map((sub, idx) => {
-                                const subTotal = chapters.filter(c => sub === 'All Subjects' || c.subject === sub).length;
-                                const subCompleted = chapters.filter(c => (sub === 'All Subjects' || c.subject === sub) && c.status === 'Completed').length;
+                                const subTotal = chapters.filter(c => c.subject === sub).length;
+                                const subCompleted = chapters.filter(c => c.subject === sub && c.status === 'Completed').length;
                                 const subProgress = subTotal === 0 ? 0 : Math.round((subCompleted / subTotal) * 100);
                                 
                                 return (
                                     <button 
                                         key={idx}
-                                        onClick={() => setActiveSubject(sub)}
-                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap border ${
+                                        onClick={() => { setActiveSubject(sub); setActivePaper('All'); }}
+                                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition whitespace-nowrap ${
                                             activeSubject === sub 
-                                            ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
-                                            : 'bg-white border-transparent text-slate-600 hover:bg-slate-50'
+                                            ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 shadow-sm' 
+                                            : 'text-slate-600 hover:bg-slate-50 border border-transparent'
                                         }`}
                                     >
-                                        {sub} <span className="text-xs opacity-60">{subProgress}% ({subTotal})</span>
+                                        {sub} <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${activeSubject === sub ? 'bg-indigo-100' : 'bg-slate-100'}`}>{subProgress}% ({subTotal})</span>
                                     </button>
                                 )
                             })}
                         </div>
 
-                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 flex flex-col md:flex-row gap-4 items-center justify-between">
-                            <div className="flex-1 w-full flex items-center gap-3 px-2 md:px-4">
-                                <div className="relative flex-1">
-                                    <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Search chapter or topic..." 
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
+                        {/* UNIVERSAL DASHBOARD VIEW */}
+                        {activeSubject === 'All Subjects' && (
+                            <div className="space-y-8">
+                                {/* Header */}
+                                <div className={`${getHeaderStyle('All Subjects')} rounded-2xl p-6 md:p-8 text-white shadow-lg relative overflow-hidden`}>
+                                    <div className="absolute right-0 top-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl"></div>
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-3 mb-2 opacity-80">
+                                            <i className="fa-solid fa-earth-americas"></i>
+                                            <span className="text-sm font-medium tracking-wide uppercase">Universal Multi-Subject Master Hub</span>
+                                        </div>
+                                        <h1 className="text-3xl md:text-4xl font-bold mb-4">Universal Study Command Center</h1>
+                                        <p className="max-w-2xl text-slate-200 text-sm md:text-base mb-8">
+                                            Track syllabus mastery, chapters, topics, Written practice, MCQ practice, Question Bank solves, and revision counters across all subjects in real time.
+                                        </p>
+                                        
+                                        <div className="flex gap-4">
+                                            <div className="glass-panel px-4 py-3 rounded-xl flex items-center gap-3">
+                                                <div className="bg-white/20 p-2 rounded-lg"><i className="fa-solid fa-book text-xl"></i></div>
+                                                <div>
+                                                    <div className="text-xs text-slate-300">Total Subjects Active</div>
+                                                    <div className="font-bold text-xl">{subjectsList.length}</div>
+                                                </div>
+                                            </div>
+                                            <div className="glass-panel px-4 py-3 rounded-xl flex items-center gap-3">
+                                                <div className="bg-white/20 p-2 rounded-lg"><i className="fa-solid fa-list-check text-xl"></i></div>
+                                                <div>
+                                                    <div className="text-xs text-slate-300">Total Chapters</div>
+                                                    <div className="font-bold text-xl">{chapters.length}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Subject Hubs Grid */}
+                                <div>
+                                    <div className="flex items-center gap-2 mb-4 text-slate-700">
+                                        <i className="fa-solid fa-satellite-dish text-indigo-600"></i>
+                                        <h2 className="text-lg font-bold">All Subject Study Command Hubs</h2>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        {subjectsList.map(sub => {
+                                            const subChaps = chapters.filter(c => c.subject === sub);
+                                            const subCompleted = subChaps.filter(c => c.status === 'Completed').length;
+                                            const subInProgress = subChaps.filter(c => c.status === 'In Progress').length;
+                                            const progress = subChaps.length === 0 ? 0 : Math.round((subCompleted / subChaps.length) * 100);
+                                            const uniquePapers = Array.from(new Set(subChaps.map(c => c.paper))).length;
+
+                                            return (
+                                                <div key={sub} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all group">
+                                                    <div className="flex justify-between items-start mb-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${getSubjectColor(sub).replace('border-', 'bg-opacity-20 ')}`}>
+                                                                {getSubjectPrefix(sub)}
+                                                            </div>
+                                                            <div>
+                                                                <h3 className="font-bold text-slate-800 leading-tight">{sub}</h3>
+                                                                <p className="text-xs text-slate-500">{subChaps.length} Chapters • {uniquePapers} Papers</p>
+                                                            </div>
+                                                        </div>
+                                                        <span className={`font-bold text-lg ${getSubjectColor(sub).split(' ')[0]}`}>{progress}%</span>
+                                                    </div>
+
+                                                    <div className="w-full bg-slate-100 h-1.5 rounded-full mb-4 overflow-hidden">
+                                                        <div className={`h-full rounded-full ${getSubjectColor(sub).split(' ')[0].replace('text', 'bg')}`} style={{ width: `${progress}%` }}></div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-3 gap-2 mb-4">
+                                                        <div className="text-center bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                                            <div className="text-[10px] text-slate-400 uppercase font-bold mb-1">In Progress</div>
+                                                            <div className="font-bold text-orange-600">{subInProgress} ch</div>
+                                                        </div>
+                                                        <div className="text-center bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                                            <div className="text-[10px] text-slate-400 uppercase font-bold mb-1">Completed</div>
+                                                            <div className="font-bold text-emerald-600">{subCompleted} ch</div>
+                                                        </div>
+                                                        <div className="text-center bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                                            <div className="text-[10px] text-slate-400 uppercase font-bold mb-1">Revisions</div>
+                                                            <div className="font-bold text-blue-600">{subChaps.reduce((acc, c) => acc + c.revisions, 0)}</div>
+                                                        </div>
+                                                    </div>
+
+                                                    <button 
+                                                        onClick={() => setActiveSubject(sub)}
+                                                        className="w-full py-2 text-sm font-bold text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                                    >
+                                                        Open {sub} Center <i className="fa-solid fa-arrow-right text-xs"></i>
+                                                    </button>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Active Study Queue (Weak / In Progress) */}
+                                <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+                                    <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-4">
+                                        <div>
+                                            <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800">
+                                                <i className="fa-solid fa-clock-rotate-left text-orange-500"></i> Currently In-Progress & Weak Topics Queue
+                                            </h2>
+                                            <p className="text-sm text-slate-500">Quickly track and update chapters that need your attention.</p>
+                                        </div>
+                                        <div className="px-3 py-1 bg-orange-50 text-orange-700 font-bold rounded-lg text-sm border border-orange-200">
+                                            {actionQueueChapters.length} Action Items
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                        {actionQueueChapters.slice(0, 6).map(chapter => (
+                                            <ChapterCard key={chapter.id} chapter={chapter} onUpdate={updateChapter} subjectColor={getSubjectColor(chapter.subject)} />
+                                        ))}
+                                    </div>
+                                    {actionQueueChapters.length === 0 && (
+                                        <div className="text-center py-8 text-slate-400">
+                                            <i className="fa-solid fa-clipboard-check text-4xl mb-3 opacity-50"></i>
+                                            <p>No chapters in progress or marked as low confidence. Great job!</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        </div>
+                        )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-                            {filteredChapters.map((chapter) => (
-                                <ChapterCard 
-                                    key={chapter.id} 
-                                    chapter={chapter} 
-                                    onUpdate={updateChapter} 
-                                    subjectColor={getSubjectColor(chapter.subject)}
-                                />
-                            ))}
-                        </div>
+                        {/* SPECIFIC SUBJECT DASHBOARD VIEW */}
+                        {activeSubject !== 'All Subjects' && (
+                            <div className="space-y-6">
+                                {/* Subject Header */}
+                                <div className={`${getHeaderStyle(activeSubject)} rounded-2xl p-6 text-white shadow-lg relative`}>
+                                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 relative z-10">
+                                        <div>
+                                            <div className="flex items-center gap-2 text-white/70 text-sm mb-3">
+                                                <button onClick={() => setActiveSubject('All Subjects')} className="hover:text-white transition"><i className="fa-solid fa-layer-group"></i> All Subjects</button>
+                                                <span>/</span>
+                                                <span>{activeSubject} Command Center</span>
+                                            </div>
+                                            <h1 className="text-3xl font-bold flex items-center gap-3">
+                                                <i className="fa-solid fa-book-open opacity-80"></i> {activeSubject} Command Center
+                                            </h1>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-2 bg-black/20 px-3 py-1.5 rounded-full text-xs font-medium">
+                                           {syncStatus === 'syncing' ? <i className="fa-solid fa-spinner fa-spin text-blue-300"></i> 
+                                            : syncStatus === 'error' ? <i className="fa-solid fa-cloud-bolt text-rose-400"></i> 
+                                            : <i className="fa-solid fa-cloud-check text-emerald-400"></i>}
+                                           {syncStatus === 'syncing' ? 'Saving...' : syncStatus === 'error' ? 'Local Mode' : 'Synced'}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Papers Selection Section */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800">
+                                            <i className="fa-solid fa-layer-group text-indigo-500"></i> Modules & Papers
+                                        </h2>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <button 
+                                            onClick={() => setActivePaper('All')}
+                                            className={`p-4 rounded-xl border text-left transition-all ${activePaper === 'All' ? 'bg-indigo-50 border-indigo-500 shadow-md ring-1 ring-indigo-500' : 'bg-white border-slate-200 hover:border-indigo-300'}`}
+                                        >
+                                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Overview</div>
+                                            <div className="font-bold text-lg text-slate-800">All Papers Combined</div>
+                                            <div className="text-sm text-slate-500 mt-1">{chapters.filter(c=>c.subject===activeSubject).length} Total Chapters</div>
+                                        </button>
+                                        
+                                        {papersList.map(paper => {
+                                            const pChaps = chapters.filter(c => c.subject === activeSubject && c.paper === paper);
+                                            const pComp = pChaps.filter(c => c.status === 'Completed').length;
+                                            const pProg = pChaps.length === 0 ? 0 : Math.round((pComp / pChaps.length) * 100);
+                                            
+                                            return (
+                                                <button 
+                                                    key={paper}
+                                                    onClick={() => setActivePaper(paper)}
+                                                    className={`p-4 rounded-xl border text-left transition-all ${activePaper === paper ? 'bg-indigo-50 border-indigo-500 shadow-md ring-1 ring-indigo-500' : 'bg-white border-slate-200 hover:border-indigo-300'}`}
+                                                >
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <div className="text-xs font-bold text-indigo-600 bg-indigo-100/50 px-2 py-0.5 rounded uppercase tracking-wider">{activeSubject}</div>
+                                                        <div className="font-bold text-lg text-indigo-900">{pProg}%</div>
+                                                    </div>
+                                                    <div className="font-bold text-lg text-slate-800">{paper}</div>
+                                                    <div className="text-sm text-slate-500 mt-1">{pChaps.length} Chapters</div>
+                                                    <div className="w-full bg-slate-200 h-1.5 rounded-full mt-3">
+                                                        <div className="bg-indigo-500 h-1.5 rounded-full" style={{width: `${pProg}%`}}></div>
+                                                    </div>
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Toolbar & View Ribbon */}
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 flex flex-col lg:flex-row gap-4 items-center justify-between">
+                                    {/* View Toggle */}
+                                    <div className="flex items-center p-1 bg-slate-100 rounded-lg w-full lg:w-auto">
+                                        <button 
+                                            onClick={() => setViewMode('tiles')}
+                                            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${viewMode === 'tiles' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                        >
+                                            <i className="fa-solid fa-border-all"></i> Interactive Tiles
+                                        </button>
+                                        <button 
+                                            onClick={() => setViewMode('table')}
+                                            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-bold transition-all ${viewMode === 'table' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                        >
+                                            <i className="fa-solid fa-table-list"></i> Master Table
+                                        </button>
+                                    </div>
+                                    
+                                    {/* Filters */}
+                                    <div className="flex-1 w-full flex flex-col md:flex-row items-center gap-3 px-2">
+                                        <div className="relative flex-1 w-full">
+                                            <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Search chapter or topic..." 
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                            />
+                                        </div>
+                                        <select 
+                                            value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+                                            className="w-full md:w-auto bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500"
+                                        >
+                                            <option value="All Statuses">Status: All</option>
+                                            <option value="Not Started">Not Started</option>
+                                            <option value="In Progress">In Progress</option>
+                                            <option value="Completed">Completed</option>
+                                        </select>
+                                        <select 
+                                            value={confidenceFilter} onChange={e => setConfidenceFilter(e.target.value)}
+                                            className="w-full md:w-auto bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500"
+                                        >
+                                            <option value="All Levels">Confidence: All</option>
+                                            <option value="Unrated">Unrated</option>
+                                            <option value="Low">Low</option>
+                                            <option value="Medium">Medium</option>
+                                            <option value="High">High</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {/* Content Area: Tiles OR Table */}
+                                {viewMode === 'tiles' ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                                        {filteredChapters.map((chapter) => (
+                                            <ChapterCard key={chapter.id} chapter={chapter} onUpdate={updateChapter} subjectColor={getSubjectColor(chapter.subject)} />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left text-sm whitespace-nowrap">
+                                                <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200">
+                                                    <tr>
+                                                        <th className="px-4 py-3">Chapter</th>
+                                                        <th className="px-4 py-3">Status</th>
+                                                        <th className="px-4 py-3 text-center">Theory</th>
+                                                        <th className="px-4 py-3 text-center">Textbook</th>
+                                                        <th className="px-4 py-3 text-center">CQ</th>
+                                                        <th className="px-4 py-3 text-center">MCQ Score</th>
+                                                        <th className="px-4 py-3 text-center">QB Solves</th>
+                                                        <th className="px-4 py-3 text-center">Rev</th>
+                                                        <th className="px-4 py-3">Confidence</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {filteredChapters.map(ch => (
+                                                        <tr key={ch.id} className="hover:bg-slate-50 transition-colors">
+                                                            <td className="px-4 py-3">
+                                                                <div className="font-bold text-slate-800">{ch.titleEn}</div>
+                                                                <div className="text-[10px] text-slate-500">{ch.paper} • Ch {ch.chapterNo}</div>
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <select 
+                                                                    value={ch.status} onChange={(e) => updateChapter(ch.id, 'status', e.target.value)}
+                                                                    className="text-xs font-bold bg-transparent outline-none cursor-pointer"
+                                                                >
+                                                                    <option value="Not Started">Not Started</option>
+                                                                    <option value="In Progress">In Progress</option>
+                                                                    <option value="Completed">Completed</option>
+                                                                </select>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center cursor-pointer" onClick={() => updateChapter(ch.id, 'milestones.theory', !ch.milestones.theory)}>
+                                                                {ch.milestones.theory ? <i className="fa-solid fa-circle-check text-indigo-600"></i> : <i className="fa-regular fa-circle text-slate-300"></i>}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center cursor-pointer" onClick={() => updateChapter(ch.id, 'milestones.textbook', !ch.milestones.textbook)}>
+                                                                {ch.milestones.textbook ? <i className="fa-solid fa-circle-check text-indigo-600"></i> : <i className="fa-regular fa-circle text-slate-300"></i>}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center cursor-pointer" onClick={() => updateChapter(ch.id, 'milestones.written', !ch.milestones.written)}>
+                                                                {ch.milestones.written ? <i className="fa-solid fa-circle-check text-indigo-600"></i> : <i className="fa-regular fa-circle text-slate-300"></i>}
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <input 
+                                                                    type="text" defaultValue={ch.mcqScore} onBlur={(e) => updateChapter(ch.id, 'mcqScore', e.target.value)}
+                                                                    className="w-16 text-center text-xs bg-white border border-slate-200 rounded px-1 py-1 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                                                    placeholder="0/30"
+                                                                />
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                                <div className="flex items-center justify-center gap-2">
+                                                                    <button onClick={() => updateChapter(ch.id, 'qbSolved', Math.max(0, ch.qbSolved - 1))} className="text-slate-400 hover:text-slate-700">-</button>
+                                                                    <span className="font-bold w-4">{ch.qbSolved}</span>
+                                                                    <button onClick={() => updateChapter(ch.id, 'qbSolved', ch.qbSolved + 1)} className="text-slate-400 hover:text-slate-700">+</button>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center font-bold text-blue-600">{ch.revisions}</td>
+                                                            <td className="px-4 py-3">
+                                                                <select 
+                                                                    value={ch.confidence} onChange={(e) => updateChapter(ch.id, 'confidence', e.target.value)}
+                                                                    className="text-xs font-bold bg-transparent outline-none cursor-pointer"
+                                                                >
+                                                                    <option value="Unrated">Unrated</option>
+                                                                    <option value="Low">Low</option>
+                                                                    <option value="Medium">Medium</option>
+                                                                    <option value="High">High</option>
+                                                                </select>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                {filteredChapters.length === 0 && (
+                                    <div className="text-center py-12 text-slate-400 bg-white rounded-xl border border-dashed border-slate-300">
+                                        <i className="fa-solid fa-folder-open text-4xl mb-3 opacity-50"></i>
+                                        <p>No chapters found matching your selected filters.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             );
         }
 
-        function StatCard({ title, value, subtext, icon }) {
-            return (
-                <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-xl p-4 flex flex-col justify-between">
-                    <div className="text-indigo-100 text-xs font-medium mb-1 line-clamp-1">{title}</div>
-                    <div className="flex items-center gap-2">
-                        {icon}
-                        <div className="text-2xl md:text-3xl font-bold">{value}</div>
-                    </div>
-                    <div className="text-indigo-200 text-xs mt-1">{subtext}</div>
-                </div>
-            );
-        }
-
+        // ==========================================
+        // SUB-COMPONENTS
+        // ==========================================
         function ChapterCard({ chapter, onUpdate, subjectColor }) {
             const { id, subject, paper, chapterNo, titleEn, titleBn, status, milestones, qbSolved, revisions, writtenScore, mcqScore, confidence } = chapter;
             const [localWritten, setLocalWritten] = useState(writtenScore || '');
@@ -333,7 +628,7 @@ Physics - 1st Paper	1	Physical World and Measurement	ভৌতজগৎ ও প�
                     <div className="p-4 border-b border-slate-100">
                         <div className="flex justify-between items-start mb-3">
                             <div className="flex items-center gap-2 flex-wrap">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${subjectColor}`}>
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase border ${subjectColor}`}>
                                     {subject}
                                 </span>
                                 <span className="text-xs font-medium text-slate-500">{paper} • Ch {chapterNo}</span>
