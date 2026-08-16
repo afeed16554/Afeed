@@ -3,260 +3,449 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universal Study Command Center</title>
-    <!-- Tailwind CSS for styling -->
+    <title>Study Command Center</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
     <style>
-        body { background-color: #f3f4f6; }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="text-gray-800 antialiased min-h-screen flex flex-col">
+<body class="bg-slate-50 font-sans text-slate-800">
+    <div id="root"></div>
 
-    <!-- Header -->
-    <header class="bg-indigo-700 text-white shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <i class="fas fa-graduation-cap text-2xl"></i>
-                <h1 class="text-xl font-bold tracking-tight">Study Command Center</h1>
-            </div>
-            <div class="text-sm font-medium bg-indigo-800 px-3 py-1 rounded-full">
-                Beta v1.0
-            </div>
-        </div>
-    </header>
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
 
-    <!-- Main Content -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        <!-- Left Column: Input Form -->
-        <div class="lg:col-span-1 space-y-6">
-            <div class="glass-panel rounded-2xl shadow-sm p-6">
-                <h2 class="text-lg font-bold text-gray-900 mb-4 border-b pb-2">
-                    <i class="fas fa-plus-circle text-indigo-600 mr-2"></i>Log Study Session
-                </h2>
-                
-                <form id="study-form" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
-                        <input type="text" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" placeholder="Enter your name">
-                    </div>
+        // ==========================================
+        // 1. Google Web App URL (এখানে আপনার Apps Script থেকে পাওয়া লিংকটি দিন)
+        // ==========================================
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxXChctISVU_ImeXddBD1q9rppb53BBHmBLdNrIrJSH9BtBYR3IFeCWRo5S1v-8VyT7/exec"; 
+        // উদাহরণ: "https://script.google.com/macros/s/AKfycb.../exec"
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                        <input type="date" name="date" id="date-input" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
-                    </div>
+        // ফলব্যাক ডেটা (যদি শিট লিংক না থাকে)
+        const rawTSVData = `Paper	Chapter No.	Chapter Title (English)	Chapter Title (Bangla)	Status	Theory / Lectures	Textbook & Notes	CQ Practice	MCQ Practice Score	Board Questions Solved	Revision Count	Confidence Level	Mock Test / Exam Marks	Notes & Weak Topics
+Physics - 1st Paper	1	Physical World and Measurement	ভৌতজগৎ ও পরিমাপ	Not Started						0	Low		
+Physics - 1st Paper	2	Vector	ভেক্টর	Not Started	Pending	Pending				0			
+Physics - 1st Paper	3	Dynamics	গতিবিদ্যা	Not Started						0			`;
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                        <select name="subject" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
-                            <option value="" disabled selected>Select a subject...</option>
-                            <option value="Physics">Physics</option>
-                            <option value="Mathematics">Mathematics</option>
-                            <option value="Chemistry">Chemistry</option>
-                            <option value="Biology">Biology</option>
-                            <option value="Computer Science">Computer Science</option>
-                            <option value="Literature">Literature</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
+        const parseFallbackTSV = (tsv) => {
+            const lines = tsv.trim().split('\n');
+            return lines.slice(1).map((line, index) => {
+                const cols = line.split('\t');
+                const subjectParts = cols[0] ? cols[0].split(' - ') : ['Unknown', 'Unknown'];
+                return {
+                    id: `ch-${index}`, rowNum: index + 2, subject: subjectParts[0] || 'Unknown', paper: subjectParts[1] || 'Unknown',
+                    chapterNo: cols[1] || '', titleEn: cols[2] || '', titleBn: cols[3] || '', status: cols[4] || 'Not Started',
+                    milestones: { theory: cols[5] === 'Done', textbook: cols[6] === 'Done', written: cols[7] === 'Done', questionBank: false },
+                    mcqScore: cols[8] || '', qbSolved: parseInt(cols[9]) || 0, revisions: parseInt(cols[10]) || 0,
+                    confidence: cols[11] || 'Unrated', writtenScore: cols[12] || '', notes: cols[13] || ''
+                };
+            });
+        };
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Topic / Module</label>
-                        <input type="text" name="topic" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" placeholder="e.g. Quantum Mechanics">
-                    </div>
+        function App() {
+            const [chapters, setChapters] = useState([]);
+            const [activeSubject, setActiveSubject] = useState('Physics');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [loading, setLoading] = useState(true);
+            const [syncStatus, setSyncStatus] = useState('synced');
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Duration (Minutes)</label>
-                        <input type="number" name="duration" min="1" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" placeholder="60">
-                    </div>
-
-                    <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg shadow transition-colors flex justify-center items-center gap-2">
-                        <span>Save to Database</span>
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </form>
-
-                <!-- Status Message Box -->
-                <div id="status-message" class="hidden mt-4 p-3 rounded-lg text-sm text-center font-medium"></div>
-            </div>
-        </div>
-
-        <!-- Right Column: Data Display -->
-        <div class="lg:col-span-2 space-y-6">
-            <div class="glass-panel rounded-2xl shadow-sm p-6 flex flex-col h-full">
-                <div class="flex justify-between items-center mb-4 border-b pb-2">
-                    <h2 class="text-lg font-bold text-gray-900">
-                        <i class="fas fa-table text-indigo-600 mr-2"></i>Global Study Logs
-                    </h2>
-                    <button onclick="fetchData()" class="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors">
-                        <i class="fas fa-sync-alt" id="refresh-icon"></i> Refresh
-                    </button>
-                </div>
-                
-                <div class="flex-grow overflow-hidden flex flex-col">
-                    <div class="overflow-x-auto flex-grow h-[400px]">
-                        <table class="w-full text-sm text-left whitespace-nowrap">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 rounded-tl-lg">Date</th>
-                                    <th scope="col" class="px-6 py-3">Name</th>
-                                    <th scope="col" class="px-6 py-3">Subject</th>
-                                    <th scope="col" class="px-6 py-3">Topic</th>
-                                    <th scope="col" class="px-6 py-3 rounded-tr-lg">Duration</th>
-                                </tr>
-                            </thead>
-                            <tbody id="data-table-body" class="divide-y divide-gray-200">
-                                <!-- Data will be injected here by JavaScript -->
-                                <tr>
-                                    <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                                        <i class="fas fa-spinner fa-spin text-2xl mb-2 text-indigo-500"></i><br>
-                                        Loading data from Google Sheets...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <script>
-        // ======================================================================
-        // IMPORTANT: PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL BELOW
-        // ======================================================================
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw2Y-5YX7wUHRA6w9JHUh0YB-1viVaEQo4NtBW7UzX95fOi9HtiB8SiQJgC4PEnbtc/exec'; // <--- PASTE HERE
-        
-        // Setup initial date
-        document.getElementById('date-input').valueAsDate = new Date();
-
-        const form = document.getElementById('study-form');
-        const submitBtn = document.getElementById('submit-btn');
-        const statusMsg = document.getElementById('status-message');
-        const tableBody = document.getElementById('data-table-body');
-        const refreshIcon = document.getElementById('refresh-icon');
-
-        // Helper function to show messages
-        function showMessage(text, type) {
-            statusMsg.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700', 'bg-blue-100', 'text-blue-700');
-            statusMsg.textContent = text;
-            
-            if (type === 'success') {
-                statusMsg.classList.add('bg-green-100', 'text-green-700');
-            } else if (type === 'error') {
-                statusMsg.classList.add('bg-red-100', 'text-red-700');
-            } else {
-                statusMsg.classList.add('bg-blue-100', 'text-blue-700');
-            }
-            statusMsg.classList.remove('hidden');
-            
-            // Auto hide after 5 seconds if success
-            if(type === 'success') {
-                setTimeout(() => { statusMsg.classList.add('hidden'); }, 5000);
-            }
-        }
-
-        // Handle Form Submission (Saving to Google Sheets)
-        form.addEventListener('submit', e => {
-            e.preventDefault();
-            
-            if (SCRIPT_URL === 'YOUR_WEB_APP_URL_HERE') {
-                showMessage('Error: You need to add your Google Script URL to the code.', 'error');
-                return;
-            }
-
-            // Update UI to show loading
-            const originalBtnHtml = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-            submitBtn.disabled = true;
-            submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
-
-            const formData = new FormData(form);
-
-            fetch(SCRIPT_URL, { method: 'POST', body: formData })
-                .then(response => {
-                    if(!response.ok) throw new Error('Network response was not ok');
-                    showMessage('Success! Study session logged.', 'success');
-                    form.reset();
-                    document.getElementById('date-input').valueAsDate = new Date(); // reset date
-                    fetchData(); // Refresh table
-                })
-                .catch(error => {
-                    console.error('Error!', error.message);
-                    showMessage('Failed to save data. Please try again.', 'error');
-                })
-                .finally(() => {
-                    // Restore button UI
-                    submitBtn.innerHTML = originalBtnHtml;
-                    submitBtn.disabled = false;
-                    submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-                });
-        });
-
-        // Handle Fetching Data (Reading from Google Sheets)
-        function fetchData() {
-            if (SCRIPT_URL === 'YOUR_WEB_APP_URL_HERE') {
-                tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-red-500 font-medium">Please add your Web App URL in the HTML code to see data.</td></tr>';
-                return;
-            }
-
-            refreshIcon.classList.add('fa-spin');
-            
-            fetch(SCRIPT_URL)
-                .then(res => res.json())
-                .then(data => {
-                    tableBody.innerHTML = ''; // Clear table
-                    
-                    if (data.length === 0) {
-                        tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">No logs found yet. Start studying!</td></tr>';
-                        return;
-                    }
-
-                    // Reverse data to show newest at the top
-                    data.reverse().forEach(row => {
-                        // Format the date if it looks like an ISO string
-                        let displayDate = row['Date'];
-                        if(displayDate && displayDate.includes('T')) {
-                            displayDate = new Date(displayDate).toLocaleDateString();
+            useEffect(() => {
+                const fetchData = async () => {
+                    if (WEB_APP_URL && WEB_APP_URL !== "YOUR_WEB_APP_URL_HERE") {
+                        try {
+                            const response = await fetch(WEB_APP_URL);
+                            const data = await response.json();
+                            setChapters(data);
+                            setSyncStatus('synced');
+                        } catch (error) {
+                            console.error("Error fetching data:", error);
+                            setChapters(parseFallbackTSV(rawTSVData));
+                            setSyncStatus('error');
                         }
+                    } else {
+                        setChapters(parseFallbackTSV(rawTSVData));
+                        setSyncStatus('error');
+                    }
+                    setLoading(false);
+                };
+                fetchData();
+            }, []);
 
-                        const tr = document.createElement('tr');
-                        tr.className = "hover:bg-gray-50 transition-colors";
-                        tr.innerHTML = `
-                            <td class="px-6 py-4 font-medium text-gray-900">${displayDate || '-'}</td>
-                            <td class="px-6 py-4">${row['Name'] || '-'}</td>
-                            <td class="px-6 py-4">
-                                <span class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded">${row['Subject'] || '-'}</span>
-                            </td>
-                            <td class="px-6 py-4 text-gray-600">${row['Topic'] || '-'}</td>
-                            <td class="px-6 py-4 font-semibold text-gray-700">${row['Duration (Mins)'] || '-'} min</td>
-                        `;
-                        tableBody.appendChild(tr);
-                    });
-                })
-                .catch(err => {
-                    console.error(err);
-                    tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-red-500">Error loading data.</td></tr>';
-                })
-                .finally(() => {
-                    refreshIcon.classList.remove('fa-spin');
-                });
+            const updateChapter = async (id, field, value) => {
+                const targetChapter = chapters.find(c => c.id === id);
+                let updatedFields = {};
+
+                setChapters(prev => prev.map(ch => {
+                    if (ch.id === id) {
+                        if (field.includes('.')) {
+                            const [parent, child] = field.split('.');
+                            updatedFields = { [parent]: { ...ch[parent], [child]: value } };
+                            return { ...ch, ...updatedFields };
+                        }
+                        updatedFields = { [field]: value };
+                        return { ...ch, [field]: value };
+                    }
+                    return ch;
+                }));
+
+                if (WEB_APP_URL && WEB_APP_URL !== "YOUR_WEB_APP_URL_HERE") {
+                    setSyncStatus('syncing');
+                    try {
+                        const payload = { rowNum: targetChapter.rowNum, ...updatedFields };
+                        await fetch(WEB_APP_URL, {
+                            method: 'POST',
+                            body: JSON.stringify(payload),
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                        });
+                        setSyncStatus('synced');
+                    } catch (error) {
+                        setSyncStatus('error');
+                    }
+                }
+            };
+
+            const filteredChapters = chapters.filter(ch => {
+                const matchesSubject = activeSubject === 'All Subjects' || ch.subject === activeSubject;
+                const matchesSearch = ch.titleEn.toLowerCase().includes(searchTerm.toLowerCase()) || ch.titleBn.includes(searchTerm);
+                return matchesSubject && matchesSearch;
+            });
+
+            const stats = useMemo(() => {
+                const total = filteredChapters.length;
+                const completed = filteredChapters.filter(ch => ch.status === 'Completed').length;
+                const inProgress = filteredChapters.filter(ch => ch.status === 'In Progress').length;
+                const qbSolves = filteredChapters.reduce((sum, ch) => sum + ch.qbSolved, 0);
+                const revisions = filteredChapters.reduce((sum, ch) => sum + ch.revisions, 0);
+                const progressPercent = total === 0 ? 0 : Math.round((completed / total) * 100);
+                return { total, completed, inProgress, qbSolves, revisions, progressPercent };
+            }, [filteredChapters]);
+
+            const subjectsList = ['All Subjects', ...Array.from(new Set(chapters.map(ch => ch.subject)))];
+
+            const getSubjectColor = (sub) => {
+                switch(sub) {
+                    case 'Physics': return 'text-indigo-600 bg-indigo-50 border-indigo-200';
+                    case 'Chemistry': return 'text-emerald-600 bg-emerald-50 border-emerald-200';
+                    case 'Higher Math': return 'text-blue-600 bg-blue-50 border-blue-200';
+                    case 'Biology': return 'text-rose-600 bg-rose-50 border-rose-200';
+                    default: return 'text-slate-600 bg-slate-50 border-slate-200';
+                }
+            };
+
+            const getHeaderGradient = (sub) => {
+                switch(sub) {
+                    case 'Physics': return 'from-indigo-900 to-indigo-700';
+                    case 'Chemistry': return 'from-emerald-900 to-emerald-700';
+                    case 'Higher Math': return 'from-blue-900 to-blue-700';
+                    case 'Biology': return 'from-rose-900 to-rose-700';
+                    default: return 'from-slate-900 to-slate-700';
+                }
+            };
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen flex flex-col items-center justify-center gap-3">
+                        <i className="fa-solid fa-spinner fa-spin text-3xl text-indigo-500"></i>
+                        <p className="font-medium animate-pulse text-slate-500">Fetching live data from Google Sheets...</p>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="pb-20">
+                    <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
+                        
+                        {WEB_APP_URL === "YOUR_WEB_APP_URL_HERE" && (
+                            <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm flex items-start gap-3">
+                               <i className="fa-solid fa-triangle-exclamation mt-1"></i>
+                               <div>
+                                  <strong>Live connection not active!</strong> You are viewing fallback data. Deploy the Google Apps Script and update <code>WEB_APP_URL</code>.
+                               </div>
+                            </div>
+                        )}
+
+                        <div className={`bg-gradient-to-r ${getHeaderGradient(activeSubject)} rounded-2xl p-6 text-white shadow-lg relative`}>
+                            <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-medium">
+                               {syncStatus === 'syncing' ? <i className="fa-solid fa-spinner fa-spin text-blue-300"></i> 
+                                : syncStatus === 'error' ? <i className="fa-solid fa-cloud-bolt text-rose-400"></i> 
+                                : <i className="fa-solid fa-cloud-check text-emerald-400"></i>}
+                               {syncStatus === 'syncing' ? 'Saving...' 
+                                : syncStatus === 'error' ? 'Local Mode' 
+                                : 'Synced'}
+                            </div>
+
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                                <div className="mt-4 md:mt-0">
+                                    <div className="flex items-center gap-2 text-indigo-100 text-sm mb-3">
+                                        <button className="flex items-center gap-1 hover:text-white transition">
+                                            <i className="fa-solid fa-layer-group"></i> All Subjects
+                                        </button>
+                                        <span>/</span>
+                                        <span>{activeSubject} Command Center</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-white/10 rounded-lg">
+                                            <i className="fa-solid fa-book-open text-xl text-indigo-100"></i>
+                                        </div>
+                                        <h1 className="text-2xl md:text-3xl font-bold">{activeSubject} Center</h1>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
+                                <StatCard title={`${activeSubject} Chapters`} value={stats.total} subtext="Total Modules" />
+                                <StatCard title="QB Solves Logged" value={stats.qbSolves} subtext="Total times solved" icon={<i className="fa-solid fa-clock-rotate-left text-yellow-400"></i>} />
+                                <StatCard title="Overall Progress" value={`${stats.progressPercent}%`} subtext={
+                                    <div className="w-full bg-white/20 h-1.5 rounded-full mt-2">
+                                        <div className="bg-green-400 h-1.5 rounded-full transition-all" style={{ width: `${stats.progressPercent}%` }}></div>
+                                    </div>
+                                } />
+                                <StatCard title="Status Overview" value={`${stats.completed} / ${stats.inProgress}`} subtext={`${stats.total - stats.completed - stats.inProgress} Not Started`} />
+                                <StatCard title="Total Revisions" value={stats.revisions} subtext="Keep it up!" icon={<i className="fa-solid fa-rotate-right text-blue-300"></i>} />
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 flex items-center gap-2 overflow-x-auto custom-scrollbar">
+                            <div className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-slate-500 border-r border-slate-200">
+                                <i className="fa-solid fa-bookmark"></i> SUBJECTS:
+                            </div>
+                            {subjectsList.map((sub, idx) => {
+                                const subTotal = chapters.filter(c => sub === 'All Subjects' || c.subject === sub).length;
+                                const subCompleted = chapters.filter(c => (sub === 'All Subjects' || c.subject === sub) && c.status === 'Completed').length;
+                                const subProgress = subTotal === 0 ? 0 : Math.round((subCompleted / subTotal) * 100);
+                                
+                                return (
+                                    <button 
+                                        key={idx}
+                                        onClick={() => setActiveSubject(sub)}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap border ${
+                                            activeSubject === sub 
+                                            ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
+                                            : 'bg-white border-transparent text-slate-600 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        {sub} <span className="text-xs opacity-60">{subProgress}% ({subTotal})</span>
+                                    </button>
+                                )
+                            })}
+                        </div>
+
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-2 flex flex-col md:flex-row gap-4 items-center justify-between">
+                            <div className="flex-1 w-full flex items-center gap-3 px-2 md:px-4">
+                                <div className="relative flex-1">
+                                    <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Search chapter or topic..." 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                            {filteredChapters.map((chapter) => (
+                                <ChapterCard 
+                                    key={chapter.id} 
+                                    chapter={chapter} 
+                                    onUpdate={updateChapter} 
+                                    subjectColor={getSubjectColor(chapter.subject)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
         }
 
-        // Fetch data when page loads
-        window.addEventListener('DOMContentLoaded', fetchData);
+        function StatCard({ title, value, subtext, icon }) {
+            return (
+                <div className="bg-white/10 backdrop-blur-sm border border-white/10 rounded-xl p-4 flex flex-col justify-between">
+                    <div className="text-indigo-100 text-xs font-medium mb-1 line-clamp-1">{title}</div>
+                    <div className="flex items-center gap-2">
+                        {icon}
+                        <div className="text-2xl md:text-3xl font-bold">{value}</div>
+                    </div>
+                    <div className="text-indigo-200 text-xs mt-1">{subtext}</div>
+                </div>
+            );
+        }
+
+        function ChapterCard({ chapter, onUpdate, subjectColor }) {
+            const { id, subject, paper, chapterNo, titleEn, titleBn, status, milestones, qbSolved, revisions, writtenScore, mcqScore, confidence } = chapter;
+            const [localWritten, setLocalWritten] = useState(writtenScore || '');
+            const [localMcq, setLocalMcq] = useState(mcqScore || '');
+
+            useEffect(() => { setLocalWritten(writtenScore || ''); }, [writtenScore]);
+            useEffect(() => { setLocalMcq(mcqScore || ''); }, [mcqScore]);
+
+            const toggleMilestone = (field) => onUpdate(id, `milestones.${field}`, !milestones[field]);
+
+            const getConfidenceStyle = (conf) => {
+                switch(conf) {
+                    case 'High': return 'text-emerald-700 bg-emerald-50 border-emerald-200';
+                    case 'Medium': return 'text-amber-700 bg-amber-50 border-amber-200';
+                    case 'Low': return 'text-rose-700 bg-rose-50 border-rose-200';
+                    default: return 'text-slate-500 bg-slate-50 border-slate-200';
+                }
+            };
+
+            const getStatusColor = (stat) => {
+                switch(stat) {
+                    case 'Completed': return 'text-emerald-700 bg-emerald-50 border-emerald-200';
+                    case 'In Progress': return 'text-orange-700 bg-orange-50 border-orange-200';
+                    default: return 'text-slate-600 bg-slate-100 border-slate-200';
+                }
+            };
+
+            return (
+                <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-slate-200 flex flex-col overflow-hidden relative group">
+                    <div className="p-4 border-b border-slate-100">
+                        <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${subjectColor}`}>
+                                    {subject}
+                                </span>
+                                <span className="text-xs font-medium text-slate-500">{paper} • Ch {chapterNo}</span>
+                                {confidence && confidence !== 'Unrated' && (
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 border ${getConfidenceStyle(confidence)}`}>
+                                        {confidence === 'Low' && <i className="fa-solid fa-triangle-exclamation"></i>}
+                                        {confidence}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        <h3 className="font-bold text-slate-800 leading-tight mb-1">{titleEn}</h3>
+                        <p className="text-sm font-medium text-slate-500">{titleBn}</p>
+                        
+                        <div className="mt-4 flex items-center gap-2">
+                            <span className="text-xs font-medium text-slate-500">Status:</span>
+                            <select 
+                                value={status}
+                                onChange={(e) => onUpdate(id, 'status', e.target.value)}
+                                className={`text-xs font-bold px-3 py-1.5 rounded-lg border outline-none cursor-pointer appearance-none ${getStatusColor(status)}`}
+                            >
+                                <option value="Not Started">Not Started</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="p-4 bg-slate-50/50 flex-1">
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Study Milestones</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                            <MilestoneCheckbox label="Theory / Lectures" checked={milestones.theory} onChange={() => toggleMilestone('theory')} />
+                            <MilestoneCheckbox label="Textbook & Notes" checked={milestones.textbook} onChange={() => toggleMilestone('textbook')} />
+                            <MilestoneCheckbox label="Written Practice" checked={milestones.written} onChange={() => toggleMilestone('written')} />
+                            <MilestoneCheckbox label="Question Bank" checked={milestones.questionBank} onChange={() => toggleMilestone('questionBank')} />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mt-4">
+                            <div className="bg-white border border-yellow-100 rounded-lg p-2 shadow-sm">
+                                <div className="flex items-center gap-1 text-[10px] font-bold text-yellow-600 uppercase mb-2">
+                                    <i className="fa-solid fa-clock-rotate-left"></i> QB Solved:
+                                </div>
+                                <div className="flex items-center justify-between bg-yellow-50 rounded-md p-1 border border-yellow-200/50">
+                                    <button onClick={() => onUpdate(id, 'qbSolved', Math.max(0, qbSolved - 1))} className="w-6 h-6 flex items-center justify-center text-yellow-700 hover:bg-yellow-200 rounded font-bold">-</button>
+                                    <span className="font-bold text-yellow-900">{qbSolved}x</span>
+                                    <button onClick={() => onUpdate(id, 'qbSolved', qbSolved + 1)} className="w-6 h-6 flex items-center justify-center text-yellow-700 hover:bg-yellow-200 rounded font-bold">+</button>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-white border border-blue-100 rounded-lg p-2 shadow-sm">
+                                <div className="flex items-center gap-1 text-[10px] font-bold text-blue-600 uppercase mb-2">
+                                    <i className="fa-solid fa-rotate-right"></i> Revisions:
+                                </div>
+                                <div className="flex items-center justify-between bg-blue-50 rounded-md p-1 border border-blue-200/50">
+                                    <button onClick={() => onUpdate(id, 'revisions', Math.max(0, revisions - 1))} className="w-6 h-6 flex items-center justify-center text-blue-700 hover:bg-blue-200 rounded font-bold">-</button>
+                                    <span className="font-bold text-blue-900">{revisions}</span>
+                                    <button onClick={() => onUpdate(id, 'revisions', revisions + 1)} className="w-6 h-6 flex items-center justify-center text-blue-700 hover:bg-blue-200 rounded font-bold">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-200/60">
+                            <div>
+                                <label className="text-[10px] text-slate-500 font-medium block mb-1">Written Score:</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="e.g. 42/50" 
+                                    value={localWritten}
+                                    onChange={(e) => setLocalWritten(e.target.value)}
+                                    onBlur={() => onUpdate(id, 'writtenScore', localWritten)}
+                                    className="w-full text-xs bg-white border border-slate-200 rounded px-2 py-1.5 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-slate-500 font-medium block mb-1">MCQ Score:</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="e.g. 28/30" 
+                                    value={localMcq}
+                                    onChange={(e) => setLocalMcq(e.target.value)}
+                                    onBlur={() => onUpdate(id, 'mcqScore', localMcq)}
+                                    className="w-full text-xs bg-white border border-slate-200 rounded px-2 py-1.5 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-slate-500 font-medium block mb-1">Confidence:</label>
+                                <select 
+                                    value={confidence}
+                                    onChange={(e) => onUpdate(id, 'confidence', e.target.value)}
+                                    className="w-full text-xs bg-white border border-slate-200 rounded px-2 py-1.5 focus:ring-1 focus:ring-indigo-500 outline-none font-medium"
+                                >
+                                    <option value="Unrated">Select</option>
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function MilestoneCheckbox({ label, checked, onChange }) {
+            return (
+                <div 
+                    onClick={onChange}
+                    className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
+                        checked 
+                        ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                >
+                    {checked ? <i className="fa-solid fa-circle-check text-indigo-600"></i> : <i className="fa-regular fa-circle text-slate-300"></i>}
+                    <span className="text-[11px] font-medium leading-none select-none">{label}</span>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
+
 
