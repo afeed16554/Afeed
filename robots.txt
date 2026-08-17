@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://afeed16554.github.io/Afeed/sitemap.xml
