@@ -55,7 +55,7 @@
         // ==========================================
         // 1. Google Web App URL (আপনার নতুন Apps Script URL এখানে দিন)
         // ==========================================
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwRTuosm9jJ2AW-qMREiuGh-A3aR0bYNtV0WW6m0Ifngm5vBBwZzHw7eHjVvh7FJloM/exec"; 
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyGMQ-cdbw4GTx2vN01KEqaAoVENMjc6Ulk5sXMFr9Kc3Nl83TojZe0GDSzlEreFAT5/exec"; 
         
         function App() {
             // Theme State
@@ -238,7 +238,8 @@
 
                 setPendingUpdates(prev => {
                     // rowNum এর পরিবর্তে শুধু id পাঠানো হচ্ছে
-                    const currentChapterQueue = prev[id] || { id: id };
+                    const chapterInfo = chapters.find(c => c.id === id);
+                    const currentChapterQueue = prev[id] || { id: id, rowNum: chapterInfo.rowNum };
                     if (field.includes('.')) {
                         const [parent, child] = field.split('.');
                         currentChapterQueue[parent] = currentChapterQueue[parent] || {};
