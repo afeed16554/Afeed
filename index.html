@@ -793,62 +793,57 @@
         // PERFORMANCE: Debounced Live Search Logic with Auto-Expand Behavior
         document.getElementById('searchBar').addEventListener('input', debounce((e) => {
             const term = e.target.value.toLowerCase().trim();
-            const cards = document.querySelectorAll('.chapter-card');
-            
-            cards.forEach(card => {
+            document.querySelectorAll('.chapter-card').forEach(card => {
                 const metadata = card.getAttribute('data-search');
                 if (term === '' || metadata.includes(term)) {
                     card.style.display = ''; 
-                    
-                    // AUTO EXPAND: If search is actively yielding this card, dynamically expand it to reveal matching simulations
-                    if (term !== '') {
-                        const chapterId = card.id.replace('card-', '');
-                        expandChapter(chapterId);
-                    }
-
-                } else {
-                    card.style.display = 'none';
-                }
+                    if (term !== '') expandChapter(card.id.replace('card-', ''));
+                } else { card.style.display = 'none'; }
             });
 
-            const sections = document.querySelectorAll('#papers-container section');
-            sections.forEach(sec => {
-                const cardsInSection = sec.querySelectorAll('.chapter-card');
+            document.querySelectorAll('#papers-container section').forEach(sec => {
                 let visibleCount = 0;
-                cardsInSection.forEach(c => {
-                    if (c.style.display !== 'none') {
-                        visibleCount++;
-                    }
-                });
-                
-                if (visibleCount > 0 || term === '') {
-                    sec.style.display = '';
-                } else {
-                    sec.style.display = 'none';
-                }
+                sec.querySelectorAll('.chapter-card').forEach(c => { if (c.style.display !== 'none') visibleCount++; });
+                sec.style.display = (visibleCount > 0 || term === '') ? '' : 'none';
             });
-        }, 300)); // 300ms debounce
+        }, 300));
 
-        // ======================================================================
-        // THE NEW DYNAMIC DATA FETCHING LOGIC
-        // ======================================================================
+        // NEW: Fetch Data.json on load with Offline Detection
         window.onload = async function() {
             applyTheme();
+            
+            // Check if device is completely offline
+            if (!navigator.onLine) {
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('papers-container').innerHTML = `
+                    <div class="text-center p-8 bg-orange-500/10 border border-orange-500/20 rounded-2xl">
+                        <i data-lucide="wifi-off" class="w-10 h-10 text-orange-500 mx-auto mb-4 hover-3d" data-tilt="15" data-scale="1.1"></i>
+                        <h2 class="text-xl font-bold text-slate-800 dark:text-white mb-2">No Internet Connection</h2>
+                        <p class="text-slate-600 dark:text-slate-400">Please connect to the internet to load AFEED OS.</p>
+                        <button onclick="window.location.reload()" class="mt-6 px-6 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-orange-500/20">Try Again</button>
+                    </div>`;
+                document.getElementById('papers-container').classList.remove('hidden');
+                if(window.lucide) lucide.createIcons();
+                initGlobalHoverEngine();
+                return;
+            }
+
             try {
-                // Fetch the external JSON file. The '?t=Date.now()' prevents the browser from caching an old version.
-                const response = await fetch('data.json?t=' + Date.now());
-                if (!response.ok) throw new Error("Failed to load database file.");
+                // Add timestamp query to bypass github pages aggressive cache
+                const response = await fetch('data.json?v=' + new Date().getTime());
+                if(!response.ok) throw new Error("Network response was not ok");
+                
                 database = await response.json();
                 renderApp();
-            } catch (err) {
-                console.error("Error connecting to data:", err);
-                document.getElementById('papers-container').innerHTML = `
-                    <div class="text-center p-8 bg-red-500/10 border border-red-500/20 rounded-2xl">
+            } catch (error) {
+                console.error("Failed to load database:", error);
+                document.getElementById('loading-state').innerHTML = `
+                    <div class="text-center p-8 bg-red-500/10 border border-red-500/20 rounded-2xl max-w-lg mx-auto">
                         <i data-lucide="alert-circle" class="w-10 h-10 text-red-500 mx-auto mb-4"></i>
                         <h2 class="text-xl font-bold text-slate-800 dark:text-white">Database Missing</h2>
                         <p class="text-slate-600 dark:text-slate-400">Please ensure the <code>data.json</code> file exists in the repository root.</p>
                     </div>`;
-                lucide.createIcons();
+                if(window.lucide) lucide.createIcons();
             }
         };
     </script>
