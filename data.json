@@ -10,16 +10,163 @@
         "bn": "পদার্থবিজ্ঞান প্রথম পত্র",
         "themeColor": "blue",
         "chapters": [
-          { "id": "p1c1", "name": "Physical World", "bn": "ভৌত জগৎ", "status": "planned", "icon": "globe", "keywords": ["units", "measurements", "errors"] },
-          { "id": "p1c2", "name": "Vectors", "bn": "ভেক্টর", "status": "available", "icon": "move", "keywords": ["direction", "scalar", "dot", "cross", "calculus", "field"], "simulations": [{ "title": "Vector Calculus & Fields", "link": "Vector Calculus Simulation.html" }] },
-          { "id": "p1c3", "name": "Dynamics", "bn": "গতিবিদ্যা", "status": "planned", "icon": "rocket", "keywords": ["motion", "projectile", "velocity", "acceleration"] },
-          { "id": "p1c4", "name": "Newtonian Mechanics", "bn": "নিউটনিয়ান বলবিদ্যা", "status": "planned", "icon": "apple", "keywords": ["force", "friction", "momentum", "torque"] },
-          { "id": "p1c5", "name": "Work, Energy & Power", "bn": "কাজ, শক্তি ও ক্ষমতা", "status": "planned", "icon": "battery-charging", "keywords": ["kinetic", "potential", "conservation"] },
-          { "id": "p1c6", "name": "Gravitation", "bn": "মহাকর্ষ ও অভিকর্ষ", "status": "planned", "icon": "moon", "keywords": ["gravity", "kepler", "escape velocity", "satellite"] },
-          { "id": "p1c7", "name": "Structural Properties", "bn": "পদার্থের গাঠনিক ধর্ম", "status": "planned", "icon": "layers", "keywords": ["elasticity", "stress", "strain", "fluids", "viscosity"] },
-          { "id": "p1c8", "name": "Periodic Motion", "bn": "পর্যাবৃত্ত গতি", "status": "available", "icon": "metronome", "keywords": ["shm", "pendulum", "spring", "oscillation"], "simulations": [{ "title": "SHM Pendulum Dynamics", "link": "SHM Pendulum Simulation.html" }, { "title": "Basic Harmonic Oscillators", "link": "Simple harmonic motion Simulation.html" }] },
-          { "id": "p1c9", "name": "Waves", "bn": "তরঙ্গ", "status": "available", "icon": "waves", "keywords": ["sound", "interference", "superposition", "beats"], "simulations": [{ "title": "Superposition & Interference", "link": "Superposition of wave Simulation.html" }, { "title": "Beat Understanding", "link": "Beat Understanding.html" }] },
-          { "id": "p1c10", "name": "Ideal Gas", "bn": "আদর্শ গ্যাস ও গতিতত্ত্ব", "status": "planned", "icon": "wind", "keywords": ["pressure", "temperature", "rms", "kinetic theory"] }
+          {
+            "id": "p1c1",
+            "name": "Physical World",
+            "bn": "ভৌত জগৎ",
+            "status": "planned",
+            "icon": "earth",
+            "keywords": [
+              "units",
+              "measurements",
+              "errors"
+            ]
+          },
+          {
+            "id": "p1c2",
+            "name": "Vectors",
+            "bn": "ভেক্টর",
+            "status": "available",
+            "icon": "move",
+            "keywords": [
+              "direction",
+              "scalar",
+              "dot",
+              "cross",
+              "calculus",
+              "field"
+            ],
+            "simulations": [
+              {
+                "title": "Vector Calculus & Fields",
+                "link": "Vector Calculus Simulation.html"
+              }
+            ]
+          },
+          {
+            "id": "p1c3",
+            "name": "Dynamics",
+            "bn": "গতিবিদ্যা",
+            "status": "planned",
+            "icon": "rocket",
+            "keywords": [
+              "motion",
+              "projectile",
+              "velocity",
+              "acceleration"
+            ]
+          },
+          {
+            "id": "p1c4",
+            "name": "Newtonian Mechanics",
+            "bn": "নিউটনিয়ান বলবিদ্যা",
+            "status": "planned",
+            "icon": "apple",
+            "keywords": [
+              "force",
+              "friction",
+              "momentum",
+              "torque"
+            ]
+          },
+          {
+            "id": "p1c5",
+            "name": "Work, Energy & Power",
+            "bn": "কাজ, শক্তি ও ক্ষমতা",
+            "status": "planned",
+            "icon": "battery-charging",
+            "keywords": [
+              "kinetic",
+              "potential",
+              "conservation"
+            ]
+          },
+          {
+            "id": "p1c6",
+            "name": "Gravitation",
+            "bn": "মহাকর্ষ ও অভিকর্ষ",
+            "status": "planned",
+            "icon": "moon",
+            "keywords": [
+              "gravity",
+              "kepler",
+              "escape velocity",
+              "satellite"
+            ]
+          },
+          {
+            "id": "p1c7",
+            "name": "Structural Properties",
+            "bn": "পদার্থের গাঠনিক ধর্ম",
+            "status": "planned",
+            "icon": "layers",
+            "keywords": [
+              "elasticity",
+              "stress",
+              "strain",
+              "fluids",
+              "viscosity"
+            ]
+          },
+          {
+            "id": "p1c8",
+            "name": "Periodic Motion",
+            "bn": "পর্যাবৃত্ত গতি",
+            "status": "available",
+            "icon": "metronome",
+            "keywords": [
+              "shm",
+              "pendulum",
+              "spring",
+              "oscillation"
+            ],
+            "simulations": [
+              {
+                "title": "SHM Pendulum Dynamics",
+                "link": "SHM Pendulum Simulation.html"
+              },
+              {
+                "title": "Basic Harmonic Oscillators",
+                "link": "Simple harmonic motion Simulation.html"
+              }
+            ]
+          },
+          {
+            "id": "p1c9",
+            "name": "Waves",
+            "bn": "তরঙ্গ",
+            "status": "available",
+            "icon": "waves",
+            "keywords": [
+              "sound",
+              "interference",
+              "superposition",
+              "beats"
+            ],
+            "simulations": [
+              {
+                "title": "Superposition & Interference",
+                "link": "Superposition of wave Simulation.html"
+              },
+              {
+                "title": "Beat Understanding",
+                "link": "Beat Understanding.html"
+              }
+            ]
+          },
+          {
+            "id": "p1c10",
+            "name": "Ideal Gas",
+            "bn": "আদর্শ গ্যাস ও গতিতত্ত্ব",
+            "status": "planned",
+            "icon": "wind",
+            "keywords": [
+              "pressure",
+              "temperature",
+              "rms",
+              "kinetic theory"
+            ]
+          }
         ]
       },
       {
@@ -28,16 +175,155 @@
         "bn": "পদার্থবিজ্ঞান দ্বিতীয় পত্র",
         "themeColor": "orange",
         "chapters": [
-          { "id": "p2c1", "name": "Thermodynamics", "bn": "তাপগতিবিদ্যা", "status": "planned", "icon": "thermometer", "keywords": ["heat", "entropy", "carnot", "engine"] },
-          { "id": "p2c2", "name": "Static Electricity", "bn": "স্থির তড়িৎ", "status": "planned", "icon": "zap", "keywords": ["charge", "coulomb", "electric field", "capacitor"] },
-          { "id": "p2c3", "name": "Current Electricity", "bn": "চল তড়িৎ", "status": "planned", "icon": "plug", "keywords": ["circuit", "ohm", "kirchhoff", "resistance"] },
-          { "id": "p2c4", "name": "Magnetic Effect", "bn": "চৌম্বক ক্রিয়া", "status": "planned", "icon": "magnet", "keywords": ["magnet", "biot savart", "ampere", "lorentz"] },
-          { "id": "p2c5", "name": "Electromagnetic Induction", "bn": "তড়িৎ চৌম্বক আবেশ", "status": "planned", "icon": "heater", "keywords": ["faraday", "lenz", "ac current", "transformer"] },
-          { "id": "p2c6", "name": "Geometric Optics", "bn": "জ্যামিতিক আলোকবিজ্ঞান", "status": "available", "icon": "lens-concave", "keywords": ["light", "lens", "prism", "ray", "refraction", "mirror"], "simulations": [{ "title": "Lens Ray Tracing & Focals", "link": "Lens visual Simulation.html" }, { "title": "Prism Deviation Angle", "link": "Deviation Angle of Prism Simulation.html" }] },
-          { "id": "p2c7", "name": "Physical Optics", "bn": "ভৌত আলোকবিজ্ঞান", "status": "available", "icon": "stretch-vertical", "keywords": ["interference", "diffraction", "polarization", "double slit"], "simulations": [{ "title": "Double-Slit Experiment", "link": "Double-Slit Experiment Simulation.html" }] },
-          { "id": "p2c8", "name": "Modern Physics", "bn": "আধুনিক পদার্থবিজ্ঞান", "status": "planned", "icon": "orbit", "keywords": ["relativity", "photoelectric", "compton", "quantum"] },
-          { "id": "p2c9", "name": "Atomic Physics", "bn": "পরমাণু মডেল ও নিউক্লিয়ার", "status": "planned", "icon": "radiation", "keywords": ["bohr", "radioactivity", "half life", "fusion", "fission"] },
-          { "id": "p2c10", "name": "Semiconductors", "bn": "সেমিকন্ডাক্টর ও ইলেকট্রনিক্স", "status": "planned", "icon": "cpu", "keywords": ["diode", "transistor", "logic gates", "band theory"] }
+          {
+            "id": "p2c1",
+            "name": "Thermodynamics",
+            "bn": "তাপগতিবিদ্যা",
+            "status": "planned",
+            "icon": "thermometer",
+            "keywords": [
+              "heat",
+              "entropy",
+              "carnot",
+              "engine"
+            ]
+          },
+          {
+            "id": "p2c2",
+            "name": "Static Electricity",
+            "bn": "স্থির তড়িৎ",
+            "status": "planned",
+            "icon": "zap",
+            "keywords": [
+              "charge",
+              "coulomb",
+              "electric field",
+              "capacitor"
+            ]
+          },
+          {
+            "id": "p2c3",
+            "name": "Current Electricity",
+            "bn": "চল তড়িৎ",
+            "status": "planned",
+            "icon": "plug",
+            "keywords": [
+              "circuit",
+              "ohm",
+              "kirchhoff",
+              "resistance"
+            ]
+          },
+          {
+            "id": "p2c4",
+            "name": "Magnetic Effect",
+            "bn": "চৌম্বক ক্রিয়া",
+            "status": "planned",
+            "icon": "magnet",
+            "keywords": [
+              "magnet",
+              "biot savart",
+              "ampere",
+              "lorentz"
+            ]
+          },
+          {
+            "id": "p2c5",
+            "name": "Electromagnetic Induction",
+            "bn": "তড়িৎ চৌম্বক আবেশ",
+            "status": "planned",
+            "icon": "heater",
+            "keywords": [
+              "faraday",
+              "lenz",
+              "ac current",
+              "transformer"
+            ]
+          },
+          {
+            "id": "p2c6",
+            "name": "Geometric Optics",
+            "bn": "জ্যামিতিক আলোকবিজ্ঞান",
+            "status": "available",
+            "icon": "lens-concave",
+            "keywords": [
+              "light",
+              "lens",
+              "prism",
+              "ray",
+              "refraction",
+              "mirror"
+            ],
+            "simulations": [
+              {
+                "title": "Lens Ray Tracing & Focals",
+                "link": "Lens visual Simulation.html"
+              },
+              {
+                "title": "Prism Deviation Angle",
+                "link": "Deviation Angle of Prism Simulation.html"
+              }
+            ]
+          },
+          {
+            "id": "p2c7",
+            "name": "Physical Optics",
+            "bn": "ভৌত আলোকবিজ্ঞান",
+            "status": "available",
+            "icon": "stretch-vertical",
+            "keywords": [
+              "interference",
+              "diffraction",
+              "polarization",
+              "double slit"
+            ],
+            "simulations": [
+              {
+                "title": "Double-Slit Experiment",
+                "link": "Double-Slit Experiment Simulation.html"
+              }
+            ]
+          },
+          {
+            "id": "p2c8",
+            "name": "Modern Physics",
+            "bn": "আধুনিক পদার্থবিজ্ঞান",
+            "status": "planned",
+            "icon": "orbit",
+            "keywords": [
+              "relativity",
+              "photoelectric",
+              "compton",
+              "quantum"
+            ]
+          },
+          {
+            "id": "p2c9",
+            "name": "Atomic Physics",
+            "bn": "পরমাণু মডেল ও নিউক্লিয়ার",
+            "status": "planned",
+            "icon": "radiation",
+            "keywords": [
+              "bohr",
+              "radioactivity",
+              "half life",
+              "fusion",
+              "fission"
+            ]
+          },
+          {
+            "id": "p2c10",
+            "name": "Semiconductors",
+            "bn": "সেমিকন্ডাক্টর ও ইলেকট্রনিক্স",
+            "status": "planned",
+            "icon": "cpu",
+            "keywords": [
+              "diode",
+              "transistor",
+              "logic gates",
+              "band theory"
+            ]
+          }
         ]
       }
     ]
@@ -53,11 +339,75 @@
         "bn": "রসায়ন প্রথম পত্র",
         "themeColor": "emerald",
         "chapters": [
-          { "id": "c1c1", "name": "Safe Use of Laboratory", "bn": "ল্যাবরেটরির নিরাপদ ব্যবহার", "status": "planned", "icon": "shield-alert", "keywords": ["safety", "glassware", "measurements"] },
-          { "id": "c1c2", "name": "Qualitative Chemistry", "bn": "গুণগত রসায়ন", "status": "planned", "icon": "microscope", "keywords": ["atom", "bohr", "quantum", "solubility", "ions"] },
-          { "id": "c1c3", "name": "Periodic Properties", "bn": "মৌলসমূহহের পর্যাবৃত্ত ধর্ম", "status": "available", "icon": "table-2", "keywords": ["bonds", "hybridization", "periodic table"], "simulations": [{ "title": "Super Periodic Table", "link": "Super Periodic Table.html" }] },
-          { "id": "c1c4", "name": "Chemical Changes", "bn": "রাসায়নিক পরিবর্তন", "status": "planned", "icon": "flame", "keywords": ["equilibrium", "ph", "titration", "rate"] },
-          { "id": "c1c5", "name": "Working Chemistry", "bn": "কর্মমুখী রসায়ন", "status": "planned", "icon": "briefcase", "keywords": ["food", "preservatives", "vinegar"] }
+          {
+            "id": "c1c1",
+            "name": "Safe Use of Laboratory",
+            "bn": "ল্যাবরেটরির নিরাপদ ব্যবহার",
+            "status": "planned",
+            "icon": "shield-alert",
+            "keywords": [
+              "safety",
+              "glassware",
+              "measurements"
+            ]
+          },
+          {
+            "id": "c1c2",
+            "name": "Qualitative Chemistry",
+            "bn": "গুণগত রসায়ন",
+            "status": "planned",
+            "icon": "microscope",
+            "keywords": [
+              "atom",
+              "bohr",
+              "quantum",
+              "solubility",
+              "ions"
+            ]
+          },
+          {
+            "id": "c1c3",
+            "name": "Periodic Properties",
+            "bn": "মৌলসমূহহের পর্যাবৃত্ত ধর্ম",
+            "status": "available",
+            "icon": "table-2",
+            "keywords": [
+              "bonds",
+              "hybridization",
+              "periodic table"
+            ],
+            "simulations": [
+              {
+                "title": "Super Periodic Table",
+                "link": "Super Periodic Table.html"
+              }
+            ]
+          },
+          {
+            "id": "c1c4",
+            "name": "Chemical Changes",
+            "bn": "রাসায়নিক পরিবর্তন",
+            "status": "planned",
+            "icon": "flame",
+            "keywords": [
+              "equilibrium",
+              "ph",
+              "titration",
+              "rate"
+            ]
+          },
+          {
+            "id": "c1c5",
+            "name": "Working Chemistry",
+            "bn": "কর্মমুখী রসায়ন",
+            "status": "planned",
+            "icon": "briefcase",
+            "keywords": [
+              "food",
+              "preservatives",
+              "vinegar"
+            ]
+          }
         ]
       },
       {
@@ -66,11 +416,71 @@
         "bn": "রসায়ন দ্বিতীয় পত্র",
         "themeColor": "teal",
         "chapters": [
-          { "id": "c2c1", "name": "Environmental Chemistry", "bn": "পরিবেশ রসায়ন", "status": "planned", "icon": "leaf", "keywords": ["gas laws", "pollution", "water", "atmosphere"] },
-          { "id": "c2c2", "name": "Organic Chemistry", "bn": "জৈব রসায়ন", "status": "planned", "icon": "hexagon", "keywords": ["hydrocarbons", "benzene", "alcohol", "reaction mechanism"] },
-          { "id": "c2c3", "name": "Quantitative Chemistry", "bn": "পরিমাণগত রসায়ন", "status": "planned", "icon": "scale", "keywords": ["molarity", "redox", "titration", "concentration"] },
-          { "id": "c2c4", "name": "Electrochemistry", "bn": "তড়িৎ রসায়ন", "status": "planned", "icon": "battery-charging", "keywords": ["cells", "faraday", "galvanic", "electrolysis"] },
-          { "id": "c2c5", "name": "Economic Chemistry", "bn": "অর্থনৈতিক রসায়ন", "status": "planned", "icon": "factory", "keywords": ["industry", "coal", "gas", "ceramics"] }
+          {
+            "id": "c2c1",
+            "name": "Environmental Chemistry",
+            "bn": "পরিবেশ রসায়ন",
+            "status": "planned",
+            "icon": "leaf",
+            "keywords": [
+              "gas laws",
+              "pollution",
+              "water",
+              "atmosphere"
+            ]
+          },
+          {
+            "id": "c2c2",
+            "name": "Organic Chemistry",
+            "bn": "জৈব রসায়ন",
+            "status": "planned",
+            "icon": "hexagon",
+            "keywords": [
+              "hydrocarbons",
+              "benzene",
+              "alcohol",
+              "reaction mechanism"
+            ]
+          },
+          {
+            "id": "c2c3",
+            "name": "Quantitative Chemistry",
+            "bn": "পরিমাণগত রসায়ন",
+            "status": "planned",
+            "icon": "scale",
+            "keywords": [
+              "molarity",
+              "redox",
+              "titration",
+              "concentration"
+            ]
+          },
+          {
+            "id": "c2c4",
+            "name": "Electrochemistry",
+            "bn": "তড়িৎ রসায়ন",
+            "status": "planned",
+            "icon": "battery-charging",
+            "keywords": [
+              "cells",
+              "faraday",
+              "galvanic",
+              "electrolysis"
+            ]
+          },
+          {
+            "id": "c2c5",
+            "name": "Economic Chemistry",
+            "bn": "অর্থনৈতিক রসায়ন",
+            "status": "planned",
+            "icon": "factory",
+            "keywords": [
+              "industry",
+              "coal",
+              "gas",
+              "ceramics"
+            ]
+          }
         ]
       }
     ]
@@ -86,16 +496,126 @@
         "bn": "উচ্চতর গণিত প্রথম পত্র",
         "themeColor": "rose",
         "chapters": [
-          { "id": "m1c1", "name": "Matrices & Determinants", "bn": "ম্যাট্রিক্স ও নির্ণায়ক", "status": "planned", "icon": "grid-3x3", "keywords": ["matrix", "array", "determinant"] },
-          { "id": "m1c2", "name": "Vectors", "bn": "ভেক্টর", "status": "planned", "icon": "arrow-up-right", "keywords": ["vector", "direction", "magnitude"] },
-          { "id": "m1c3", "name": "Straight Lines", "bn": "সরলরেখা", "status": "planned", "icon": "ruler", "keywords": ["geometry", "slope", "coordinates"] },
-          { "id": "m1c4", "name": "Circles", "bn": "বৃত্ত", "status": "planned", "icon": "circle", "keywords": ["geometry", "radius", "center"] },
-          { "id": "m1c5", "name": "Permutations & Combinations", "bn": "বিন্যাস ও সমাবেশ", "status": "planned", "icon": "shuffle", "keywords": ["factorial", "arrangement", "selection"] },
-          { "id": "m1c6", "name": "Trigonometric Ratio", "bn": "ত্রিকোণমিতিক অনুপাত", "status": "planned", "icon": "triangle-right", "keywords": ["sine", "cosine", "tangent"] },
-          { "id": "m1c7", "name": "Trigonometric Ratio of Associated Angles", "bn": "সংযুক্ত কোণের ত্রিকোণমিতিক অনুপাত", "status": "planned", "icon": "drafting-compass", "keywords": ["angles", "compound", "identities"] },
-          { "id": "m1c8", "name": "Functions & Graphs", "bn": "ফাংশন ও ফাংশনের লেখচিত্র", "status": "planned", "icon": "function-square", "keywords": ["domain", "range", "plot"] },
-          { "id": "m1c9", "name": "Differentiation", "bn": "অন্টারীকরণ", "status": "planned", "icon": "trending-up", "keywords": ["calculus", "derivative", "limits"] },
-          { "id": "m1c10", "name": "Integration", "bn": "যোগজীকরণ", "status": "planned", "icon": "sigma", "keywords": ["calculus", "integral", "area"] }
+          {
+            "id": "m1c1",
+            "name": "Matrices & Determinants",
+            "bn": "ম্যাট্রিক্স ও নির্ণায়ক",
+            "status": "planned",
+            "icon": "grid-3x3",
+            "keywords": [
+              "matrix",
+              "array",
+              "determinant"
+            ]
+          },
+          {
+            "id": "m1c2",
+            "name": "Vectors",
+            "bn": "ভেক্টর",
+            "status": "planned",
+            "icon": "arrow-up-right",
+            "keywords": [
+              "vector",
+              "direction",
+              "magnitude"
+            ]
+          },
+          {
+            "id": "m1c3",
+            "name": "Straight Lines",
+            "bn": "সরলরেখা",
+            "status": "planned",
+            "icon": "ruler",
+            "keywords": [
+              "geometry",
+              "slope",
+              "coordinates"
+            ]
+          },
+          {
+            "id": "m1c4",
+            "name": "Circles",
+            "bn": "বৃত্ত",
+            "status": "planned",
+            "icon": "circle",
+            "keywords": [
+              "geometry",
+              "radius",
+              "center"
+            ]
+          },
+          {
+            "id": "m1c5",
+            "name": "Permutations & Combinations",
+            "bn": "বিন্যাস ও সমাবেশ",
+            "status": "planned",
+            "icon": "shuffle",
+            "keywords": [
+              "factorial",
+              "arrangement",
+              "selection"
+            ]
+          },
+          {
+            "id": "m1c6",
+            "name": "Trigonometric Ratio",
+            "bn": "ত্রিকোণমিতিক অনুপাত",
+            "status": "planned",
+            "icon": "triangle-right",
+            "keywords": [
+              "sine",
+              "cosine",
+              "tangent"
+            ]
+          },
+          {
+            "id": "m1c7",
+            "name": "Trigonometric Ratio of Associated Angles",
+            "bn": "সংযুক্ত কোণের ত্রিকোণমিতিক অনুপাত",
+            "status": "planned",
+            "icon": "drafting-compass",
+            "keywords": [
+              "angles",
+              "compound",
+              "identities"
+            ]
+          },
+          {
+            "id": "m1c8",
+            "name": "Functions & Graphs",
+            "bn": "ফাংশন ও ফাংশনের লেখচিত্র",
+            "status": "planned",
+            "icon": "function-square",
+            "keywords": [
+              "domain",
+              "range",
+              "plot"
+            ]
+          },
+          {
+            "id": "m1c9",
+            "name": "Differentiation",
+            "bn": "অন্টারীকরণ",
+            "status": "planned",
+            "icon": "trending-up",
+            "keywords": [
+              "calculus",
+              "derivative",
+              "limits"
+            ]
+          },
+          {
+            "id": "m1c10",
+            "name": "Integration",
+            "bn": "যোগজীকরণ",
+            "status": "planned",
+            "icon": "sigma",
+            "keywords": [
+              "calculus",
+              "integral",
+              "area"
+            ]
+          }
         ]
       },
       {
@@ -104,16 +624,128 @@
         "bn": "উচ্চতর গণিত দ্বিতীয় পত্র",
         "themeColor": "pink",
         "chapters": [
-          { "id": "m2c1", "name": "Real Numbers & Inequalities", "bn": "বাস্তব সংখ্যা", "status": "planned", "icon": "infinity", "keywords": ["number line", "absolute value"] },
-          { "id": "m2c2", "name": "Linear Programming", "bn": "যোগাশ্রয়ী প্রোগ্রামিং", "status": "planned", "icon": "target", "keywords": ["optimization", "constraints", "graphs"] },
-          { "id": "m2c3", "name": "Complex Numbers", "bn": "জটিল সংখ্যা", "status": "planned", "icon": "compass", "keywords": ["argand", "imaginary", "modulus", "argument"] },
-          { "id": "m2c4", "name": "Polynomials & Equations", "bn": "বহুপদী ও বহুপদী সমীকরণ", "status": "planned", "icon": "braces", "keywords": ["roots", "quadratic", "algebra"] },
-          { "id": "m2c5", "name": "Binomial Expansion", "bn": "দ্বিপদী বিস্তৃতি", "status": "planned", "icon": "pyramid", "keywords": ["expansion", "pascal", "coefficients"] },
-          { "id": "m2c6", "name": "Conics", "bn": "কণিক", "status": "planned", "icon": "cone", "keywords": ["parabola", "ellipse", "hyperbola"] },
-          { "id": "m2c7", "name": "Inverse Trigonometry", "bn": "বিপরীত ত্রিকোণমিতিক ফাংশন ও সমীকরণ", "status": "planned", "icon": "rotate-ccw", "keywords": ["arcsin", "arccos", "equations"] },
-          { "id": "m2c8", "name": "Statics", "bn": "স্থিতবিদ্যা", "status": "planned", "icon": "scale", "keywords": ["forces", "equilibrium", "moments"] },
-          { "id": "m2c9", "name": "Dynamics", "bn": "সমতলে বস্তুকণার গতি", "status": "planned", "icon": "rocket", "keywords": ["motion", "velocity", "acceleration", "projectile"] },
-          { "id": "m2c10", "name": "Measure of Dispersion & Probability", "bn": "বিস্তার পরিমাপ ও সম্ভাবনা", "status": "planned", "icon": "dices", "keywords": ["statistics", "variance", "chance", "events"] }
+          {
+            "id": "m2c1",
+            "name": "Real Numbers & Inequalities",
+            "bn": "বাস্তব সংখ্যা",
+            "status": "planned",
+            "icon": "infinity",
+            "keywords": [
+              "number line",
+              "absolute value"
+            ]
+          },
+          {
+            "id": "m2c2",
+            "name": "Linear Programming",
+            "bn": "যোগাশ্রয়ী প্রোগ্রামিং",
+            "status": "planned",
+            "icon": "target",
+            "keywords": [
+              "optimization",
+              "constraints",
+              "graphs"
+            ]
+          },
+          {
+            "id": "m2c3",
+            "name": "Complex Numbers",
+            "bn": "জটিল সংখ্যা",
+            "status": "planned",
+            "icon": "compass",
+            "keywords": [
+              "argand",
+              "imaginary",
+              "modulus",
+              "argument"
+            ]
+          },
+          {
+            "id": "m2c4",
+            "name": "Polynomials & Equations",
+            "bn": "বহুপদী ও বহুপদী সমীকরণ",
+            "status": "planned",
+            "icon": "braces",
+            "keywords": [
+              "roots",
+              "quadratic",
+              "algebra"
+            ]
+          },
+          {
+            "id": "m2c5",
+            "name": "Binomial Expansion",
+            "bn": "দ্বিপদী বিস্তৃতি",
+            "status": "planned",
+            "icon": "pyramid",
+            "keywords": [
+              "expansion",
+              "pascal",
+              "coefficients"
+            ]
+          },
+          {
+            "id": "m2c6",
+            "name": "Conics",
+            "bn": "কণিক",
+            "status": "planned",
+            "icon": "cone",
+            "keywords": [
+              "parabola",
+              "ellipse",
+              "hyperbola"
+            ]
+          },
+          {
+            "id": "m2c7",
+            "name": "Inverse Trigonometry",
+            "bn": "বিপরীত ত্রিকোণমিতিক ফাংশন ও সমীকরণ",
+            "status": "planned",
+            "icon": "rotate-ccw",
+            "keywords": [
+              "arcsin",
+              "arccos",
+              "equations"
+            ]
+          },
+          {
+            "id": "m2c8",
+            "name": "Statics",
+            "bn": "স্থিতবিদ্যা",
+            "status": "planned",
+            "icon": "scale",
+            "keywords": [
+              "forces",
+              "equilibrium",
+              "moments"
+            ]
+          },
+          {
+            "id": "m2c9",
+            "name": "Dynamics",
+            "bn": "সমতলে বস্তুকণার গতি",
+            "status": "planned",
+            "icon": "rocket",
+            "keywords": [
+              "motion",
+              "velocity",
+              "acceleration",
+              "projectile"
+            ]
+          },
+          {
+            "id": "m2c10",
+            "name": "Measure of Dispersion & Probability",
+            "bn": "বিস্তার পরিমাপ ও সম্ভাবনা",
+            "status": "planned",
+            "icon": "dices",
+            "keywords": [
+              "statistics",
+              "variance",
+              "chance",
+              "events"
+            ]
+          }
         ]
       }
     ]
@@ -129,12 +761,87 @@
         "bn": "তথ্য ও যোগাযোগ প্রযুক্তি",
         "themeColor": "cyan",
         "chapters": [
-          { "id": "i1c1", "name": "World & Bangladesh Perspective", "bn": "বিশ্ব ও বাংলাদেশ প্রেক্ষিত", "status": "planned", "icon": "globe-2", "keywords": ["virtual reality", "ai", "biometrics", "robotics"] },
-          { "id": "i1c2", "name": "Communication Systems & Networking", "bn": "কমিউনিকেশন সিস্টেমস ও নেটওয়ার্কিং", "status": "planned", "icon": "network", "keywords": ["topology", "bandwidth", "fiber optic", "wireless"] },
-          { "id": "i1c3", "name": "Number Systems & Digital Devices", "bn": "সংখ্যা পদ্ধতি ও ডিজিটাল ডিভাইস", "status": "planned", "icon": "binary", "keywords": ["binary", "logic gates", "boolean", "encoder", "decoder"] },
-          { "id": "i1c4", "name": "Web Design & HTML", "bn": "ওয়েব ডিজাইন পরিচিতি এবং HTML", "status": "planned", "icon": "layout-template", "keywords": ["website", "tags", "hyperlink", "tables"] },
-          { "id": "i1c5", "name": "Programming Language (C)", "bn": "প্রোগ্রামিং ভাষা", "status": "planned", "icon": "code", "keywords": ["loops", "functions", "array", "algorithm", "flowchart"] },
-          { "id": "i1c6", "name": "Database Management System", "bn": "ডেটাবেজ ম্যানেজমেন্ট সিস্টেম", "status": "planned", "icon": "database", "keywords": ["dbms", "sql", "keys", "relations", "sorting"] }
+          {
+            "id": "i1c1",
+            "name": "World & Bangladesh Perspective",
+            "bn": "বিশ্ব ও বাংলাদেশ প্রেক্ষিত",
+            "status": "planned",
+            "icon": "globe-2",
+            "keywords": [
+              "virtual reality",
+              "ai",
+              "biometrics",
+              "robotics"
+            ]
+          },
+          {
+            "id": "i1c2",
+            "name": "Communication Systems & Networking",
+            "bn": "কমিউনিকেশন সিস্টেমস ও নেটওয়ার্কিং",
+            "status": "planned",
+            "icon": "network",
+            "keywords": [
+              "topology",
+              "bandwidth",
+              "fiber optic",
+              "wireless"
+            ]
+          },
+          {
+            "id": "i1c3",
+            "name": "Number Systems & Digital Devices",
+            "bn": "সংখ্যা পদ্ধতি ও ডিজিটাল ডিভাইস",
+            "status": "planned",
+            "icon": "binary",
+            "keywords": [
+              "binary",
+              "logic gates",
+              "boolean",
+              "encoder",
+              "decoder"
+            ]
+          },
+          {
+            "id": "i1c4",
+            "name": "Web Design & HTML",
+            "bn": "ওয়েব ডিজাইন পরিচিতি এবং HTML",
+            "status": "planned",
+            "icon": "layout-template",
+            "keywords": [
+              "website",
+              "tags",
+              "hyperlink",
+              "tables"
+            ]
+          },
+          {
+            "id": "i1c5",
+            "name": "Programming Language (C)",
+            "bn": "প্রোগ্রামিং ভাষা",
+            "status": "planned",
+            "icon": "code",
+            "keywords": [
+              "loops",
+              "functions",
+              "array",
+              "algorithm",
+              "flowchart"
+            ]
+          },
+          {
+            "id": "i1c6",
+            "name": "Database Management System",
+            "bn": "ডেটাবেজ ম্যানেজমেন্ট সিস্টেম",
+            "status": "planned",
+            "icon": "database",
+            "keywords": [
+              "dbms",
+              "sql",
+              "keys",
+              "relations",
+              "sorting"
+            ]
+          }
         ]
       }
     ]
@@ -150,8 +857,49 @@
         "bn": "উত্পাদনশীলতা সরঞ্জাম",
         "themeColor": "blue",
         "chapters": [
-          { "id": "m_t1", "name": "Study Center", "bn": "স্টাডি সেন্টার", "status": "available", "icon": "pie-chart", "keywords": ["study", "tracker", "center", "sheet", "plan", "productivity", "spreadsheet", "dashboard"], "simulations": [{ "title": "Open Study Center", "link": "study-center.html" }] },
-          { "id": "m_t2", "name": "Routine Planner", "bn": "রুটিন প্ল্যানার", "status": "available", "icon": "calendar-days", "keywords": ["routine", "planner", "schedule", "time management", "productivity"], "simulations": [{ "title": "Open Routine Planner Sheet", "link": "https://docs.google.com/spreadsheets/d/1Q98WitHrPaA82X0cvnphBnAIgIu-uLQKlfGfkf9Kmu0/edit?gid=1481639252#gid=1481639252" }] }
+          {
+            "id": "m_t1",
+            "name": "Study Center",
+            "bn": "স্টাডি সেন্টার",
+            "status": "available",
+            "icon": "pie-chart",
+            "keywords": [
+              "study",
+              "tracker",
+              "center",
+              "sheet",
+              "plan",
+              "productivity",
+              "spreadsheet",
+              "dashboard"
+            ],
+            "simulations": [
+              {
+                "title": "Open Study Center",
+                "link": "study-center.html"
+              }
+            ]
+          },
+          {
+            "id": "m_t2",
+            "name": "Routine Planner",
+            "bn": "রুটিন প্ল্যানার",
+            "status": "available",
+            "icon": "calendar-days",
+            "keywords": [
+              "routine",
+              "planner",
+              "schedule",
+              "time management",
+              "productivity"
+            ],
+            "simulations": [
+              {
+                "title": "Open Routine Planner Sheet",
+                "link": "https://docs.google.com/spreadsheets/d/1Q98WitHrPaA82X0cvnphBnAIgIu-uLQKlfGfkf9Kmu0/edit?gid=1481639252#gid=1481639252"
+              }
+            ]
+          }
         ]
       }
     ]
