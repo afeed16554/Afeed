@@ -12,10 +12,10 @@
         "chapters": [
           {
             "id": "p1c1",
-            "name": "Physical World",
-            "bn": "ভৌত জগৎ",
+            "name": "Physical World and Measurement",
+            "bn": "ভৌত জগৎ ও পরিমাপ",
             "status": "planned",
-            "icon": "earth",
+            "icon": "ruler",
             "keywords": [
               "units",
               "measurements",
