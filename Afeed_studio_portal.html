@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AFEED | Visual Admin OS</title>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -12,6 +13,7 @@
             theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'], } } }
         }
     </script>
+    
     <!-- Lucide for icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -51,7 +53,7 @@
                 </span>
             </div>
             
-            <button onclick="toggleModal('settingsModal')" class="p-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all focus:ring-2 focus:ring-indigo-500/50">
+            <button onclick="toggleModal('settingsModal')" class="p-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all focus:ring-2 focus:ring-indigo-500/50" title="Settings & API Key">
                 <i data-lucide="settings" class="w-5 h-5"></i>
             </button>
         </div>
@@ -75,6 +77,31 @@
     <!-- ========================================================= -->
     <!-- MODALS SECTION -->
     <!-- ========================================================= -->
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none modal-closed" style="background: rgba(0,0,0,0.8);">
+        <div class="modal-content bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-2xl w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2"><i data-lucide="settings" class="w-5 h-5 text-indigo-400"></i> Settings & Credentials</h2>
+                <button onclick="toggleModal('settingsModal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div><label class="block text-xs uppercase text-slate-400 mb-1">GitHub Username</label><input id="ghUser" type="text" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-indigo-500 outline-none text-white"></div>
+                <div><label class="block text-xs uppercase text-slate-400 mb-1">Repository Name</label><input id="ghRepo" type="text" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-indigo-500 outline-none text-white"></div>
+                <div>
+                    <label class="block text-xs uppercase text-slate-400 mb-1 flex justify-between">
+                        <span>Personal Access Token</span>
+                        <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" class="text-indigo-400 hover:underline">Get Token</a>
+                    </label>
+                    <input id="ghToken" type="password" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-indigo-500 outline-none text-white">
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button type="button" onclick="clearConfig()" class="w-1/3 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-colors text-sm">Clear Data</button>
+                    <button type="button" onclick="saveConfig()" class="w-2/3 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-white font-bold text-sm transition-colors">Save & Connect</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- 1. Manager Modal (Edit Chapter & Upload Sims) -->
     <div id="managerModal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none modal-closed" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);">
@@ -193,7 +220,7 @@
         </div>
     </div>
 
-    <!-- 4a. Edit Subject Modal -->
+    <!-- 5. Edit Subject Modal -->
     <div id="editSubjectModal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none modal-closed" style="background: rgba(0,0,0,0.8);">
         <div class="modal-content bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-2xl w-full max-w-md">
             <div class="flex justify-between items-center mb-6">
@@ -215,7 +242,7 @@
         </div>
     </div>
 
-    <!-- 4b. Edit Paper Modal -->
+    <!-- 6. Edit Paper Modal -->
     <div id="editPaperModal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none modal-closed" style="background: rgba(0,0,0,0.8);">
         <div class="modal-content bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-2xl w-full max-w-md">
             <div class="flex justify-between items-center mb-6">
@@ -266,7 +293,6 @@
             }
         }
 
-        // Theme Classes for UI
         function getThemeClasses(themeColor) {
             const maps = {
                 blue: { text: 'text-blue-400', border: 'border-blue-500/20', bgIcon: 'bg-blue-500/10' },
@@ -299,10 +325,7 @@
                     if(res.ok) db = await res.json();
                 }
                 
-                // Set default subject if current is invalid
-                if (Object.keys(db).length > 0 && !db[currentSubject]) {
-                    currentSubject = Object.keys(db)[0];
-                }
+                if (Object.keys(db).length > 0 && !db[currentSubject]) currentSubject = Object.keys(db)[0];
                 if(Object.keys(db).length > 0) renderApp();
             } catch(e) {
                 console.error("Could not fetch database", e);
@@ -310,19 +333,15 @@
             }
         }
 
-        /* === RENDERING UI (Grid & Tabs) === */
         function switchSubject(key) { currentSubject = key; renderApp(); }
 
         function renderApp() {
             const tabContainer = document.getElementById('subject-selector');
             const papersContainer = document.getElementById('papers-container');
             
-            // Handle deleted currentSubject fallback
-            if (Object.keys(db).length > 0 && !db[currentSubject]) {
-                currentSubject = Object.keys(db)[0];
-            }
+            if (Object.keys(db).length > 0 && !db[currentSubject]) currentSubject = Object.keys(db)[0];
             
-            // Render Subject Tabs + "Add Subject" Button
+            // Build Tabs
             let tabsHtml = Object.entries(db).map(([key, data]) => {
                 const isActive = key === currentSubject;
                 const css = isActive ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800';
@@ -333,17 +352,14 @@
             tabsHtml += `<button onclick="toggleModal('addSubjectModal')" class="flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm border border-dashed border-slate-600 text-slate-400 hover:text-white hover:border-slate-400 transition-colors"><i data-lucide="plus" class="w-4 h-4"></i> Add Subject</button>`;
             tabContainer.innerHTML = tabsHtml;
 
-            // Render Papers & Chapters
+            // Build Papers
             const subjectData = db[currentSubject];
             if (!subjectData) { papersContainer.innerHTML = ''; return; }
 
             let papersHtml = subjectData.papers.map(paper => {
                 const theme = getThemeClasses(paper.themeColor);
-                
-                // Chapter Cards
                 let chaptersHtml = paper.chapters.map(ch => createAdminCard(currentSubject, paper.id, ch, theme)).join('');
                 
-                // The "Add Chapter" Card
                 const addChapterCard = `
                     <div onclick="openAddChapterModal('${paper.id}')" class="bg-slate-900/50 border-2 border-dashed border-slate-700 hover:border-indigo-500/50 rounded-2xl p-5 flex flex-col items-center justify-center text-slate-500 hover:text-indigo-400 cursor-pointer transition-colors min-h-[160px] hover-card">
                         <i data-lucide="plus-circle" class="w-8 h-8 mb-2"></i>
@@ -366,7 +382,6 @@
                 `;
             }).join('');
             
-            // Add "Add Paper" Button at the bottom of the subject
             papersHtml += `
                 <div class="mt-8 flex justify-center">
                     <button onclick="toggleModal('addPaperModal')" class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm border border-dashed border-slate-700 bg-slate-900/50 text-slate-400 hover:text-white hover:border-slate-500 transition-all">
@@ -416,14 +431,12 @@
             el.innerText = msg;
         }
 
-        // Generic function to execute safe DB mutation
         async function commitDatabaseMutation(mutationFn, logElementId, successMsg) {
             try {
                 setLogMsg(logElementId, "Fetching latest database registry...");
                 const dbFile = await apiFetch('data.json');
                 const liveDb = JSON.parse(decodeURIComponent(escape(atob(dbFile.content))));
                 
-                // Run the custom mutation
                 mutationFn(liveDb);
 
                 setLogMsg(logElementId, "Saving changes to GitHub...");
@@ -432,7 +445,6 @@
 
                 setLogMsg(logElementId, "✅ " + successMsg, 'success');
                 
-                // Sync Memory & Render
                 db = liveDb;
                 renderApp();
                 return true;
@@ -457,9 +469,7 @@
                 liveDb[id] = { name, icon, itemLabel, papers: [] };
             }, 'subStatusLog', `Added Subject: ${name}`);
 
-            if (success) {
-                setTimeout(() => { toggleModal('addSubjectModal'); e.target.reset(); document.getElementById('subStatusLog').classList.add('hidden'); }, 1500);
-            }
+            if (success) setTimeout(() => { toggleModal('addSubjectModal'); e.target.reset(); document.getElementById('subStatusLog').classList.add('hidden'); }, 1500);
             btn.disabled = false;
         }
 
@@ -471,21 +481,19 @@
             const title = document.getElementById('newPapTitle').value.trim();
             const bn = document.getElementById('newPapBn').value.trim();
             const themeColor = document.getElementById('newPapTheme').value;
-            const id = 'paper_' + Date.now().toString(36); // Auto-generate ID
+            const id = 'paper_' + Date.now().toString(36);
 
             const success = await commitDatabaseMutation((liveDb) => {
                 if (!liveDb[currentSubject]) throw new Error("Current subject missing!");
                 liveDb[currentSubject].papers.push({ id, title, bn, themeColor, chapters: [] });
             }, 'papStatusLog', `Added Paper: ${title}`);
 
-            if (success) {
-                setTimeout(() => { toggleModal('addPaperModal'); e.target.reset(); document.getElementById('papStatusLog').classList.add('hidden'); }, 1500);
-            }
+            if (success) setTimeout(() => { toggleModal('addPaperModal'); e.target.reset(); document.getElementById('papStatusLog').classList.add('hidden'); }, 1500);
             btn.disabled = false;
         }
 
         function openAddChapterModal(paperId) {
-            activeContext.paperId = paperId; // Store context for the form submission
+            activeContext.paperId = paperId;
             toggleModal('addChapterModal');
         }
 
@@ -497,20 +505,18 @@
             const name = document.getElementById('newChapTitle').value.trim();
             const bn = document.getElementById('newChapBn').value.trim();
             const icon = document.getElementById('newChapIcon').value.trim() || 'file';
-            const id = 'ch_' + Date.now().toString(36); // Auto-generate ID
+            const id = 'ch_' + Date.now().toString(36);
 
             const success = await commitDatabaseMutation((liveDb) => {
                 const paper = liveDb[currentSubject].papers.find(p => p.id === activeContext.paperId);
                 paper.chapters.push({ id, name, bn, status: "planned", icon, keywords: [], simulations: [] });
             }, 'chapStatusLog', `Added Chapter: ${name}`);
 
-            if (success) {
-                setTimeout(() => { toggleModal('addChapterModal'); e.target.reset(); document.getElementById('chapStatusLog').classList.add('hidden'); }, 1500);
-            }
+            if (success) setTimeout(() => { toggleModal('addChapterModal'); e.target.reset(); document.getElementById('chapStatusLog').classList.add('hidden'); }, 1500);
             btn.disabled = false;
         }
 
-        /* === EDIT / DELETE SUBJECT LOGIC === */
+        /* === EDIT / DELETE LOGIC === */
         function openEditSubjectModal(subId) {
             activeContext.subjectId = subId;
             const sub = db[subId];
@@ -535,9 +541,7 @@
                 liveDb[activeContext.subjectId].itemLabel = itemLabel;
             }, 'editSubStatusLog', `Updated Subject: ${name}`);
 
-            if (success) {
-                setTimeout(() => { toggleModal('editSubjectModal'); document.getElementById('editSubStatusLog').classList.add('hidden'); }, 1500);
-            }
+            if (success) setTimeout(() => { toggleModal('editSubjectModal'); document.getElementById('editSubStatusLog').classList.add('hidden'); }, 1500);
             btn.disabled = false;
         }
 
@@ -547,12 +551,9 @@
                 delete liveDb[activeContext.subjectId];
             }, 'editSubStatusLog', `Deleted Subject`);
 
-            if (success) {
-                setTimeout(() => { toggleModal('editSubjectModal'); document.getElementById('editSubStatusLog').classList.add('hidden'); }, 1500);
-            }
+            if (success) setTimeout(() => { toggleModal('editSubjectModal'); document.getElementById('editSubStatusLog').classList.add('hidden'); }, 1500);
         }
 
-        /* === EDIT / DELETE PAPER LOGIC === */
         function openEditPaperModal(paperId) {
             activeContext.paperId = paperId;
             const paper = db[currentSubject].papers.find(p => p.id === paperId);
@@ -578,9 +579,7 @@
                 paper.themeColor = themeColor;
             }, 'editPapStatusLog', `Updated Paper: ${title}`);
 
-            if (success) {
-                setTimeout(() => { toggleModal('editPaperModal'); document.getElementById('editPapStatusLog').classList.add('hidden'); }, 1500);
-            }
+            if (success) setTimeout(() => { toggleModal('editPaperModal'); document.getElementById('editPapStatusLog').classList.add('hidden'); }, 1500);
             btn.disabled = false;
         }
 
@@ -592,27 +591,21 @@
                 if(idx > -1) papers.splice(idx, 1);
             }, 'editPapStatusLog', `Deleted Paper`);
 
-            if (success) {
-                setTimeout(() => { toggleModal('editPaperModal'); document.getElementById('editPapStatusLog').classList.add('hidden'); }, 1500);
-            }
+            if (success) setTimeout(() => { toggleModal('editPaperModal'); document.getElementById('editPapStatusLog').classList.add('hidden'); }, 1500);
         }
 
-        /* === CHAPTER DELETE LOGIC === */
         async function handleDeleteChapter() {
-            if(!confirm("Are you sure? This deletes the chapter from the registry. The HTML simulation files attached to it will remain safely in GitHub.")) return;
+            if(!confirm("Are you sure? This deletes the chapter from the registry. HTML files will remain safely in GitHub.")) return;
             const success = await commitDatabaseMutation((liveDb) => {
                 const chapters = liveDb[activeContext.subjectId].papers.find(p => p.id === activeContext.paperId).chapters;
                 const idx = chapters.findIndex(c => c.id === activeContext.chapterId);
                 if(idx > -1) chapters.splice(idx, 1);
             }, 'modalStatusLog', `Deleted Chapter`);
 
-            if (success) {
-                setTimeout(() => { toggleModal('managerModal'); }, 1000);
-            }
+            if (success) setTimeout(() => { toggleModal('managerModal'); }, 1000);
         }
 
-
-        /* === MANAGER MODAL LOGIC (Edit Chapter & Upload Sims) === */
+        /* === MANAGER MODAL LOGIC === */
         function openManagerModal(subId, paperId, chapId) {
             activeContext = { subjectId: subId, paperId: paperId, chapterId: chapId };
             const chapter = db[subId].papers.find(p => p.id === paperId).chapters.find(c => c.id === chapId);
@@ -710,15 +703,9 @@
                     chapter.status = "available";
                 }, 'modalStatusLog', `Upload Successful!`);
 
-                if (success) {
-                    e.target.reset();
-                    renderExistingSims(); 
-                }
-            } catch (err) {
-                setLogMsg('modalStatusLog', `Error: ${err.message}`, 'error');
-            } finally {
-                btn.disabled = false;
-            }
+                if (success) { e.target.reset(); renderExistingSims(); }
+            } catch (err) { setLogMsg('modalStatusLog', `Error: ${err.message}`, 'error'); } 
+            finally { btn.disabled = false; }
         }
 
         async function handleDelete(simIndex) {
@@ -740,11 +727,8 @@
                 }, 'modalStatusLog', `Removed ${simTarget.title}`);
 
                 renderExistingSims();
-            } catch (err) {
-                setLogMsg('modalStatusLog', `Error: ${err.message}`, 'error');
-            } finally {
-                btnList.forEach(b => b.disabled = false);
-            }
+            } catch (err) { setLogMsg('modalStatusLog', `Error: ${err.message}`, 'error'); } 
+            finally { btnList.forEach(b => b.disabled = false); }
         }
 
         /* === GITHUB API CONTROLLER === */
