@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AFEED | Visual Admin OS</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'], } } }
+        }
+    </script>
+    <!-- Lucide for icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .smooth-transition { transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .hover-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .hover-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px -5px rgba(99, 102, 241, 0.15); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Modal Animation */
+        #managerModal { transition: opacity 0.3s ease; }
+        #managerModalContent { transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .modal-open #managerModalContent { transform: scale(1) translateY(0); }
+        .modal-closed #managerModalContent { transform: scale(0.95) translateY(20px); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen relative selection:bg-indigo-500/30">
+
+    <nav class="sticky top-0 z-40 border-b border-slate-800/80 glass-panel">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="font-black text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-orange-500">
+                    AFEED Admin OS
+                </span>
+                <span class="px-2 py-1 rounded text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30 uppercase tracking-widest hidden md:block">
+                    Live System
+                </span>
+            </div>
+            
+            <button onclick="toggleSettingsModal()" class="p-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all focus:ring-2 focus:ring-indigo-500/50">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-6 py-12 relative z-10">
+        
+        <!-- Tabs -->
+        <div id="subject-selector" class="flex flex-wrap justify-center gap-3 max-w-2xl mx-auto mb-16">
+            <!-- Tabs injected here -->
+        </div>
+
+        <!-- Cards Grid -->
+        <div id="papers-container" class="space-y-16">
+            <!-- Grids injected here -->
+        </div>
+
+    </main>
+
+    <div id="managerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none modal-closed" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);">
+        <div id="managerModalContent" class="bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <div>
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="edit-3" class="w-5 h-5 text-indigo-400"></i> <span id="modalChapterName">Chapter Name</span>
+                    </h3>
+                    <p id="modalChapterInfo" class="text-xs text-slate-400 mt-1 uppercase tracking-wider font-semibold">Subject > Paper</p>
+                </div>
+                <button onclick="closeManagerModal()" class="p-2 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body (Scrollable) -->
+            <div class="p-6 overflow-y-auto no-scrollbar space-y-8 flex-1">
+                
+                <!-- Edit Chapter Metadata Form -->
+                <div class="bg-slate-950 border border-slate-800 p-5 rounded-2xl">
+                    <h4 class="text-sm font-bold text-orange-400 mb-4 flex items-center gap-2">
+                        <i data-lucide="settings-2" class="w-4 h-4"></i> Edit Chapter Details
+                    </h4>
+                    
+                    <form id="metadataForm" onsubmit="handleMetadataUpdate(event)" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs uppercase font-semibold text-slate-400 mb-2">Chapter Name (EN)</label>
+                                <input id="editChName" required type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-indigo-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase font-semibold text-slate-400 mb-2">Chapter Name (BN)</label>
+                                <input id="editChBn" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-indigo-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase font-semibold text-slate-400 mb-2 flex justify-between">
+                                    <span>Icon Name</span>
+                                    <a href="https://lucide.dev/icons" target="_blank" class="text-indigo-400 hover:underline">Find Icons</a>
+                                </label>
+                                <input id="editChIcon" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-indigo-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase font-semibold text-slate-400 mb-2">Keywords (Comma separated)</label>
+                                <input id="editChKeywords" type="text" placeholder="e.g. vector, force, math" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-indigo-500 outline-none">
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 border border-slate-700">
+                            <i data-lucide="save" class="w-4 h-4"></i> Save Details
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Existing Simulations List -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Existing Simulations</h4>
+                    <div id="existingSimsList" class="space-y-2">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Add New Simulation Form -->
+                <div class="bg-slate-950 border border-slate-800 p-5 rounded-2xl">
+                    <h4 class="text-sm font-bold text-indigo-400 mb-4 flex items-center gap-2">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i> Upload New Simulation
+                    </h4>
+                    
+                    <form id="uploadForm" onsubmit="handleUpload(event)" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs uppercase font-semibold text-slate-400 mb-2">Display Title</label>
+                                <input id="simTitle" required type="text" placeholder="e.g. Wave Interference" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-indigo-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs uppercase font-semibold text-slate-400 mb-2">File Name (.html)</label>
+                                <input id="fileName" required type="text" placeholder="e.g. wave_sim.html" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-indigo-500 outline-none">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs uppercase font-semibold text-slate-400 mb-2">HTML File</label>
+                            <input id="fileUpload" required type="file" accept=".html,.htm" class="w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-800 file:text-indigo-400 hover:file:bg-slate-700 cursor-pointer">
+                        </div>
+
+                        <button id="uploadBtn" type="submit" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50">
+                            <i id="uploadIcon" data-lucide="cloud-upload" class="w-5 h-5"></i>
+                            <span id="uploadBtnText">Upload & Register</span>
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Status Feedback inside Modal -->
+                <div id="modalStatusLog" class="text-sm font-mono text-center h-6 transition-colors hidden"></div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity" style="background: rgba(0,0,0,0.8);">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl shadow-2xl w-full max-w-md transform scale-95 transition-transform" id="settingsContent">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2"><i data-lucide="key" class="w-5 h-5 text-orange-500"></i> API Configuration</h2>
+                <button onclick="toggleSettingsModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs uppercase text-slate-400 mb-1">GitHub Username</label>
+                    <input id="ghUser" type="text" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs uppercase text-slate-400 mb-1">Repository Name</label>
+                    <input id="ghRepo" type="text" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs uppercase text-slate-400 mb-1">Personal Access Token</label>
+                    <input id="ghToken" type="password" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-indigo-500 outline-none">
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button onclick="clearConfig()" class="w-1/3 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-xl font-bold transition-colors text-sm">Clear</button>
+                    <button onclick="saveConfig()" class="w-2/3 py-3 bg-orange-600 hover:bg-orange-500 rounded-xl text-white font-bold text-sm">Save & Connect</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db = {};
+        let currentSubject = 'physics';
+        let activeContext = { subjectId: null, paperId: null, chapterId: null };
+
+        // Theme Classes for UI
+        function getThemeClasses(themeColor) {
+            const maps = {
+                blue: { text: 'text-blue-400', border: 'border-blue-500/20', bgIcon: 'bg-blue-500/10' },
+                orange: { text: 'text-orange-400', border: 'border-orange-500/20', bgIcon: 'bg-orange-500/10' },
+                emerald: { text: 'text-emerald-400', border: 'border-emerald-500/20', bgIcon: 'bg-emerald-500/10' },
+                teal: { text: 'text-teal-400', border: 'border-teal-500/20', bgIcon: 'bg-teal-500/10' },
+                rose: { text: 'text-rose-400', border: 'border-rose-500/20', bgIcon: 'bg-rose-500/10' },
+                pink: { text: 'text-pink-400', border: 'border-pink-500/20', bgIcon: 'bg-pink-500/10' },
+                cyan: { text: 'text-cyan-400', border: 'border-cyan-500/20', bgIcon: 'bg-cyan-500/10' }
+            };
+            return maps[themeColor] || maps.blue;
+        }
+
+        /* === INITIALIZATION & DATA FETCHING === */
+        window.onload = function() {
+            lucide.createIcons();
+            document.getElementById('ghUser').value = localStorage.getItem('gh_owner') || '';
+            document.getElementById('ghRepo').value = localStorage.getItem('gh_repo') || '';
+            document.getElementById('ghToken').value = localStorage.getItem('gh_pat') || '';
+            
+            fetchDatabase();
+        };
+
+        async function fetchDatabase() {
+            try {
+                if(document.getElementById('ghToken').value) {
+                    const fileData = await apiFetch('data.json');
+                    db = JSON.parse(decodeURIComponent(escape(atob(fileData.content))));
+                } else {
+                    const res = await fetch('data.json?t=' + Date.now());
+                    if(res.ok) db = await res.json();
+                }
+                if(Object.keys(db).length > 0) renderApp();
+            } catch(e) {
+                console.error("Could not fetch database", e);
+                if(Object.keys(db).length === 0) toggleSettingsModal(); // Force open settings if empty
+            }
+        }
+
+        /* === RENDERING UI (Grid & Tabs) === */
+        function switchSubject(key) {
+            currentSubject = key;
+            renderApp();
+        }
+
+        function renderApp() {
+            const tabContainer = document.getElementById('subject-selector');
+            const papersContainer = document.getElementById('papers-container');
+            
+            // Render Tabs
+            tabContainer.innerHTML = Object.entries(db).map(([key, data]) => {
+                const isActive = key === currentSubject;
+                const css = isActive ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800';
+                return `<button onclick="switchSubject('${key}')" class="flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold text-sm border smooth-transition ${css}"><i data-lucide="${data.icon}" class="w-4 h-4"></i>${data.name}</button>`;
+            }).join('');
+
+            // Render Cards
+            const subjectData = db[currentSubject];
+            papersContainer.innerHTML = subjectData.papers.map(paper => {
+                const theme = getThemeClasses(paper.themeColor);
+                return `
+                    <section>
+                        <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                            <i data-lucide="book-open" class="w-6 h-6 ${theme.text}"></i> ${paper.title}
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                            ${paper.chapters.map(ch => createAdminCard(currentSubject, paper.id, ch, theme)).join('')}
+                        </div>
+                    </section>
+                `;
+            }).join('');
+            
+            lucide.createIcons();
+        }
+
+        function createAdminCard(subId, paperId, chapter, theme) {
+            const simCount = chapter.simulations ? chapter.simulations.length : 0;
+            const statusColor = simCount > 0 ? 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20' : 'text-slate-400 bg-slate-800 border-slate-700';
+            
+            return `
+                <div class="bg-slate-900 border ${theme.border} rounded-2xl p-5 hover-card flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="w-10 h-10 rounded-xl ${theme.bgIcon} flex items-center justify-center ${theme.text}">
+                                <i data-lucide="${chapter.icon || 'file'}" class="w-5 h-5"></i>
+                            </div>
+                            <span class="text-[10px] px-2 py-1 rounded-md border font-bold uppercase tracking-wide ${statusColor}">
+                                ${simCount} Labs
+                            </span>
+                        </div>
+                        <h3 class="text-lg text-white font-bold mb-1">${chapter.name}</h3>
+                        <p class="text-sm text-slate-400">${chapter.bn}</p>
+                    </div>
+                    
+                    <button onclick="openManagerModal('${subId}', '${paperId}', '${chapter.id}')" class="mt-6 w-full py-2.5 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-400 border border-indigo-500/30 rounded-xl font-bold text-sm smooth-transition flex items-center justify-center gap-2">
+                        <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Manage Logic
+                    </button>
+                </div>
+            `;
+        }
+
+        /* === MANAGER MODAL LOGIC === */
+        function openManagerModal(subId, paperId, chapId) {
+            activeContext = { subjectId: subId, paperId: paperId, chapterId: chapId };
+            const chapter = db[subId].papers.find(p => p.id === paperId).chapters.find(c => c.id === chapId);
+            const paper = db[subId].papers.find(p => p.id === paperId);
+            const subject = db[subId];
+
+            document.getElementById('modalChapterName').innerText = chapter.name;
+            document.getElementById('modalChapterInfo').innerText = `${subject.name} > ${paper.title}`;
+            
+            // Populate metadata fields
+            document.getElementById('editChName').value = chapter.name || '';
+            document.getElementById('editChBn').value = chapter.bn || '';
+            document.getElementById('editChIcon').value = chapter.icon || '';
+            document.getElementById('editChKeywords').value = (chapter.keywords || []).join(', ');
+            
+            renderExistingSims();
+            
+            // Clear form & logs
+            document.getElementById('uploadForm').reset();
+            const log = document.getElementById('modalStatusLog');
+            log.innerText = ''; log.classList.add('hidden');
+
+            const modal = document.getElementById('managerModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none', 'modal-closed');
+            modal.classList.add('opacity-100', 'modal-open');
+            lucide.createIcons();
+        }
+
+        function closeManagerModal() {
+            const modal = document.getElementById('managerModal');
+            modal.classList.add('opacity-0', 'pointer-events-none', 'modal-closed');
+            modal.classList.remove('opacity-100', 'modal-open');
+        }
+
+        function renderExistingSims() {
+            const chapter = db[activeContext.subjectId].papers.find(p => p.id === activeContext.paperId).chapters.find(c => c.id === activeContext.chapterId);
+            const listContainer = document.getElementById('existingSimsList');
+            
+            if (!chapter.simulations || chapter.simulations.length === 0) {
+                listContainer.innerHTML = `<div class="text-sm text-slate-500 italic p-3 bg-slate-950 rounded-lg border border-slate-800">No simulations currently registered.</div>`;
+                return;
+            }
+
+            listContainer.innerHTML = chapter.simulations.map((sim, index) => `
+                <div class="flex justify-between items-center p-3 bg-slate-950 rounded-xl border border-slate-800 group hover:border-slate-600 transition-colors">
+                    <div class="flex flex-col overflow-hidden">
+                        <span class="text-sm font-semibold text-white truncate">${sim.title}</span>
+                        <span class="text-xs text-slate-500 truncate">${sim.link}</span>
+                    </div>
+                    <button onclick="handleDelete(${index})" class="p-2 ml-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0" title="Delete Simulation">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        /* === GITHUB API OPERATIONS === */
+        async function apiFetch(path, method = 'GET', body = null) {
+            const owner = document.getElementById('ghUser').value.trim();
+            const repo = document.getElementById('ghRepo').value.trim();
+            const token = document.getElementById('ghToken').value.trim();
+            
+            const options = {
+                method,
+                headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+            };
+            if (body) {
+                options.headers['Content-Type'] = 'application/json';
+                options.body = JSON.stringify(body);
+            }
+            
+            // Add cache buster for GET
+            const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}` + (method === 'GET' ? `?t=${Date.now()}` : '');
+            
+            const res = await fetch(url, options);
+            if (!res.ok && method !== 'GET') throw new Error(`GitHub API Error: ${res.statusText}`); 
+            // Allow GET to fail silently if file doesn't exist
+            return res.ok ? await res.json() : null; 
+        }
+
+        function setModalLog(msg, type = 'info') {
+            const log = document.getElementById('modalStatusLog');
+            log.classList.remove('hidden', 'text-indigo-400', 'text-emerald-400', 'text-red-400');
+            if(type === 'info') log.classList.add('text-indigo-400');
+            if(type === 'success') log.classList.add('text-emerald-400');
+            if(type === 'error') log.classList.add('text-red-400');
+            log.innerText = msg;
+        }
+
+        async function handleMetadataUpdate(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+
+            try {
+                setModalLog("1/2 Updating registry...");
+                const dbFile = await apiFetch('data.json');
+                const liveDb = JSON.parse(decodeURIComponent(escape(atob(dbFile.content))));
+                
+                const chapter = liveDb[activeContext.subjectId].papers.find(p => p.id === activeContext.paperId).chapters.find(c => c.id === activeContext.chapterId);
+                
+                chapter.name = document.getElementById('editChName').value.trim();
+                chapter.bn = document.getElementById('editChBn').value.trim();
+                chapter.icon = document.getElementById('editChIcon').value.trim();
+                
+                const keywords = document.getElementById('editChKeywords').value;
+                chapter.keywords = keywords ? keywords.split(',').map(k => k.trim()).filter(k => k) : [];
+
+                setModalLog("2/2 Saving to GitHub...");
+                const dbBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(liveDb, null, 2))));
+                await apiFetch('data.json', 'PUT', { message: `Update details for ${chapter.name}`, content: dbBase64, sha: dbFile.sha });
+
+                setModalLog("✅ Details Saved Successfully!", 'success');
+                
+                // Update local memory and re-render current view
+                db = liveDb;
+                renderApp(); 
+                document.getElementById('modalChapterName').innerText = chapter.name;
+                lucide.createIcons();
+
+            } catch (err) {
+                setModalLog(`Error: ${err.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function handleUpload(e) {
+            e.preventDefault();
+            const btn = document.getElementById('uploadBtn');
+            btn.disabled = true;
+
+            try {
+                setModalLog("1/3 Reading file...");
+                const file = document.getElementById('fileUpload').files[0];
+                let fileName = document.getElementById('fileName').value.trim();
+                const simTitle = document.getElementById('simTitle').value.trim();
+                if(!fileName.endsWith('.html')) fileName += '.html';
+
+                // Base64 encode file
+                const base64File = await new Promise((res, rej) => {
+                    const reader = new FileReader();
+                    reader.onload = () => res(reader.result.split(',')[1]);
+                    reader.onerror = rej;
+                    reader.readAsDataURL(file);
+                });
+
+                setModalLog("2/3 Uploading to GitHub...");
+                const existingFile = await apiFetch(fileName);
+                await apiFetch(fileName, 'PUT', { message: `Upload ${fileName}`, content: base64File, sha: existingFile?.sha });
+
+                setModalLog("3/3 Updating database registry...");
+                const dbFile = await apiFetch('data.json');
+                const liveDb = JSON.parse(decodeURIComponent(escape(atob(dbFile.content))));
+                
+                // Update specific chapter
+                const chapter = liveDb[activeContext.subjectId].papers.find(p => p.id === activeContext.paperId).chapters.find(c => c.id === activeContext.chapterId);
+                if (!chapter.simulations) chapter.simulations = [];
+                
+                const existingIdx = chapter.simulations.findIndex(s => s.title === simTitle);
+                if (existingIdx >= 0) chapter.simulations[existingIdx].link = fileName;
+                else chapter.simulations.push({ title: simTitle, link: fileName });
+                
+                chapter.status = "available";
+
+                const dbBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(liveDb, null, 2))));
+                await apiFetch('data.json', 'PUT', { message: `Register ${simTitle}`, content: dbBase64, sha: dbFile.sha });
+
+                setModalLog("✅ Upload Successful!", 'success');
+                e.target.reset();
+                
+                // Update local memory and re-render current view
+                db = liveDb;
+                renderExistingSims();
+                renderApp(); 
+
+            } catch (err) {
+                setModalLog(`Error: ${err.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function handleDelete(simIndex) {
+            if(!confirm("Are you sure you want to permanently delete this simulation?")) return;
+            
+            const btnList = document.querySelectorAll('#existingSimsList button');
+            btnList.forEach(b => b.disabled = true);
+            
+            try {
+                const chapterMem = db[activeContext.subjectId].papers.find(p => p.id === activeContext.paperId).chapters.find(c => c.id === activeContext.chapterId);
+                const simTarget = chapterMem.simulations[simIndex];
+                
+                setModalLog("1/2 Deleting file from GitHub...");
+                const targetFile = await apiFetch(simTarget.link);
+                if(targetFile) {
+                    await apiFetch(simTarget.link, 'DELETE', { message: `Delete ${simTarget.link}`, sha: targetFile.sha });
+                }
+
+                setModalLog("2/2 Updating registry...");
+                const dbFile = await apiFetch('data.json');
+                const liveDb = JSON.parse(decodeURIComponent(escape(atob(dbFile.content))));
+                const chapterLive = liveDb[activeContext.subjectId].papers.find(p => p.id === activeContext.paperId).chapters.find(c => c.id === activeContext.chapterId);
+                
+                chapterLive.simulations.splice(simIndex, 1);
+                if(chapterLive.simulations.length === 0) chapterLive.status = "planned";
+
+                const dbBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(liveDb, null, 2))));
+                await apiFetch('data.json', 'PUT', { message: `Removed ${simTarget.title}`, content: dbBase64, sha: dbFile.sha });
+
+                setModalLog("✅ Deletion Successful!", 'success');
+                
+                // Sync Memory
+                db = liveDb;
+                renderExistingSims();
+                renderApp();
+
+            } catch (err) {
+                setModalLog(`Error: ${err.message}`, 'error');
+                btnList.forEach(b => b.disabled = false);
+            }
+        }
+
+        /* === SETTINGS MODAL LOGIC === */
+        function toggleSettingsModal() {
+            const modal = document.getElementById('settingsModal');
+            const content = document.getElementById('settingsContent');
+            if (modal.classList.contains('opacity-0')) {
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            } else {
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                content.classList.remove('scale-100');
+                content.classList.add('scale-95');
+            }
+        }
+
+        function saveConfig() {
+            localStorage.setItem('gh_owner', document.getElementById('ghUser').value.trim());
+            localStorage.setItem('gh_repo', document.getElementById('ghRepo').value.trim());
+            localStorage.setItem('gh_pat', document.getElementById('ghToken').value.trim());
+            toggleSettingsModal();
+            fetchDatabase();
+        }
+
+        function clearConfig() {
+            // 1. Wipe credentials from browser storage
+            localStorage.removeItem('gh_owner');
+            localStorage.removeItem('gh_repo');
+            localStorage.removeItem('gh_pat');
+            
+            // 2. Clear the input boxes
+            document.getElementById('ghUser').value = '';
+            document.getElementById('ghRepo').value = '';
+            document.getElementById('ghToken').value = '';
+            
+            // 3. Clear the active memory and UI
+            db = {};
+            document.getElementById('papers-container').innerHTML = '';
+            
+            toggleSettingsModal();
+            
+            // Show custom visual feedback instead of an alert
+            const log = document.getElementById('modalStatusLog');
+            if(log) {
+                setModalLog("Credentials cleared. You are safely logged out.", 'error');
+            }
+        }
+    </script>
+</body>
+</html>
