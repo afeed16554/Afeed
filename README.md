@@ -3,7 +3,7 @@
 Welcome to **AFEED**, your interactive, locally-stored hub for science and math simulations. This platform is designed specifically for HSC Bangladesh students to explore textbook concepts through interactive labs, simulations, and visual tools.
 
 This guide will walk you through how to navigate the home page and use the platform effectively.<br>
-Go and visit <a href="https://afeed16554.github.io/Physics-Simulation-/"> AFEED</a>
+Go and visit <a href="https://afeed16554.github.io/Afeed/"> AFEED</a>
 
 ---
 
