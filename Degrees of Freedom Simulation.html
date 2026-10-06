@@ -113,6 +113,9 @@
             </div>
             
             <div class="flex items-center gap-2 md:gap-4">
+                <button onclick="toggleFullscreen()" class="p-2.5 rounded-xl border border-orange-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-orange-50/50 dark:hover:bg-slate-800 text-orange-600 dark:text-slate-400 hover:text-orange-700 dark:hover:text-indigo-400 transition-all duration-300" title="Toggle Fullscreen">
+                    <i data-lucide="maximize" class="w-5 h-5"></i>
+                </button>
                 <button onclick="toggleTheme()" class="p-2.5 rounded-xl border border-orange-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-orange-50/50 dark:hover:bg-slate-800 text-orange-600 dark:text-slate-400 hover:text-orange-700 dark:hover:text-amber-400 transition-all duration-300">
                     <span id="theme-icon-container" class="flex items-center justify-center relative z-10"></span>
                 </button>
@@ -305,6 +308,16 @@
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('afeed_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
             applyThemeIcons();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => console.log(err));
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
         }
 
         const sidebar = document.getElementById('sidebar');
