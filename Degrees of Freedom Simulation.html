@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Ideal Gas - Degrees of Freedom | AFEED</title>
+    <meta name="description" content="AFEED Physics Simulation - Ideal Gas Degrees of Freedom">
+    
+    <!-- Tailwind CSS with Dark Mode Class enabled -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans Bengali', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        afeed: {
+                            orange: '#ea580c',
+                            light: '#fffdfa',
+                            dark: '#050505'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide for icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Noto+Sans+Bengali:wght@400;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX for Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body);"></script>
+
+    <!-- Three.js and OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        /* ======================================================================
+           AFEED GLOBAL STYLING
+         ====================================================================== */
+        :root { --ease-smooth: cubic-bezier(0.2, 0.8, 0.2, 1); }
+        body { font-family: 'Inter', sans-serif; -webkit-user-select: none; user-select: none; overflow-x: hidden; overflow-y: auto; }
+        
+        .glass { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+        .dark .glass { background: rgba(15, 23, 42, 0.8); }
+        html:not(.dark) .glass { background: rgba(255, 253, 250, 0.85); }
+
+        .brand-text { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -0.05em; }
+        .brand-gradient { display: inline-block; padding-right: 0.08em; }
+        .dark .brand-gradient { background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        html:not(.dark) .brand-gradient { background: linear-gradient(135deg, #ea580c 0%, #f59e0b 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.3); border-radius: 10px; }
+        .dark .custom-scroll::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.2); }
+
+        /* Prevent browser scroll when interacting with 3D canvas on mobile */
+        canvas { display: block; touch-action: none; outline: none; }
+
+        .btn-toggle { transition: all 0.2s var(--ease-smooth); }
+        .btn-toggle.active { background-color: #ea580c; border-color: #f97316; color: white; box-shadow: 0 4px 15px rgba(234, 88, 12, 0.3); }
+        .dark .btn-toggle.active { background-color: #4f46e5; border-color: #818cf8; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3); }
+        .btn-toggle:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* Temperature Slider */
+        input[type=range].temp-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 3px; outline: none; background: #cbd5e1; transition: background 0.3s; }
+        .dark input[type=range].temp-slider { background: #334155; }
+        input[type=range].temp-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #ffffff; cursor: pointer; border: 2px solid #ef4444; box-shadow: -400px 0 0 390px rgba(239, 68, 68, 0.3); transition: transform 0.1s; }
+
+        .axis-label { position: absolute; transform: translate(-50%, -50%); font-weight: 700; font-size: 11px; background: rgba(255, 255, 255, 0.8); color: #1e293b; padding: 2px 6px; border-radius: 4px; pointer-events: none; z-index: 5; backdrop-filter: blur(4px); border: 1px solid rgba(0,0,0,0.1); transition: opacity 0.1s; }
+        .dark .axis-label { background: rgba(15, 23, 42, 0.7); color: white; border: 1px solid rgba(255,255,255,0.1); }
+        
+        /* Math rendering overrides */
+        .katex { font-size: 1.05em !important; }
+    </style>
+    
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('afeed_theme') || 'dark';
+            if (savedTheme === 'dark') document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+        })();
+    </script>
+</head>
+<body class="bg-afeed-light text-slate-700 dark:bg-afeed-dark dark:text-slate-300 transition-colors duration-500 min-h-screen flex flex-col">
+
+    <!-- NAVIGATION -->
+    <nav class="sticky top-0 z-50 border-b border-orange-100 dark:border-slate-800/80 glass transition-colors duration-500 h-16 shrink-0">
+        <div class="w-full px-4 md:px-6 h-full flex items-center justify-between">
+            <div class="flex items-center gap-3 md:gap-5">
+                <a href="#" class="p-2 rounded-xl border border-orange-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-orange-50/50 dark:hover:bg-slate-800 text-orange-600 dark:text-slate-400 hover:text-orange-700 dark:hover:text-indigo-400 transition-all duration-300">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </a>
+                <div class="flex items-center gap-3">
+                    <span class="brand-text text-2xl tracking-tight brand-gradient inline-block px-1 hidden md:block">AFEED</span>
+                    <div class="hidden md:block w-px h-6 bg-orange-200 dark:bg-slate-700"></div>
+                    <div>
+                        <h1 class="text-sm md:text-base font-bold text-slate-800 dark:text-white leading-tight">Ideal Gas</h1>
+                        <p class="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-medium">Degrees of Freedom</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2 md:gap-4">
+                <button onclick="toggleTheme()" class="p-2.5 rounded-xl border border-orange-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-orange-50/50 dark:hover:bg-slate-800 text-orange-600 dark:text-slate-400 hover:text-orange-700 dark:hover:text-amber-400 transition-all duration-300">
+                    <span id="theme-icon-container" class="flex items-center justify-center relative z-10"></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex flex-col w-full flex-1">
+        
+        <div class="flex w-full relative h-[calc(100svh-64px)] min-h-[500px] shrink-0 z-10">
+            
+            <!-- SIDEBAR CONTROL PANEL -->
+            <aside id="sidebar" class="absolute md:relative z-30 h-full w-80 md:w-80 lg:w-[400px] bg-afeed-light dark:bg-[#0a0a0a] border-r border-orange-100 dark:border-slate-800/80 shadow-2xl md:shadow-none flex flex-col shrink-0 transform transition-transform duration-300 ease-in-out md:translate-x-0">
+                
+                <div class="p-5 flex-1 overflow-y-auto custom-scroll flex flex-col gap-6">
+                    
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i data-lucide="settings-2" class="w-4 h-4 text-orange-600 dark:text-indigo-400"></i>
+                            <h3 class="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">Parameters</h3>
+                        </div>
+                        <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-lg text-slate-500 hover:bg-orange-50 dark:hover:bg-slate-800 transition-colors">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+
+                    <!-- 1. Select Molecule -->
+                    <div class="flex flex-col gap-3 relative z-10">
+                        <h2 class="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">1. Gas Molecule Type</h2>
+                        <div class="grid grid-cols-1 gap-2">
+                            <button onclick="selectMolecule('monatomic')" id="btn-monatomic" class="text-left px-3 py-2 rounded-xl border border-orange-100 dark:border-slate-700 hover:border-blue-300 dark:hover:border-slate-500 transition-all bg-white dark:bg-slate-800/30 flex flex-col group">
+                                <span class="font-bold text-blue-600 dark:text-blue-400 text-sm">Monatomic (He, Ar)</span>
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">$N=1$. Rigid DoF: 3</span>
+                            </button>
+                            <button onclick="selectMolecule('diatomic')" id="btn-diatomic" class="text-left px-3 py-2 rounded-xl border border-orange-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-500/50 transition-all bg-white dark:bg-slate-800/30 flex flex-col group">
+                                <span class="font-bold text-emerald-600 dark:text-emerald-400 text-sm">Diatomic (O₂, N₂)</span>
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">$N=2$. Rigid DoF: 5</span>
+                            </button>
+                            <button onclick="selectMolecule('polyatomic')" id="btn-polyatomic" class="text-left px-3 py-2 rounded-xl border border-orange-100 dark:border-slate-700 hover:border-purple-300 dark:hover:border-purple-500/50 transition-all bg-white dark:bg-slate-800/30 flex flex-col group">
+                                <span class="font-bold text-purple-600 dark:text-purple-400 text-sm">Non-Linear Polyatomic (H₂O)</span>
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">$N=3$. Rigid DoF: 6</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 2. Thermal Energy Slider -->
+                    <div class="bg-red-50/50 dark:bg-red-900/10 p-4 rounded-2xl border border-red-100 dark:border-red-900/30 shrink-0">
+                        <div class="flex justify-between items-center mb-3">
+                            <label class="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wide flex items-center gap-2">
+                                <i data-lucide="thermometer" class="w-4 h-4"></i> System Temperature
+                            </label>
+                            <span id="temp-display" class="font-mono text-sm font-bold text-red-700 dark:text-red-300">300 K</span>
+                        </div>
+                        <div class="overflow-hidden rounded-lg py-1">
+                            <input type="range" id="temp-slider" class="temp-slider" min="0" max="1000" step="10" value="300">
+                        </div>
+                        <p class="text-[9px] text-slate-500 dark:text-slate-400 mt-2 leading-tight">Controls the physical amplitude and velocity of the activated thermal modes below.</p>
+                    </div>
+
+                    <!-- 3. Activate Thermal Modes -->
+                    <div class="flex flex-col gap-4 bg-white dark:bg-slate-900/30 p-4 rounded-2xl border border-orange-100 dark:border-slate-800 relative z-10">
+                        <h2 class="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-1">3. Activate Thermal Modes</h2>
+                        
+                        <!-- Translation -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Translational Modes (3)</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button onclick="toggleMode('transX')" id="t-transX" class="btn-toggle py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80">X-Axis</button>
+                                <button onclick="toggleMode('transY')" id="t-transY" class="btn-toggle py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80">Y-Axis</button>
+                                <button onclick="toggleMode('transZ')" id="t-transZ" class="btn-toggle py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80">Z-Axis</button>
+                            </div>
+                        </div>
+
+                        <!-- Rotation -->
+                        <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Rotational Modes (<span id="rot-dof-count">3</span>)</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <button onclick="toggleMode('rotX')" id="t-rotX" class="btn-toggle py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80">Pitch (X)</button>
+                                <button onclick="toggleMode('rotY')" id="t-rotY" class="btn-toggle py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80">Yaw (Y)</button>
+                                <button onclick="toggleMode('rotZ')" id="t-rotZ" class="btn-toggle py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80">Roll (Z)</button>
+                            </div>
+                        </div>
+
+                        <!-- Vibration -->
+                        <div id="vibration-container" class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Vibrational Modes (<span id="vib-dof-count">3</span>)</span>
+                            </div>
+                            <div id="vib-buttons-grid" class="grid grid-cols-1 gap-2">
+                                <!-- Populated dynamically based on molecule -->
+                            </div>
+                        </div>
+                        
+                        <button onclick="resetModes()" class="w-full py-2 mt-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 transition-colors flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700">
+                            <i data-lucide="square" class="w-3 h-3"></i> Pause Simulation
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 3D CANVAS & HUD -->
+            <div id="canvas-wrapper" class="flex-1 relative bg-afeed-light dark:bg-afeed-dark overflow-hidden min-h-0 border-b border-orange-100 dark:border-slate-800/80 transition-colors duration-500">
+                
+                <button id="sidebar-toggle-btn" onclick="toggleSidebar()" class="md:hidden absolute top-4 left-4 z-20 p-2.5 glass rounded-xl shadow-lg border border-orange-100 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition-colors">
+                    <i data-lucide="panel-left-open" class="w-5 h-5"></i>
+                </button>
+
+                <!-- Active Modes HUD -->
+                <div class="absolute top-4 right-4 md:top-6 md:right-6 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-3 md:p-4 rounded-2xl shadow-xl border border-orange-100 dark:border-slate-800 flex flex-col gap-2 z-10 w-48 transition-colors">
+                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-2">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Live DoF</span>
+                        <div class="flex items-center gap-1.5">
+                            <div id="status-indicator" class="w-2 h-2 rounded-full bg-slate-400"></div>
+                            <span id="active-total-text" class="text-xs font-bold text-slate-700 dark:text-slate-200">0 Active</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1 text-[11px] font-mono">
+                        <div class="flex justify-between"><span class="text-slate-500">Translation:</span><span id="hud-trans" class="font-bold text-blue-500">0</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500">Rotation:</span><span id="hud-rot" class="font-bold text-emerald-500">0</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500">Vibration:</span><span id="hud-vib" class="font-bold text-purple-500">0</span></div>
+                    </div>
+                </div>
+
+                <!-- 3D Canvas Injection -->
+                <div id="three-container" class="absolute inset-0 w-full h-full z-0"></div>
+
+                <!-- 3D Labels -->
+                <div id="labels-container" class="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-hidden">
+                    <div class="axis-label text-red-600 dark:text-red-400" id="label-px">+X</div>
+                    <div class="axis-label text-red-600 dark:text-red-400" id="label-nx">-X</div>
+                    <div class="axis-label text-green-600 dark:text-green-400" id="label-py">+Y</div>
+                    <div class="axis-label text-green-600 dark:text-green-400" id="label-ny">-Y</div>
+                    <div class="axis-label text-blue-600 dark:text-blue-400" id="label-pz">+Z</div>
+                    <div class="axis-label text-blue-600 dark:text-blue-400" id="label-nz">-Z</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM DASHBOARD -->
+        <div class="w-full flex flex-col md:flex-row shrink-0 bg-afeed-light dark:bg-[#0a0a0a] z-20 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.2)]">
+            
+            <div class="w-full md:w-80 lg:w-[400px] flex flex-col p-5 md:p-6 border-b md:border-b-0 md:border-r border-orange-100 dark:border-slate-800/80">
+                <h3 class="text-xs font-bold text-slate-600 dark:text-slate-300 mb-3 flex items-center gap-2 uppercase tracking-wide">
+                    <i data-lucide="microscope" class="w-4 h-4 text-orange-500"></i> Mathematical Model
+                </h3>
+                <div class="flex-1 bg-white dark:bg-slate-900/30 p-4 rounded-xl border border-orange-100 dark:border-slate-800/50 shadow-inner flex flex-col gap-2 justify-center" id="math-card">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col p-5 md:p-6 min-h-[200px]">
+                <h3 class="text-xs font-bold text-slate-600 dark:text-slate-300 mb-3 flex items-center gap-2 uppercase tracking-wide">
+                    <i data-lucide="info" class="w-4 h-4 text-blue-500"></i> Model Assumptions & Physics
+                </h3>
+                <div class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                        <ul class="text-[11px] md:text-xs text-slate-600 dark:text-slate-300 space-y-1.5 list-disc pl-4">
+                            <li><strong class="text-slate-700 dark:text-slate-200">Classical Ideal Gas:</strong> Intermolecular forces are ignored.</li>
+                            <li><strong class="text-slate-700 dark:text-slate-200">Equipartition Theorem:</strong> Energy $\langle E\rangle = \frac{f}{2}k_BT$ per molecule.</li>
+                            <li><strong class="text-slate-700 dark:text-slate-200">Illustrative Translation:</strong> Positional oscillation shown here is for conceptual visualization. Real gases follow Maxwell-Boltzmann velocity distributions.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-amber-50/50 dark:bg-amber-900/10 p-4 rounded-xl border border-amber-100 dark:border-amber-900/30" id="molecule-specific-notes">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ============================================================================
+        // 1. UI & THEME MANAGEMENT
+        // ============================================================================
+        function applyThemeIcons() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const themeIconContainer = document.getElementById('theme-icon-container');
+            themeIconContainer.innerHTML = isDark 
+                ? `<i data-lucide="sun" class="w-5 h-5 text-amber-400"></i>`
+                : `<i data-lucide="moon" class="w-5 h-5 text-orange-600"></i>`;
+            if(window.lucide) lucide.createIcons();
+            if(typeof updateThreeJSTheme === 'function') updateThreeJSTheme(isDark);
+        }
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('afeed_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            applyThemeIcons();
+        }
+
+        const sidebar = document.getElementById('sidebar');
+        let isSidebarOpen = window.innerWidth >= 768; 
+        function toggleSidebar() {
+            isSidebarOpen = !isSidebarOpen;
+            isSidebarOpen ? sidebar.classList.remove('-translate-x-full') : sidebar.classList.add('-translate-x-full');
+            setTimeout(resizeCanvas, 300);
+        }
+        
+        window.addEventListener('resize', () => {
+            if(window.innerWidth >= 768 && !isSidebarOpen) toggleSidebar(); 
+            else if (window.innerWidth < 768 && isSidebarOpen) toggleSidebar();
+            resizeCanvas();
+        });
+
+        // ============================================================================
+        // 2. STATE ARCHITECTURE
+        // ============================================================================
+        const state = {
+            molecule: 'polyatomic', // monatomic, diatomic, polyatomic
+            temperature: 300,       // Kelvin (0 to 1000)
+            modes: {
+                transX: false, transY: false, transZ: false,
+                rotX: false, rotY: false, rotZ: false,
+                vib1: false, vib2: false, vib3: false
+            },
+            atoms: [] // Stores base positions for vibrational calculations
+        };
+
+        // ============================================================================
+        // 3. THREE.JS RENDERING ENGINE
+        // ============================================================================
+        const wrapper = document.getElementById('canvas-wrapper');
+        const container = document.getElementById('three-container');
+        const scene = new THREE.Scene();
+        
+        const camera = new THREE.PerspectiveCamera(45, wrapper.clientWidth / wrapper.clientHeight, 0.1, 100);
+        camera.position.set(10, 8, 12);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
+        container.appendChild(renderer.domElement);
+
+        // Orbit Controls optimized for Desktop & Mobile
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.enablePan = true; 
+        controls.enableZoom = true;
+        controls.target.set(0, 0, 0);
+
+        // Lighting
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        let gridHelper;
+        function updateThreeJSTheme(isDark) {
+            scene.background = null; // Let CSS handle background for seamless UI
+            if (gridHelper) scene.remove(gridHelper);
+            
+            const gridColor = isDark ? 0x1e293b : 0xffedd5;
+            const gridCenter = isDark ? 0x334155 : 0xf97316;
+            
+            gridHelper = new THREE.GridHelper(30, 30, gridCenter, gridColor);
+            gridHelper.position.y = 0; // Strictly at origin
+            scene.add(gridHelper);
+        }
+
+        // Thin, semi-transparent axes
+        function createFullAxis(color, length, direction) {
+            const material = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.5 });
+            const cylinder = new THREE.CylinderGeometry(0.02, 0.02, length, 8);
+            const mesh = new THREE.Mesh(cylinder, material);
+            const group = new THREE.Group();
+            
+            if (direction === 'x') mesh.rotation.z = -Math.PI / 2;
+            else if (direction === 'z') mesh.rotation.x = Math.PI / 2;
+            
+            group.add(mesh);
+            return group;
+        }
+
+        scene.add(createFullAxis(0xef4444, 20, 'x')); // Red X
+        scene.add(createFullAxis(0x22c55e, 20, 'y')); // Green Y
+        scene.add(createFullAxis(0x3b82f6, 20, 'z')); // Blue Z
+
+        // Diatomic dashed bond axis (Illustrative X-axis overlay)
+        const dashedMaterial = new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.3, gapSize: 0.2, transparent: true, opacity: 0.6 });
+        const dashGeom = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-8,0,0), new THREE.Vector3(8,0,0)]);
+        const bondAxisLine = new THREE.Line(dashGeom, dashedMaterial);
+        bondAxisLine.computeLineDistances();
+        bondAxisLine.visible = false;
+        scene.add(bondAxisLine);
+
+        // ============================================================================
+        // 4. MOLECULE CONSTRUCTION & PHYSICS (CoM)
+        // ============================================================================
+        const moleculeGroup = new THREE.Group();
+        scene.add(moleculeGroup);
+        
+        const matO = new THREE.MeshPhongMaterial({ color: 0xef4444, shininess: 100 }); // Red O
+        const matH = new THREE.MeshPhongMaterial({ color: 0x3b82f6, shininess: 100 }); // Blue H/N
+        const matHe = new THREE.MeshPhongMaterial({ color: 0xa855f7, shininess: 100 }); // Purple He
+        const matBond = new THREE.MeshPhongMaterial({ color: 0x94a3b8, shininess: 50 });
+
+        const geoLg = new THREE.SphereGeometry(1.0, 32, 32);
+        const geoSm = new THREE.SphereGeometry(0.6, 32, 32);
+
+        function createBond(p1, p2, radius=0.15) {
+            const dist = p1.distanceTo(p2);
+            const geom = new THREE.CylinderGeometry(radius, radius, dist, 16);
+            const mesh = new THREE.Mesh(geom, matBond);
+            mesh.position.copy(p1).lerp(p2, 0.5);
+            mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), p2.clone().sub(p1).normalize());
+            return mesh;
+        }
+
+        function clearMolecule() {
+            while (moleculeGroup.children.length > 0) moleculeGroup.remove(moleculeGroup.children[0]);
+            moleculeGroup.position.set(0,0,0);
+            moleculeGroup.rotation.set(0,0,0);
+            state.atoms = [];
+            bondAxisLine.visible = false;
+        }
+
+        function buildMonatomic() {
+            clearMolecule();
+            const atom = new THREE.Mesh(geoLg, matHe);
+            moleculeGroup.add(atom);
+            state.atoms.push({ mesh: atom, basePos: new THREE.Vector3(0,0,0) });
+        }
+
+        function buildDiatomic() {
+            clearMolecule();
+            const d = 1.5;
+            const a1 = new THREE.Mesh(geoLg, matH);
+            const a2 = new THREE.Mesh(geoLg, matH);
+            
+            // Placed along X axis
+            a1.position.set(-d, 0, 0);
+            a2.position.set(d, 0, 0);
+            const bond = createBond(a1.position, a2.position);
+
+            moleculeGroup.add(a1, a2, bond);
+            state.atoms.push({ mesh: a1, basePos: a1.position.clone(), type: 'N1' });
+            state.atoms.push({ mesh: a2, basePos: a2.position.clone(), type: 'N2' });
+            bondAxisLine.visible = true; // Show dashed bond axis
+        }
+
+        function buildPolyatomic() {
+            clearMolecule();
+            // True H2O Geometry
+            const bondLength = 2.0;
+            const angleDeg = 104.5;
+            const angleRad = THREE.MathUtils.degToRad(angleDeg);
+            
+            const mO = 16, mH = 1;
+            
+            // Initial Positions (O at origin)
+            const pO = new THREE.Vector3(0, 0, 0);
+            const pH1 = new THREE.Vector3(-bondLength * Math.sin(angleRad/2), -bondLength * Math.cos(angleRad/2), 0);
+            const pH2 = new THREE.Vector3(bondLength * Math.sin(angleRad/2), -bondLength * Math.cos(angleRad/2), 0);
+
+            // Calculate Center of Mass
+            const totalMass = mO + mH + mH;
+            const yCoM = (mO * pO.y + mH * pH1.y + mH * pH2.y) / totalMass;
+            
+            // Offset to center of mass
+            pO.y -= yCoM; pH1.y -= yCoM; pH2.y -= yCoM;
+
+            const oMesh = new THREE.Mesh(geoLg, matO); oMesh.position.copy(pO);
+            const h1Mesh = new THREE.Mesh(geoSm, matH); h1Mesh.position.copy(pH1);
+            const h2Mesh = new THREE.Mesh(geoSm, matH); h2Mesh.position.copy(pH2);
+            
+            const b1 = createBond(pO, pH1);
+            const b2 = createBond(pO, pH2);
+
+            moleculeGroup.add(oMesh, h1Mesh, h2Mesh, b1, b2);
+            
+            state.atoms = [
+                { mesh: oMesh, basePos: pO.clone(), type: 'O' },
+                { mesh: h1Mesh, basePos: pH1.clone(), type: 'H1' },
+                { mesh: h2Mesh, basePos: pH2.clone(), type: 'H2' }
+            ];
+            // Bonds are not added to state.atoms, they will be dynamically rebuilt during vibration
+        }
+
+        // ============================================================================
+        // 5. UI CONTROLLERS & LOGIC
+        // ============================================================================
+        document.getElementById('temp-slider').addEventListener('input', (e) => {
+            state.temperature = parseInt(e.target.value);
+            document.getElementById('temp-display').innerText = `${state.temperature} K`;
+            
+            // If T=0, pause all motions visually
+            if (state.temperature === 0 && getActiveCount() > 0) {
+                document.getElementById('active-total-text').innerText = "0 K (Frozen)";
+            } else {
+                updateHUD();
+            }
+        });
+
+        window.selectMolecule = function(type) {
+            state.molecule = type;
+            if(type === 'monatomic') buildMonatomic();
+            else if(type === 'diatomic') buildDiatomic();
+            else buildPolyatomic();
+            
+            resetModes();
+            updateUI();
+        }
+
+        window.toggleMode = function(mode) {
+            state.modes[mode] = !state.modes[mode];
+            updateUI();
+        }
+
+        window.resetModes = function() {
+            Object.keys(state.modes).forEach(k => state.modes[k] = false);
+            updateUI();
+        }
+
+        function getActiveCount() {
+            return Object.values(state.modes).filter(Boolean).length;
+        }
+
+        function updateUI() {
+            // Update Molecule Buttons
+            document.querySelectorAll('[id^="btn-"]').forEach(btn => btn.classList.remove('ring-2', 'ring-orange-500', 'bg-orange-50/50', 'dark:bg-slate-800'));
+            document.getElementById(`btn-${state.molecule}`).classList.add('ring-2', 'ring-orange-500', 'bg-orange-50/50', 'dark:bg-slate-800');
+
+            // Handle Vibrational Buttons DOM
+            const vibContainer = document.getElementById('vibration-container');
+            const vibGrid = document.getElementById('vib-buttons-grid');
+            
+            if (state.molecule === 'monatomic') {
+                vibContainer.classList.add('hidden');
+            } else if (state.molecule === 'diatomic') {
+                vibContainer.classList.remove('hidden');
+                document.getElementById('vib-dof-count').innerText = "1";
+                vibGrid.innerHTML = `<button onclick="toggleMode('vib1')" id="t-vib1" class="btn-toggle py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80">Bond Stretch</button>`;
+                vibGrid.className = "grid grid-cols-1 gap-2";
+            } else {
+                vibContainer.classList.remove('hidden');
+                document.getElementById('vib-dof-count').innerText = "3";
+                vibGrid.innerHTML = `
+                    <button onclick="toggleMode('vib1')" id="t-vib1" class="btn-toggle py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80">Sym Stretch</button>
+                    <button onclick="toggleMode('vib2')" id="t-vib2" class="btn-toggle py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80">Asym Stretch</button>
+                    <button onclick="toggleMode('vib3')" id="t-vib3" class="btn-toggle py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80">Bend</button>
+                `;
+                vibGrid.className = "grid grid-cols-3 gap-2";
+            }
+
+            // Enforce Physics Rules on Buttons
+            ['rotX', 'rotY', 'rotZ'].forEach(id => document.getElementById(`t-${id}`).disabled = false);
+            if (state.molecule === 'monatomic') {
+                ['rotX', 'rotY', 'rotZ', 'vib1', 'vib2', 'vib3'].forEach(k => { state.modes[k] = false; document.getElementById(`t-${k}`)?.setAttribute('disabled', 'true'); });
+                document.getElementById('rot-dof-count').innerText = "0";
+            } else if (state.molecule === 'diatomic') {
+                state.modes.rotX = false;
+                document.getElementById('t-rotX').disabled = true;
+                document.getElementById('rot-dof-count').innerText = "2";
+                state.modes.vib2 = false; state.modes.vib3 = false;
+            } else {
+                document.getElementById('rot-dof-count').innerText = "3";
+            }
+
+            // Sync Styles
+            Object.keys(state.modes).forEach(key => {
+                const btn = document.getElementById(`t-${key}`);
+                if (btn) {
+                    if (state.modes[key]) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                }
+            });
+
+            updateHUD();
+            updateMathDashboards();
+        }
+
+        function updateHUD() {
+            const ind = document.getElementById('status-indicator');
+            const txt = document.getElementById('active-total-text');
+            
+            let t=0, r=0, v=0;
+            if(state.modes.transX) t++; if(state.modes.transY) t++; if(state.modes.transZ) t++;
+            if(state.modes.rotX) r++; if(state.modes.rotY) r++; if(state.modes.rotZ) r++;
+            if(state.modes.vib1) v++; if(state.modes.vib2) v++; if(state.modes.vib3) v++;
+
+            document.getElementById('hud-trans').innerText = t;
+            document.getElementById('hud-rot').innerText = r;
+            document.getElementById('hud-vib').innerText = v;
+
+            const total = t + r + v;
+            
+            if (total === 0) {
+                txt.innerText = "Paused";
+                ind.className = "w-2 h-2 rounded-full bg-slate-400";
+            } else if (state.temperature === 0) {
+                txt.innerText = "0 K (Frozen)";
+                ind.className = "w-2 h-2 rounded-full bg-blue-400";
+            } else {
+                txt.innerText = `${total} Active Modes`;
+                ind.className = "w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]";
+            }
+        }
+
+        function updateMathDashboards() {
+            const mathCard = document.getElementById('math-card');
+            const noteCard = document.getElementById('molecule-specific-notes');
+            
+            let n, mathHtml, noteHtml;
+
+            if (state.molecule === 'monatomic') {
+                n = 1;
+                mathHtml = `
+                    <div class="text-sm text-slate-700 dark:text-slate-200 font-bold mb-1">Monatomic Particle ($N=1$)</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400">Total Coordinates: $3N = 3$</div>
+                    <div class="mt-2 text-center text-sm font-mono bg-slate-50 dark:bg-slate-950 py-2 rounded-lg border border-slate-100 dark:border-slate-800">
+                        $\\text{DoF} = 3_{\\text{trans}} + 0_{\\text{rot}} = 3$
+                    </div>
+                `;
+                noteHtml = `<ul class="text-[11px] md:text-xs text-slate-600 dark:text-slate-300 space-y-1.5 list-disc pl-4">
+                    <li><strong class="text-slate-700 dark:text-slate-200">Point Mass Approximation:</strong> The radius of a single atom is extremely small.</li>
+                    <li><strong class="text-slate-700 dark:text-slate-200">Zero Rotational DoF:</strong> Because $I \\approx 0$, rotation cannot store macroscopic thermodynamic energy.</li>
+                </ul>`;
+            } else if (state.molecule === 'diatomic') {
+                n = 2;
+                mathHtml = `
+                    <div class="text-sm text-slate-700 dark:text-slate-200 font-bold mb-1">Linear Diatomic ($N=2$)</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400">Total Coordinates: $3N = 6$</div>
+                    <div class="mt-2 text-center text-[11px] font-mono bg-slate-50 dark:bg-slate-950 py-2 px-1 rounded-lg border border-slate-100 dark:border-slate-800">
+                        $\\text{DoF} = 3_{\\text{trans}} + 2_{\\text{rot}} + (3N-5)_{\\text{vib}} = 6$
+                    </div>
+                `;
+                noteHtml = `<ul class="text-[11px] md:text-xs text-slate-600 dark:text-slate-300 space-y-1.5 list-disc pl-4">
+                    <li><strong class="text-slate-700 dark:text-slate-200">Negligible X-Rotation:</strong> The moment of inertia along the bond axis (dashed white line) is practically zero.</li>
+                    <li><strong class="text-slate-700 dark:text-slate-200">Vibration:</strong> Becomes active at high temperatures (quantum harmonic oscillator).</li>
+                </ul>`;
+            } else {
+                n = 3;
+                mathHtml = `
+                    <div class="text-sm text-slate-700 dark:text-slate-200 font-bold mb-1">Non-Linear Polyatomic ($N=3$)</div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400">Total Coordinates: $3N = 9$</div>
+                    <div class="mt-2 text-center text-[11px] font-mono bg-slate-50 dark:bg-slate-950 py-2 px-1 rounded-lg border border-slate-100 dark:border-slate-800">
+                        $\\text{DoF} = 3_{\\text{trans}} + 3_{\\text{rot}} + (3N-6)_{\\text{vib}} = 9$
+                    </div>
+                `;
+                noteHtml = `<ul class="text-[11px] md:text-xs text-slate-600 dark:text-slate-300 space-y-1.5 list-disc pl-4">
+                    <li><strong class="text-slate-700 dark:text-slate-200">Full 3D Mass Distribution:</strong> Because mass is spread across X, Y, and Z, all three rotational axes have significant inertia.</li>
+                    <li><strong class="text-slate-700 dark:text-slate-200">Center of Mass:</strong> The molecule rotates perfectly around its mathematical center, slightly below the Oxygen atom.</li>
+                </ul>`;
+            }
+
+            mathCard.innerHTML = mathHtml;
+            noteCard.innerHTML = noteHtml;
+            if(window.renderMathInElement) renderMathInElement(mathCard);
+        }
+
+        // ============================================================================
+        // 6. ANIMATION & PHYSICS LOOP
+        // ============================================================================
+        const clock = new THREE.Clock();
+
+        const axisLabels = [
+            { id: 'label-px', pos: new THREE.Vector3(10.5, 0, 0) }, { id: 'label-nx', pos: new THREE.Vector3(-10.5, 0, 0) },
+            { id: 'label-py', pos: new THREE.Vector3(0, 10.5, 0) }, { id: 'label-ny', pos: new THREE.Vector3(0, -10.5, 0) },
+            { id: 'label-pz', pos: new THREE.Vector3(0, 0, 10.5) }, { id: 'label-nz', pos: new THREE.Vector3(0, 0, -10.5) }
+        ];
+
+        function updateLabelsPosition() {
+            const rect = wrapper.getBoundingClientRect();
+            const widthHalf = rect.width / 2;
+            const heightHalf = rect.height / 2;
+
+            axisLabels.forEach(labelData => {
+                const el = document.getElementById(labelData.id);
+                if(!el) return;
+                const pos = labelData.pos.clone().project(camera);
+                if (pos.z > 1) { el.style.opacity = '0'; } 
+                else {
+                    el.style.opacity = '1';
+                    el.style.left = (pos.x * widthHalf + widthHalf) + 'px';
+                    el.style.top = (-(pos.y * heightHalf) + heightHalf) + 'px';
+                }
+            });
+        }
+
+        function resizeCanvas() {
+            const rect = wrapper.getBoundingClientRect();
+            camera.aspect = rect.width / rect.height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(rect.width, rect.height);
+        }
+
+        // Helper to dynamically rebuild bonds when atoms move during vibration
+        function rebuildBonds() {
+            // Remove old bonds
+            const toRemove = [];
+            moleculeGroup.children.forEach(c => { if(c.geometry.type === "CylinderGeometry") toRemove.push(c); });
+            toRemove.forEach(c => { moleculeGroup.remove(c); c.geometry.dispose(); });
+
+            if (state.molecule === 'diatomic') {
+                const p1 = state.atoms[0].mesh.position;
+                const p2 = state.atoms[1].mesh.position;
+                moleculeGroup.add(createBond(p1, p2));
+            } else if (state.molecule === 'polyatomic') {
+                const pO = state.atoms[0].mesh.position;
+                const pH1 = state.atoms[1].mesh.position;
+                const pH2 = state.atoms[2].mesh.position;
+                moleculeGroup.add(createBond(pO, pH1), createBond(pO, pH2));
+            }
+        }
+
+        let simTime = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const dt = clock.getDelta();
+            
+            // Temperature factor: scales velocity and amplitude
+            const T = state.temperature;
+            const vScale = T === 0 ? 0 : Math.sqrt(T / 300); 
+            const ampScale = T === 0 ? 0 : Math.max(0.2, T / 1000); 
+
+            if (T > 0) simTime += dt * vScale * 3; // Advance time based on temp
+
+            // 1. TRANSLATION (Illustrative Oscillation)
+            const basePos = new THREE.Vector3();
+            if (state.modes.transX) basePos.x = Math.sin(simTime * 1.0) * 4 * ampScale;
+            if (state.modes.transY) basePos.y = Math.sin(simTime * 1.3) * 4 * ampScale;
+            if (state.modes.transZ) basePos.z = Math.sin(simTime * 0.8) * 4 * ampScale;
+            
+            moleculeGroup.position.lerp(basePos, 0.1);
+
+            // 2. ROTATION (Frame-rate independent angular velocity)
+            const angularVel = 1.5 * vScale;
+            if (state.modes.rotX) moleculeGroup.rotation.x += angularVel * dt;
+            if (state.modes.rotY) moleculeGroup.rotation.y += angularVel * dt;
+            if (state.modes.rotZ) moleculeGroup.rotation.z += angularVel * dt;
+
+            // 3. VIBRATION (Deforming relative to base coordinates)
+            let needsBondRebuild = false;
+            
+            if (state.atoms.length > 0) {
+                if (state.molecule === 'diatomic') {
+                    const a1 = state.atoms[0]; const a2 = state.atoms[1];
+                    const dir = new THREE.Vector3(1,0,0); // Along X
+                    let disp = 0;
+                    if (state.modes.vib1 && T > 0) disp = Math.sin(simTime * 5) * 0.4 * ampScale;
+                    
+                    a1.mesh.position.copy(a1.basePos).add(dir.clone().multiplyScalar(-disp));
+                    a2.mesh.position.copy(a2.basePos).add(dir.clone().multiplyScalar(disp));
+                    if(state.modes.vib1) needsBondRebuild = true;
+                } 
+                else if (state.molecule === 'polyatomic') {
+                    const o = state.atoms[0]; const h1 = state.atoms[1]; const h2 = state.atoms[2];
+                    
+                    // Reset to base
+                    o.mesh.position.copy(o.basePos);
+                    h1.mesh.position.copy(h1.basePos);
+                    h2.mesh.position.copy(h2.basePos);
+
+                    if (T > 0) {
+                        // Vectors from O to H
+                        const v1 = h1.basePos.clone().sub(o.basePos).normalize();
+                        const v2 = h2.basePos.clone().sub(o.basePos).normalize();
+                        
+                        if (state.modes.vib1) { // Sym Stretch
+                            const disp = Math.sin(simTime * 6) * 0.3 * ampScale;
+                            h1.mesh.position.add(v1.clone().multiplyScalar(disp));
+                            h2.mesh.position.add(v2.clone().multiplyScalar(disp));
+                            needsBondRebuild = true;
+                        }
+                        if (state.modes.vib2) { // Asym Stretch
+                            const disp = Math.sin(simTime * 6.5) * 0.3 * ampScale;
+                            h1.mesh.position.add(v1.clone().multiplyScalar(disp));
+                            h2.mesh.position.add(v2.clone().multiplyScalar(-disp));
+                            needsBondRebuild = true;
+                        }
+                        if (state.modes.vib3) { // Bend
+                            const disp = Math.sin(simTime * 4) * 0.4 * ampScale;
+                            // Move H atoms perpendicular to bond vectors slightly inward/outward
+                            const p1 = new THREE.Vector3(v1.y, -v1.x, 0).normalize();
+                            const p2 = new THREE.Vector3(-v2.y, v2.x, 0).normalize();
+                            h1.mesh.position.add(p1.multiplyScalar(disp));
+                            h2.mesh.position.add(p2.multiplyScalar(disp));
+                            
+                            // Counter-move O slightly to maintain CoM (approximate visual)
+                            o.mesh.position.y -= disp * 0.2; 
+                            needsBondRebuild = true;
+                        }
+                    }
+                }
+            }
+            
+            if (needsBondRebuild) rebuildBonds();
+
+            controls.update();
+            updateLabelsPosition();
+            renderer.render(scene, camera);
+        }
+
+        // Init
+        window.addEventListener('load', () => {
+            applyThemeIcons();
+            selectMolecule('polyatomic');
+            resizeCanvas();
+            animate();
+        });
+
+    </script>
+</body>
+</html>
