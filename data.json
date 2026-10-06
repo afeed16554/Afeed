@@ -158,13 +158,19 @@
             "id": "p1c10",
             "name": "Ideal Gas",
             "bn": "আদর্শ গ্যাস ও গতিতত্ত্ব",
-            "status": "planned",
+            "status": "available",
             "icon": "wind",
             "keywords": [
               "pressure",
               "temperature",
               "rms",
               "kinetic theory"
+            ],
+            "simulations": [
+              {
+                "title": "Degree of Freedom",
+                "link": "Degrees of Freedom Simulation.html"
+              }
             ]
           }
         ]
