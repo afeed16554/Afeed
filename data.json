@@ -361,7 +361,7 @@
             "id": "c1c2",
             "name": "Qualitative Chemistry",
             "bn": "গুণগত রসায়ন",
-            "status": "planned",
+            "status": "available",
             "icon": "microscope",
             "keywords": [
               "atom",
@@ -369,6 +369,12 @@
               "quantum",
               "solubility",
               "ions"
+            ],
+            "simulations": [
+              {
+                "title": "Quantum orbitals",
+                "link": "Orbital shapes.html"
+              }
             ]
           },
           {
