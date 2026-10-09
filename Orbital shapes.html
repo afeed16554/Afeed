@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Quantum Orbitals | AFEED</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        afeed: { primary: '#9b87f5', dark: '#050811', panel: '#0f172a' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['\\(', '\\)'], ['$', '$']], displayMath: [['\\[', '\\]'], ['$$', '$$']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+    <script>
+        if (localStorage.getItem('afeed_theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    
+    <style>
+        :root { --ease: cubic-bezier(0.2, 0.8, 0.2, 1); }
+        body { margin: 0; overflow-x: hidden; background-color: #f8fafc; }
+        html.dark body { background-color: #050811; }
+
+        /* AFEED Header Button Styles (Rounded Squares) */
+        .header-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 38px; height: 38px; border-radius: 12px;
+            background: rgba(15, 23, 42, 0.05);
+            border: 1px solid rgba(15, 23, 42, 0.05);
+            cursor: pointer; transition: all 0.2s ease;
+            color: #475569; text-decoration: none;
+            flex-shrink: 0;
+        }
+        .header-btn:hover { background: rgba(15, 23, 42, 0.1); }
+        html.dark .header-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+        }
+        html.dark .header-btn:hover { background: rgba(255, 255, 255, 0.08); }
+
+        .glass-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        html.dark .glass-header {
+            background: rgba(5, 8, 17, 0.85);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .brand-text { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -0.05em; }
+        
+        input[type=range].afeed-slider { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range].afeed-slider:focus { outline: none; }
+        input[type=range].afeed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%;
+            background: #ffffff; cursor: pointer; margin-top: -6px;
+            border: 2px solid #9b87f5; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        input[type=range].afeed-slider::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer; background: #cbd5e1; border-radius: 2px;
+        }
+        html.dark input[type=range].afeed-slider::-webkit-slider-runnable-track { background: #334155; }
+        
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        html.dark .custom-scroll::-webkit-scrollbar-thumb { background: #334155; }
+
+        #canvas-container { 
+            cursor: grab; position: relative; isolation: isolate;
+            background: radial-gradient(circle at 50% 48%, rgba(155, 135, 245, 0.08) 0%, transparent 68%), #f8fafc; 
+        }
+        html.dark #canvas-container { 
+            background: radial-gradient(circle at 50% 48%, rgba(155, 135, 245, 0.12) 0%, transparent 68%), #050811; 
+        }
+        #sim-canvas { position: relative; z-index: 1; outline: none; display: block; width: 100%; height: 100%; }
+        #canvas-container:active { cursor: grabbing; }
+
+        .orb-btn { transition: all 0.2s var(--ease); }
+        .orb-btn.active {
+            background: #9b87f5; color: white; border-color: #9b87f5; font-weight: 600;
+            box-shadow: 0 4px 12px rgba(155, 135, 245, 0.3);
+        }
+        
+        .node-toggle.active { opacity: 1; border-color: currentColor; }
+        .node-toggle { opacity: 0.6; transition: all 0.2s; }
+
+        #mobile-drawer { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        @media (max-width: 768px) {
+            #mobile-drawer { transform: translateY(100%); }
+            #mobile-drawer.open { transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 dark:text-slate-200 transition-colors duration-300 flex flex-col h-[100dvh] overflow-hidden">
+
+    <!-- Header (Aligned with exact design specs) -->
+    <nav class="h-[64px] shrink-0 glass-header flex items-center justify-between px-4 z-50">
+        <div class="flex items-center gap-4">
+            <a href="https://afeed16554.github.io/Afeed/index.html" class="header-btn" aria-label="Go Back" title="Return">
+                <i data-lucide="arrow-left" class="w-[18px] h-[18px]"></i>
+            </a>
+            <div class="flex items-center">
+                <h1 class="brand-text text-[24px] text-[#9b87f5]">AFEED</h1>
+                <div class="w-[1px] h-8 bg-slate-300 dark:bg-slate-700/60 mx-4"></div>
+                <div class="flex flex-col justify-center">
+                    <span class="text-[14px] font-bold text-slate-900 dark:text-white leading-tight">Quantum Orbitals</span>
+                    <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-tight">Probability Density & Nodes</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2.5">
+            <button onclick="toggleInfo()" class="header-btn hidden md:flex" aria-label="Information" title="Information">
+                <i data-lucide="info" class="w-[18px] h-[18px]"></i>
+            </button>
+            <button onclick="toggleTheme()" class="header-btn" aria-label="Toggle Theme" title="Toggle Theme">
+                <i data-lucide="sun" id="theme-icon" class="w-[18px] h-[18px]"></i>
+            </button>
+            <button onclick="toggleFullscreen()" class="header-btn hidden md:flex" aria-label="Toggle Fullscreen" title="Fullscreen">
+                <i data-lucide="maximize" id="fullscreen-icon" class="w-[18px] h-[18px]"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="flex-1 flex overflow-hidden relative flex-col md:flex-row w-full">
+        
+        <!-- Controls Sidebar (Moved to LEFT on Desktop) -->
+        <aside id="mobile-drawer" class="absolute md:relative z-40 w-full md:w-[380px] h-[85vh] md:h-full bottom-0 md:bottom-auto bg-white dark:bg-[#0B101E] border-t md:border-t-0 md:border-r border-slate-200 dark:border-slate-800 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:shadow-[10px_0_40px_rgba(0,0,0,0.05)] rounded-t-2xl md:rounded-none">
+            
+            <!-- Mobile Handle -->
+            <div class="flex md:hidden items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-white/95 dark:bg-[#0B101E]/95 backdrop-blur rounded-t-2xl">
+                <span class="text-sm font-bold tracking-wide text-slate-800 dark:text-white">Simulation Controls</span>
+                <button onclick="toggleMobileDrawer()" class="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400">
+                    <i data-lucide="chevron-down" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scroll p-4 md:p-5 flex flex-col gap-5">
+                
+                <!-- Unified Information Card -->
+                <div class="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-200 dark:border-slate-700/60 shadow-sm relative">
+                    <div class="flex justify-between items-start mb-1">
+                        <h2 class="text-[18px] font-bold text-[#9b87f5]" id="hud-orb-name">1s Orbital</h2>
+                        <button onclick="resetCamera()" class="p-1.5 bg-white dark:bg-slate-700 rounded-md shadow-sm border border-slate-200 dark:border-slate-600 text-slate-500 hover:text-[#9b87f5] dark:text-slate-300 dark:hover:text-[#9b87f5] transition-colors" title="Reset View" aria-label="Reset View">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <p id="hud-desc" class="text-[12px] text-slate-500 dark:text-slate-400 mb-4">Spherical</p>
+                    
+                    <!-- Quantum Numbers -->
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs font-mono bg-white dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700/60 mb-4">
+                        <div><span class="block text-[9px] text-slate-400 font-sans uppercase mb-0.5">n</span><span id="qn-n" class="font-bold text-slate-700 dark:text-slate-200">1</span></div>
+                        <div><span class="block text-[9px] text-slate-400 font-sans uppercase mb-0.5">l</span><span id="qn-l" class="font-bold text-slate-700 dark:text-slate-200">0</span></div>
+                        <div><span class="block text-[9px] text-slate-400 font-sans uppercase mb-0.5">m_l basis</span><span id="qn-ml" class="font-bold text-slate-700 dark:text-slate-200 text-[10px]">0</span></div>
+                    </div>
+
+                    <!-- Nodal Surfaces List -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2 px-1">
+                            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nodal Surfaces</h3>
+                            <span class="text-[10px] font-medium text-slate-500">Total: <span id="node-t">0</span></span>
+                        </div>
+                        <div id="node-list" class="space-y-1.5 max-h-40 overflow-y-auto custom-scroll pr-1">
+                            <!-- Nodes injected dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Environment Toggles -->
+                    <div class="flex items-center gap-4 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/60">
+                         <label class="flex items-center gap-2 text-xs font-medium cursor-pointer text-slate-600 dark:text-slate-300 hover:text-[#9b87f5] transition-colors flex-1">
+                            <input type="checkbox" id="chk-axes" class="rounded border-slate-300 text-[#9b87f5] focus:ring-[#9b87f5]" onchange="toggleAxes()" checked>
+                            World Axes
+                        </label>
+                        <div class="w-px h-4 bg-slate-300 dark:bg-slate-700"></div>
+                        <label class="flex items-center gap-2 text-xs font-medium cursor-pointer text-slate-600 dark:text-slate-300 hover:text-[#9b87f5] transition-colors flex-1 justify-end">
+                            <input type="checkbox" id="chk-auto" class="rounded border-slate-300 text-[#9b87f5] focus:ring-[#9b87f5]" onchange="toggleAuto()">
+                            Auto Rotate
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Gallery -->
+                <div class="mt-2">
+                    <h2 class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 px-1">Orbital Gallery</h2>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-4 gap-1.5" id="gallery-s"></div>
+                        <div class="grid grid-cols-3 gap-1.5" id="gallery-p"></div>
+                        <div class="grid grid-cols-3 gap-1.5" id="gallery-d"></div>
+                        <div class="grid grid-cols-3 gap-1.5" id="gallery-f"></div>
+                    </div>
+                </div>
+
+                <!-- Visualization Settings -->
+                <div class="border-t border-slate-100 dark:border-slate-800 pt-5 space-y-5 mt-2">
+                    <h2 class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2 px-1">Rendering Settings</h2>
+                    
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-semibold px-1">Render Mode</label>
+                        <div class="grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                            <button onclick="setRenderMode(1)" id="btn-mode-1" class="py-1.5 text-[11px] font-medium rounded-md bg-white dark:bg-slate-700 shadow-sm transition-all text-[#9b87f5]">Probability Cloud</button>
+                            <button onclick="setRenderMode(0)" id="btn-mode-0" class="py-1.5 text-[11px] font-medium rounded-md hover:text-slate-900 dark:hover:text-white transition-all text-slate-500 bg-transparent">Density-Band Points</button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-semibold px-1">Color Scale</label>
+                        <select id="sel-color" onchange="updateUniforms()" class="w-full text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg p-2 outline-none focus:border-[#9b87f5] text-slate-700 dark:text-slate-200">
+                            <option value="1">Relative Probability Density |\(\psi\)|²</option>
+                            <option value="2">Wavefunction Sign (+ / -)</option>
+                        </select>
+                        <p class="text-[10px] text-slate-500 leading-tight px-1">Visual map is non-linear to reveal low-density regions without corrupting exact sample coordinates.</p>
+                    </div>
+
+                    <div class="space-y-4 pt-2 px-1 pb-4">
+                        <div>
+                            <div class="flex justify-between items-center mb-1.5"><label class="text-[11px] font-medium">Density Cutoff</label><span id="val-cutoff" class="text-[10px] text-[#9b87f5] font-bold">1%</span></div>
+                            <input type="range" id="inp-cutoff" class="afeed-slider" min="0" max="40" step="1" value="1" oninput="updateUniforms()">
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1.5"><label class="text-[11px] font-medium">Cloud Intensity</label><span id="val-intensity" class="text-[10px] text-[#9b87f5] font-bold">100%</span></div>
+                            <input type="range" id="inp-intensity" class="afeed-slider" min="30" max="250" step="10" value="100" oninput="updateUniforms()">
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1.5"><label class="text-[11px] font-medium">Rendered Samples</label><span id="val-density" class="text-[10px] text-[#9b87f5] font-bold">24k rendered</span></div>
+                            <input type="range" id="inp-density" class="afeed-slider" min="10" max="100" step="10" value="40" oninput="updateDensity(this.value)">
+                            <p id="sampling-info" class="text-[10px] text-orange-500 dark:text-indigo-400 mt-1.5 leading-tight font-medium"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Canvas Area (Moved to RIGHT) -->
+        <div id="canvas-container" class="flex-1 relative flex flex-col h-full w-full">
+            
+            <!-- Mobile FAB to open controls -->
+            <button onclick="toggleMobileDrawer()" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 md:hidden px-6 py-3 bg-[#9b87f5] text-white rounded-full shadow-2xl text-sm font-semibold flex items-center gap-2 border border-white/20">
+                <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Adjust Simulation
+            </button>
+
+            <!-- Status Overlays -->
+            <div id="loader" class="absolute inset-0 z-40 bg-white/60 dark:bg-[#050811]/60 backdrop-blur-sm flex items-center justify-center pointer-events-none transition-opacity duration-300">
+                <div class="flex flex-col items-center gap-3">
+                    <div class="w-8 h-8 border-4 border-slate-200 dark:border-slate-800 border-t-[#9b87f5] dark:border-t-[#9b87f5] rounded-full animate-spin"></div>
+                    <span id="loader-text" class="text-xs font-bold tracking-widest text-slate-600 dark:text-slate-300">SOLVING SCHRÖDINGER EQ...</span>
+                </div>
+            </div>
+            
+            <div id="error-state" class="absolute inset-0 z-50 bg-white/95 dark:bg-[#050811]/95 backdrop-blur-md hidden flex-col items-center justify-center gap-4">
+                <i data-lucide="alert-triangle" class="w-12 h-12 text-red-500"></i>
+                <div class="text-center">
+                    <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Computation Interrupted</h3>
+                    <p class="text-xs text-slate-500 mt-1 max-w-xs" id="error-message">The mathematical engine encountered an error.</p>
+                </div>
+                <button onclick="retryCurrentJob()" class="px-4 py-2 bg-[#9b87f5] text-white rounded-lg text-xs font-bold uppercase tracking-wider">Retry</button>
+            </div>
+
+            <!-- Left/Right Legends (Moved to Right corner for balance) -->
+            <div class="absolute bottom-6 right-6 z-10 flex flex-col gap-2 pointer-events-none max-w-[180px] hidden md:flex">
+                <div id="legend-prob" class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl shadow-sm flex flex-col gap-1.5 transition-all">
+                    <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500">Relative Prob. Density |\(\psi\)|²</span>
+                    <div class="w-full h-2.5 rounded bg-gradient-to-r from-blue-700 via-cyan-400 via-green-400 via-yellow-400 to-red-600"></div>
+                    <div class="flex justify-between text-[8px] font-medium text-slate-400 uppercase"><span>Low</span><span>High</span></div>
+                </div>
+                <div id="legend-phase" class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl shadow-sm flex flex-col gap-1.5 hidden transition-all">
+                    <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500">Sign of real \(\psi\)</span>
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-orange-500"></div><span class="text-[10px] text-slate-600 dark:text-slate-300">+ Positive</span></div>
+                        <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-blue-600"></div><span class="text-[10px] text-slate-600 dark:text-slate-300">- Negative</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <canvas id="sim-canvas"></canvas>
+        </div>
+
+    </main>
+
+    <!-- Info Modal -->
+    <div id="info-modal" class="fixed inset-0 z-[60] bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-700 transform scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center p-4 border-b border-slate-100 dark:border-slate-800">
+                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100">About the Simulation</h3>
+                <button onclick="toggleInfo()" class="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-5 text-sm text-slate-600 dark:text-slate-400 space-y-4">
+                <p>This visualization calculates exact <strong>Hydrogenic Wavefunctions (\(Z=1\))</strong> using stable recurrence relations for generalized Laguerre polynomials and real spherical harmonics.</p>
+                <p><strong>Coordinate System:</strong> This simulation strictly follows the mathematical physics convention where the <strong>Z-axis is vertical</strong>, and the X/Y axes form the horizontal plane.</p>
+                <p><strong>Nodal Surfaces</strong> (where \(\psi = 0\)) are extracted precisely from analytical roots:</p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li><span class="text-violet-500 font-medium">Spheres</span> = Radial Nodes</li>
+                    <li><span class="text-cyan-500 font-medium">Planes / Cones</span> = Angular Nodes</li>
+                </ul>
+                <p class="text-xs bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700">The cloud is sampled via a bounded Monte Carlo method. Density colors map to \(|\psi|^2\) using a non-linear scale (\(\gamma \approx 0.40\)) to enhance visibility of faint outer lobes without distorting physical coordinates.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Math Engine Worker -->
+    <script id="worker-code" type="javascript/worker">
+        // Numerically stable Recurrence Relation for Generalized Laguerre Polynomials
+        function L_poly(n, alpha, x) {
+            if (n === 0) return 1;
+            if (n === 1) return 1 + alpha - x;
+            let Lk_2 = 1;
+            let Lk_1 = 1 + alpha - x;
+            let Lk = 0;
+            for (let k = 2; k <= n; k++) {
+                Lk = ((2 * k - 1 + alpha - x) * Lk_1 - (k - 1 + alpha) * Lk_2) / k;
+                Lk_2 = Lk_1;
+                Lk_1 = Lk;
+            }
+            return Lk;
+        }
+
+        // Hydrogenic radial wavefunction shape for Z = 1.
+        function R_func(n, l, r) {
+            const rho = (2 * r) / n;
+            return Math.exp(-rho / 2) * Math.pow(rho, l) * L_poly(n - l - 1, 2 * l + 1, rho);
+        }
+
+        // Exact Real Spherical Harmonics
+        function Y_real(l, ml, theta, phi) {
+            const cosT = Math.cos(theta), sinT = Math.sin(theta);
+            const cosP = Math.cos(phi), sinP = Math.sin(phi);
+            
+            if (l === 0) return 0.28209479177; 
+            if (l === 1) {
+                const norm = 0.4886025119; 
+                if (ml === 0) return norm * cosT; 
+                if (ml === 1) return norm * sinT * cosP; 
+                if (ml === -1) return norm * sinT * sinP; 
+            }
+            if (l === 2) {
+                const norm0 = 0.3153915652;  
+                const norm1 = 1.0925484305;  
+                const norm2 = 0.5462742152;  
+                if (ml === 0) return norm0 * (3 * cosT * cosT - 1); 
+                if (ml === 1) return norm1 * sinT * cosT * cosP; 
+                if (ml === -1) return norm1 * sinT * cosT * sinP; 
+                if (ml === 2) return norm2 * sinT * sinT * Math.cos(2 * phi); 
+                if (ml === -2) return norm2 * sinT * sinT * Math.sin(2 * phi); 
+            }
+            if (l === 3) {
+                const norm0 = 0.3731763326; 
+                const norm1 = 0.4564354646; // EXACT sqrt(21 / 32pi)
+                const norm2 = 1.4453057213; 
+                const norm3 = 0.5900435899; 
+                
+                if (ml === 0) return norm0 * (5 * Math.pow(cosT,3) - 3 * cosT); 
+                if (ml === 1) return norm1 * sinT * (5 * cosT * cosT - 1) * cosP; 
+                if (ml === -1) return norm1 * sinT * (5 * cosT * cosT - 1) * sinP; 
+                if (ml === 2) return norm2 * sinT * sinT * cosT * Math.cos(2 * phi); 
+                if (ml === -2) return norm2 * sinT * sinT * cosT * Math.sin(2 * phi); 
+                if (ml === 3) return norm3 * Math.pow(sinT,3) * Math.cos(3 * phi); 
+                if (ml === -3) return norm3 * Math.pow(sinT,3) * Math.sin(3 * phi); 
+            }
+            return 0;
+        }
+
+        function randomPointInSphere(radius) {
+            const u = Math.random(), v = Math.random();
+            const theta = 2 * Math.PI * u;
+            const phi = Math.acos(2 * v - 1);
+            const r = radius * Math.cbrt(Math.random());
+            const sinPhi = Math.sin(phi);
+            return {
+                x: r * sinPhi * Math.cos(theta),
+                y: r * sinPhi * Math.sin(theta),
+                z: r * Math.cos(phi),
+                r: r, theta: phi, phi: theta
+            };
+        }
+
+        function bisectRadialRoot(n, l, a, b, iterations = 45) {
+            let fa = R_func(n, l, a);
+            let fb = R_func(n, l, b);
+            if (fa === 0) return a;
+            if (fb === 0) return b;
+            if (fa * fb > 0) return null;
+
+            for (let i = 0; i < iterations; i++) {
+                const mid = (a + b) / 2;
+                const fm = R_func(n, l, mid);
+                if (Math.abs(fm) < 1e-12) return mid;
+                if (fa * fm < 0) { b = mid; fb = fm; } 
+                else { a = mid; fa = fm; }
+            }
+            return (a + b) / 2;
+        }
+
+        function findRadialRoots(n, l, R_bound) {
+            const roots = [];
+            const steps = 4000;
+            const dr = R_bound / steps;
+            let previousR = 0;
+            let previousValue = R_func(n, l, previousR);
+
+            for (let i = 1; i <= steps; i++) {
+                const r = i * dr;
+                const value = R_func(n, l, r);
+                if (previousValue * value < 0 && r > 1e-8) {
+                    const root = bisectRadialRoot(n, l, previousR, r);
+                    if (root !== null && root > 1e-6 && (!roots.length || Math.abs(root - roots[roots.length - 1]) > 1e-4)) {
+                        roots.push(root);
+                    }
+                }
+                previousR = r;
+                previousValue = value;
+            }
+            return roots;
+        }
+
+        let currentJob = 0;
+
+        self.onmessage = function(e) {
+            const { n, l, ml, R_bound, targetPoints, jobId } = e.data;
+            if (jobId !== currentJob) currentJob = jobId;
+
+            try {
+                let maxProb = 0;
+                const r_peak = Math.pow(n, 2); 
+                for (let r = Math.max(0.1, r_peak - 8); r <= Math.min(R_bound, r_peak + 10); r += 0.2) {
+                    for (let th = 0; th <= Math.PI; th += Math.PI / 36) {
+                        for (let ph = 0; ph <= Math.PI * 2; ph += Math.PI / 36) {
+                            const psi = R_func(n, l, r) * Y_real(l, ml, th, ph);
+                            const prob = psi * psi;
+                            if (prob > maxProb) maxProb = prob;
+                        }
+                    }
+                }
+                if (l === 0) {
+                    const centerProb = Math.pow(R_func(n, 0, 0) * Y_real(0, 0, 0, 0), 2);
+                    if (centerProb > maxProb) maxProb = centerProb;
+                }
+
+                if (maxProb <= 0 || !isFinite(maxProb)) { self.postMessage({ error: true, jobId: jobId, msg: "Failed to normalize probability maximum" }); return; }
+
+                const masterCloud = new Float32Array(targetPoints * 5); 
+                let count = 0;
+                let totalAttempts = 0;
+                const MAX_ATTEMPTS = 20000000; 
+                let lastReportedTime = Date.now();
+
+                function processBatch() {
+                    if (jobId !== currentJob) return; 
+                    
+                    let batchAttempts = 0;
+                    while (count < targetPoints && batchAttempts < 80000 && totalAttempts < MAX_ATTEMPTS) {
+                        batchAttempts++;
+                        totalAttempts++;
+                        
+                        const p = randomPointInSphere(R_bound);
+                        const psi = R_func(n, l, p.r) * Y_real(l, ml, p.theta, p.phi);
+                        const prob = psi * psi;
+                        
+                        const normalized = Math.min(prob / maxProb, 1.0);
+
+                        if (Math.random() < normalized) {
+                            const idx = count * 5;
+                            masterCloud[idx] = p.x;
+                            masterCloud[idx+1] = p.y;
+                            masterCloud[idx+2] = p.z;
+                            masterCloud[idx+3] = normalized; 
+                            masterCloud[idx+4] = psi > 0 ? 1.0 : -1.0; 
+                            count++;
+                        }
+                    }
+
+                    if (count < targetPoints && totalAttempts < MAX_ATTEMPTS) {
+                        const now = Date.now();
+                        if (now - lastReportedTime > 80) {
+                            self.postMessage({ progress: true, jobId: jobId, count: count, target: targetPoints });
+                            lastReportedTime = now;
+                        }
+                        setTimeout(processBatch, 0); 
+                    } else {
+                        for (let i = count - 1; i > 0; i--) {
+                            const j = Math.floor(Math.random() * (i + 1));
+                            for(let k=0; k<5; k++) {
+                                let temp = masterCloud[i*5 + k];
+                                masterCloud[i*5 + k] = masterCloud[j*5 + k];
+                                masterCloud[j*5 + k] = temp;
+                            }
+                        }
+                        
+                        const radialRoots = findRadialRoots(n, l, R_bound);
+                        
+                        self.postMessage({
+                            jobId: jobId,
+                            cloud: masterCloud.buffer,
+                            count: count,
+                            attempts: totalAttempts,
+                            complete: count === targetPoints,
+                            radialRoots: radialRoots
+                        }, [masterCloud.buffer]);
+                    }
+                }
+
+                processBatch();
+            } catch (err) {
+                self.postMessage({ error: true, jobId: jobId, msg: err.message });
+            }
+        };
+    </script>
+
+    <script>
+        const catalog = {
+            '1s': { n:1, l:0, mlText:'0', ml:0, html: '1s', desc: 'Spherical', rScale: 6, nodes: [] },
+            '2s': { n:2, l:0, mlText:'0', ml:0, html: '2s', desc: 'Spherical with one radial node', rScale: 12, nodes: [] },
+            '3s': { n:3, l:0, mlText:'0', ml:0, html: '3s', desc: 'Spherical with two radial nodes', rScale: 20, nodes: [] },
+            '2px': { n:2, l:1, mlText:'±1', ml:1, html: '2p<sub>x</sub>', desc: 'Two lobes along X-axis', rScale: 12, nodes: [{type:'plane', axis:'x', label:'yz-plane (x=0)'}] },
+            '2py': { n:2, l:1, mlText:'±1', ml:-1, html: '2p<sub>y</sub>', desc: 'Two lobes along Y-axis', rScale: 12, nodes: [{type:'plane', axis:'y', label:'xz-plane (y=0)'}] },
+            '2pz': { n:2, l:1, mlText:'0', ml:0, html: '2p<sub>z</sub>', desc: 'Two lobes along Z-axis', rScale: 12, nodes: [{type:'plane', axis:'z', label:'xy-plane (z=0)'}] },
+            '3px': { n:3, l:1, mlText:'±1', ml:1, html: '3p<sub>x</sub>', desc: 'Two lobes along X-axis', rScale: 24, nodes: [{type:'plane', axis:'x', label:'yz-plane (x=0)'}] },
+            '3py': { n:3, l:1, mlText:'±1', ml:-1, html: '3p<sub>y</sub>', desc: 'Two lobes along Y-axis', rScale: 24, nodes: [{type:'plane', axis:'y', label:'xz-plane (y=0)'}] },
+            '3pz': { n:3, l:1, mlText:'0', ml:0, html: '3p<sub>z</sub>', desc: 'Two lobes along Z-axis', rScale: 24, nodes: [{type:'plane', axis:'z', label:'xy-plane (z=0)'}] },
+            '3dxy': { n:3, l:2, mlText:'±2', ml:-2, html: '3d<sub>xy</sub>', desc: 'Four lobes in XY plane', rScale: 24, nodes: [{type:'plane', axis:'z', label:'xy-plane (z=0)'}, {type:'plane', axis:'y', label:'xz-plane (y=0)'}] },
+            '3dyz': { n:3, l:2, mlText:'±1', ml:-1, html: '3d<sub>yz</sub>', desc: 'Four lobes in YZ plane', rScale: 24, nodes: [{type:'plane', axis:'y', label:'xz-plane (y=0)'}, {type:'plane', axis:'x', label:'yz-plane (x=0)'}] },
+            '3dxz': { n:3, l:2, mlText:'±1', ml:1, html: '3d<sub>xz</sub>', desc: 'Four lobes in XZ plane', rScale: 24, nodes: [{type:'plane', axis:'x', label:'yz-plane (x=0)'}, {type:'plane', axis:'z', label:'xy-plane (z=0)'}] },
+            '3dx2y2': { n:3, l:2, mlText:'±2', ml:2, html: '3d<sub>x²-y²</sub>', desc: 'Four lobes along X & Y axes', rScale: 24, nodes: [{type:'plane', axis:'diag1', label:'Diagonal plane (x=y)'}, {type:'plane', axis:'diag2', label:'Diagonal plane (x=-y)'}] },
+            '3dz2': { n:3, l:2, mlText:'0', ml:0, html: '3d<sub>z²</sub>', desc: 'Two lobes on Z-axis with torus', rScale: 24, nodes: [{type:'cone', angle: 54.7356, label:'Double Cone (\\(\\theta \\approx 54.7^\\circ\\))'}] },
+            '4fz3': { n:4, l:3, mlText:'0', ml:0, html: '4f<sub>z³</sub>', desc: 'Multi-lobed structure on Z-axis', rScale: 34, nodes: [{type:'plane', axis:'z', label:'xy-plane'}, {type:'cone', angle: 39.231, label:'Double Cone (\\(\\theta \\approx 39.2^\\circ\\))'}, {type:'cone', angle: 90-39.231, label:'Double Cone (\\(\\theta \\approx 140.8^\\circ\\))'}] },
+            '4fxyz': { n:4, l:3, mlText:'±2', ml:-2, html: '4f<sub>xyz</sub>', desc: 'Eight lobes in octants', rScale: 34, nodes: [{type:'plane', axis:'x', label:'yz-plane'}, {type:'plane', axis:'y', label:'xz-plane'}, {type:'plane', axis:'z', label:'xy-plane'}] },
+            '4fxz2': { n:4, l:3, mlText:'±1', ml:1, html: '4f<sub>xz²</sub>', desc: 'Lobes oriented along X & Z', rScale: 34, nodes: [{type:'plane', axis:'y', label:'xz-plane'}, {type:'cone', angle: 63.435, label:'Double Cone (\\(\\theta \\approx 63.4^\\circ\\))'}] } 
+        };
+
+        const state = {
+            currentOrbital: null,
+            renderMode: 1, 
+            colorMode: 1, 
+            cutoff: 0.01, 
+            intensity: 1.0,
+            targetDensity: 24000,
+            autoRotate: false,
+            activeNodes: new Set()
+        };
+
+        let worker, workerUrl, jobId = 0;
+        let masterBuffer = null, masterCount = 0;
+        let radialRootsCache = [];
+        let scene, camera, renderer, controls;
+        let cloudMesh, pointsGeo, pointsMat;
+        let axesGroup, nodesGroup;
+        let allocatedGeometries = [];
+
+        const matAngular = new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false });
+        const matRadialWire = new THREE.MeshBasicMaterial({ color: 0x8b5cf6, wireframe: true, transparent: true, opacity: 0.15 });
+
+        function init() {
+            buildGalleryUI();
+            initThree();
+            initWorker();
+            
+            window.addEventListener('resize', resizeCanvas);
+            
+            selectOrbital('1s'); 
+            
+            lucide.createIcons();
+            animate();
+        }
+
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            
+            // MATH / PHYSICS CONVENTION: Z is the vertical UP axis
+            camera.up.set(0, 0, 1);
+            
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('sim-canvas'), antialias: true, alpha: true, powerPreference: 'high-performance' });
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+            
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.08;
+            controls.enablePan = false;
+
+            axesGroup = new THREE.Group();
+            nodesGroup = new THREE.Group();
+            scene.add(axesGroup);
+            scene.add(nodesGroup);
+            
+            buildWorldAxes(20); 
+
+            pointsGeo = new THREE.BufferGeometry();
+            pointsMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    uMode: { value: state.renderMode },
+                    uColorMode: { value: state.colorMode },
+                    uCutoff: { value: state.cutoff },
+                    uIntensity: { value: state.intensity },
+                    uPixelRatio: { value: renderer.getPixelRatio() }
+                },
+                vertexShader: `
+                    attribute float prob;
+                    attribute float phase;
+                    varying float vProb;
+                    varying float vPhase;
+                    uniform int uMode;
+
+                    void main() {
+                        vProb = prob;
+                        vPhase = phase;
+                        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                        float depthScale = 65.0 / max(1.0, -mvPosition.z);
+                        float densityScale = 1.0 + sqrt(max(prob, 0.0)) * 2.2;
+                        float pSize = (uMode == 0) ? 6.0 : (densityScale);
+                        gl_PointSize = clamp(depthScale * pSize, 2.5, 18.0);
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    uniform int uMode;
+                    uniform int uColorMode;
+                    uniform float uCutoff;
+                    uniform float uIntensity;
+                    varying float vProb;
+                    varying float vPhase;
+
+                    vec3 getProbColor(float p) {
+                        p = clamp(p, 0.0, 1.0);
+                        vec3 blue   = vec3(0.08, 0.18, 0.75);
+                        vec3 cyan   = vec3(0.00, 0.85, 0.95);
+                        vec3 green  = vec3(0.10, 0.90, 0.30);
+                        vec3 yellow = vec3(1.00, 0.88, 0.10);
+                        vec3 red    = vec3(0.95, 0.12, 0.08);
+                        if (p < 0.25) return mix(blue, cyan, p / 0.25);
+                        if (p < 0.50) return mix(cyan, green, (p - 0.25) / 0.25);
+                        if (p < 0.75) return mix(green, yellow, (p - 0.50) / 0.25);
+                        return mix(yellow, red, (p - 0.75) / 0.25);
+                    }
+
+                    void main() {
+                        vec2 uv = gl_PointCoord - vec2(0.5);
+                        float d = length(uv);
+                        if (d > 0.5) discard;
+
+                        if (uMode == 0) {
+                            float shellThickness = 0.08;
+                            if (vProb < uCutoff || vProb > uCutoff + shellThickness) discard;
+                        } else {
+                            if (vProb < uCutoff) discard;
+                        }
+
+                        float visualProb = pow(max(vProb, 0.0), 0.40);
+
+                        vec3 color = vec3(1.0);
+                        if (uColorMode == 1) {
+                            color = getProbColor(visualProb);
+                        } else if (uColorMode == 2) {
+                            color = (vPhase > 0.0) ? vec3(0.95, 0.45, 0.1) : vec3(0.1, 0.5, 0.95);
+                        }
+
+                        float alpha = 1.0;
+                        if (uMode == 0) {
+                            float diffuse = 1.0 - (d * 1.5);
+                            color *= (0.6 + 0.4 * diffuse); 
+                            alpha = 0.8;
+                        } else {
+                            float edge = 1.0 - smoothstep(0.15, 0.5, d);
+                            float density = 0.25 + 0.75 * sqrt(max(vProb, 0.0));
+                            alpha = edge * density;
+                        }
+
+                        gl_FragColor = vec4(color, min(alpha * uIntensity, 1.0));
+                    }
+                `,
+                transparent: true, depthWrite: false, depthTest: true,
+                blending: THREE.NormalBlending
+            });
+
+            cloudMesh = new THREE.Points(pointsGeo, pointsMat);
+            cloudMesh.frustumCulled = true;
+            scene.add(cloudMesh);
+        }
+
+        function buildWorldAxes(radius = 20) {
+            axesGroup.children.forEach(child => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (child.material.map) child.material.map.dispose();
+                    child.material.dispose();
+                }
+            });
+            axesGroup.clear();
+
+            const length = radius * 1.25; 
+            const matX = new THREE.LineBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.8 });
+            const matY = new THREE.LineBasicMaterial({ color: 0x22c55e, transparent: true, opacity: 0.8 });
+            const matZ = new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.8 });
+
+            const geoX = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-length,0,0), new THREE.Vector3(length,0,0)]);
+            const geoY = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-length,0), new THREE.Vector3(0,length,0)]);
+            const geoZ = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,-length), new THREE.Vector3(0,0,length)]);
+
+            axesGroup.add(new THREE.Line(geoX, matX), new THREE.Line(geoY, matY), new THREE.Line(geoZ, matZ));
+
+            const offset = length * 1.1;
+            axesGroup.add(createTextSprite('+X', '#ef4444', new THREE.Vector3(offset, 0, 0)));
+            axesGroup.add(createTextSprite('-X', '#ef4444', new THREE.Vector3(-offset, 0, 0)));
+            axesGroup.add(createTextSprite('+Y', '#22c55e', new THREE.Vector3(0, offset, 0)));
+            axesGroup.add(createTextSprite('-Y', '#22c55e', new THREE.Vector3(0, -offset, 0)));
+            axesGroup.add(createTextSprite('+Z', '#3b82f6', new THREE.Vector3(0, 0, offset)));
+            axesGroup.add(createTextSprite('-Z', '#3b82f6', new THREE.Vector3(0, 0, -offset)));
+        }
+
+        function createTextSprite(text, color, position) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = 'bold 32px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = color;
+            ctx.fillText(text, 64, 32);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.copy(position);
+            
+            const scale = Math.max(position.length() * 0.05, 1.0); 
+            sprite.scale.set(scale * 2, scale, 1);
+            return sprite;
+        }
+
+        function clearNodalGeometries() {
+            while(nodesGroup.children.length > 0) {
+                nodesGroup.remove(nodesGroup.children[0]);
+            }
+            allocatedGeometries.forEach(g => g.dispose());
+            allocatedGeometries = [];
+        }
+
+        function rebuildNodalGeometry() {
+            clearNodalGeometries();
+            const data = catalog[state.currentOrbital];
+            const nodeRadius = data.rScale * 0.85; 
+            
+            data.nodes.forEach((n, idx) => {
+                let mesh;
+                if (n.type === 'plane') {
+                    const pGeo = new THREE.PlaneGeometry(nodeRadius*2, nodeRadius*2);
+                    allocatedGeometries.push(pGeo);
+                    mesh = new THREE.Mesh(pGeo, matAngular);
+                    
+                    const zAxis = new THREE.Vector3(0,0,1);
+                    if (n.axis === 'x') mesh.quaternion.setFromUnitVectors(zAxis, new THREE.Vector3(1, 0, 0));
+                    else if (n.axis === 'y') mesh.quaternion.setFromUnitVectors(zAxis, new THREE.Vector3(0, 1, 0));
+                    else if (n.axis === 'z') mesh.quaternion.setFromUnitVectors(zAxis, zAxis);
+                    else if (n.axis === 'diag1') mesh.quaternion.setFromUnitVectors(zAxis, new THREE.Vector3(1, -1, 0).normalize());
+                    else if (n.axis === 'diag2') mesh.quaternion.setFromUnitVectors(zAxis, new THREE.Vector3(1, 1, 0).normalize());
+                } else if (n.type === 'cone') {
+                    mesh = new THREE.Group();
+                    const theta = THREE.MathUtils.degToRad(n.angle);
+                    const effectiveTheta = n.angle > 90 ? Math.PI - theta : theta;
+                    
+                    const height = nodeRadius;
+                    const radius = height * Math.tan(effectiveTheta);
+                    const cGeo = new THREE.ConeGeometry(radius, height, 64, 1, true);
+                    allocatedGeometries.push(cGeo);
+                    cGeo.translate(0, -height/2, 0); 
+                    
+                    const topCone = new THREE.Mesh(cGeo, matAngular);
+                    topCone.rotation.x = -Math.PI / 2; 
+                    
+                    const botCone = new THREE.Mesh(cGeo, matAngular);
+                    botCone.rotation.x = Math.PI / 2; 
+                    
+                    mesh.add(topCone);
+                    mesh.add(botCone);
+                }
+                
+                if(mesh) {
+                    mesh.name = `node-${idx}`;
+                    mesh.visible = state.activeNodes.has(idx.toString());
+                    nodesGroup.add(mesh);
+                }
+            });
+
+            radialRootsCache.forEach((r, idx) => {
+                const sGeo = new THREE.SphereGeometry(r, 64, 64);
+                allocatedGeometries.push(sGeo);
+                const wire = new THREE.Mesh(sGeo, matRadialWire);
+                wire.name = `node-r${idx}`;
+                wire.visible = state.activeNodes.has(`r${idx}`);
+                nodesGroup.add(wire);
+            });
+        }
+
+        function buildGalleryUI() {
+            const createBtn = (id) => `<button onclick="selectOrbital('${id}')" data-orb="${id}" class="orb-btn w-full py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded text-[11px] font-medium border border-transparent">${catalog[id].html}</button>`;
+            document.getElementById('gallery-s').innerHTML = ['1s','2s','3s'].map(createBtn).join('');
+            document.getElementById('gallery-p').innerHTML = ['2px','2py','2pz', '3px','3py','3pz'].map(createBtn).join('');
+            document.getElementById('gallery-d').innerHTML = ['3dxy','3dyz','3dxz','3dx2y2','3dz2'].map(createBtn).join('');
+            document.getElementById('gallery-f').innerHTML = ['4fz3','4fxyz','4fxz2'].map(createBtn).join('');
+        }
+
+        function retryCurrentJob() {
+            if(state.currentOrbital) selectOrbital(state.currentOrbital);
+        }
+
+        function selectOrbital(id) {
+            state.currentOrbital = id;
+            const data = catalog[id];
+            
+            buildWorldAxes(data.rScale);
+            toggleAxes(); 
+
+            document.querySelectorAll('.orb-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.orb-btn[data-orb="${id}"]`).classList.add('active');
+            
+            document.getElementById('hud-orb-name').innerHTML = `${data.html} Orbital`;
+            document.getElementById('hud-desc').innerText = data.desc;
+            document.getElementById('qn-n').innerText = data.n;
+            document.getElementById('qn-l').innerText = data.l;
+            document.getElementById('qn-ml').innerText = data.mlText || data.ml; 
+            document.getElementById('node-t').innerText = data.n - 1;
+            
+            state.activeNodes.clear(); 
+            let nodeHTML = '';
+            data.nodes.forEach((n, idx) => {
+                const label = n.type === 'plane' ? 'Angular node · Plane' : 'Angular node · Cone';
+                nodeHTML += `<label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/60 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors node-toggle" id="nt-${idx}">
+                    <input type="checkbox" onchange="toggleNode('${idx}', this.checked)" class="rounded text-cyan-500 focus:ring-cyan-500">
+                    <div class="flex flex-col"><span class="text-[10px] font-bold text-slate-700 dark:text-slate-200 leading-tight">${label}</span><span class="text-[9px] text-slate-500">${n.label}</span></div>
+                </label>`;
+            });
+            document.getElementById('node-list').innerHTML = nodeHTML; 
+            
+            document.getElementById('error-state').classList.add('hidden');
+            document.getElementById('loader').classList.remove('opacity-0');
+            document.getElementById('sampling-info').innerText = '';
+            
+            if(cloudMesh) cloudMesh.rotation.set(0,0,0); 
+
+            jobId++;
+            if(worker) {
+                worker.postMessage({
+                    jobId: jobId,
+                    n: data.n, l: data.l, ml: data.ml,
+                    R_bound: data.rScale,
+                    targetPoints: 60000 
+                });
+            }
+            
+            if(window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([document.getElementById('node-list')]);
+        }
+
+        function initWorker() {
+            const blob = new Blob([document.getElementById('worker-code').textContent], { type: 'application/javascript' });
+            workerUrl = URL.createObjectURL(blob);
+            worker = new Worker(workerUrl);
+            
+            worker.onerror = (err) => {
+                document.getElementById('loader').classList.add('opacity-0');
+                document.getElementById('error-message').innerText = "A critical worker engine crash occurred.";
+                document.getElementById('error-state').classList.remove('hidden');
+            };
+
+            worker.onmessage = (e) => {
+                const data = e.data;
+                if (data.jobId !== jobId) return; 
+                
+                if (data.error) {
+                    document.getElementById('loader').classList.add('opacity-0');
+                    document.getElementById('error-message').innerText = data.msg || "The mathematical engine encountered an error.";
+                    document.getElementById('error-state').classList.remove('hidden');
+                    return;
+                }
+
+                if (data.progress) {
+                    return; 
+                }
+                
+                masterBuffer = new Float32Array(data.cloud);
+                masterCount = data.count;
+                radialRootsCache = data.radialRoots;
+                
+                document.getElementById('loader').classList.add('opacity-0');
+                
+                const infoEl = document.getElementById('sampling-info');
+                if (!data.complete) {
+                    infoEl.innerText = `Only ${masterCount.toLocaleString()} points found within bounds.`;
+                } else {
+                    infoEl.innerText = ''; 
+                }
+
+                let rHTML = '';
+                radialRootsCache.forEach((r, idx) => {
+                    rHTML += `<label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/60 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors node-toggle" id="nt-r${idx}">
+                        <input type="checkbox" onchange="toggleNode('r${idx}', this.checked)" class="rounded text-violet-500 focus:ring-violet-500">
+                        <div class="flex flex-col"><span class="text-[10px] font-bold text-slate-700 dark:text-slate-200 leading-tight">Radial node · Spherical shell</span><span class="text-[9px] text-slate-500">r ≈ ${r.toFixed(2)} a₀</span></div>
+                    </label>`;
+                });
+                if(rHTML !== '') document.getElementById('node-list').innerHTML += rHTML;
+                if(document.getElementById('node-list').innerHTML === '') document.getElementById('node-list').innerHTML = '<div class="text-[10px] text-slate-400 italic py-2">No theoretical nodes present.</div>';
+
+                applyDensityToBuffer();
+                rebuildNodalGeometry();
+                resetCamera();
+            };
+        }
+
+        function applyDensityToBuffer() {
+            if (!masterBuffer || masterCount === 0 || !pointsGeo) return;
+            
+            const count = Math.min(state.targetDensity, masterCount);
+            const positions = new Float32Array(count * 3);
+            const probs = new Float32Array(count);
+            const phases = new Float32Array(count);
+            
+            const stride = masterCount / count;
+            
+            for (let i = 0; i < count; i++) {
+                const idx = Math.min(Math.floor(i * stride), masterCount - 1) * 5;
+                positions[i*3]   = masterBuffer[idx];
+                positions[i*3+1] = masterBuffer[idx+1];
+                positions[i*3+2] = masterBuffer[idx+2];
+                probs[i] = masterBuffer[idx+3];
+                phases[i] = masterBuffer[idx+4];
+            }
+            
+            pointsGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            pointsGeo.setAttribute('prob', new THREE.BufferAttribute(probs, 1));
+            pointsGeo.setAttribute('phase', new THREE.BufferAttribute(phases, 1));
+            pointsGeo.setDrawRange(0, count);
+            pointsGeo.computeBoundingSphere(); 
+            
+            pointsGeo.attributes.position.needsUpdate = true;
+            pointsGeo.attributes.prob.needsUpdate = true;
+            pointsGeo.attributes.phase.needsUpdate = true;
+            
+            document.getElementById('val-density').innerText = (count/1000).toFixed(0) + 'k rendered';
+        }
+
+        function toggleNode(id, isVisible) {
+            const sid = id.toString();
+            if(isVisible) state.activeNodes.add(sid);
+            else state.activeNodes.delete(sid);
+            
+            const mesh = nodesGroup.getObjectByName(`node-${sid}`);
+            if(mesh) mesh.visible = isVisible;
+            
+            const el = document.getElementById(`nt-${sid}`);
+            if(el) {
+                el.classList.toggle('active', isVisible);
+                el.classList.toggle('border-cyan-500', isVisible && !sid.startsWith('r'));
+                el.classList.toggle('border-violet-500', isVisible && sid.startsWith('r'));
+            }
+        }
+
+        function updateDensity(val) {
+            state.targetDensity = Math.floor((parseInt(val) / 100) * 60000);
+            applyDensityToBuffer();
+        }
+
+        function updateUniforms() {
+            state.cutoff = parseInt(document.getElementById('inp-cutoff').value) / 100;
+            state.intensity = parseInt(document.getElementById('inp-intensity').value) / 100;
+            state.colorMode = parseInt(document.getElementById('sel-color').value);
+            
+            document.getElementById('val-cutoff').innerText = state.cutoff.toFixed(2);
+            document.getElementById('val-intensity').innerText = Math.round(state.intensity * 100) + '%';
+            
+            document.getElementById('legend-prob').classList.toggle('hidden', state.colorMode !== 1);
+            document.getElementById('legend-phase').classList.toggle('hidden', state.colorMode !== 2);
+
+            if (pointsMat) {
+                pointsMat.uniforms.uCutoff.value = state.cutoff;
+                pointsMat.uniforms.uIntensity.value = state.intensity;
+                pointsMat.uniforms.uColorMode.value = state.colorMode;
+            }
+        }
+
+        function setRenderMode(mode) {
+            state.renderMode = mode;
+            const b0 = document.getElementById('btn-mode-0');
+            const b1 = document.getElementById('btn-mode-1');
+            
+            const activeCls = ['bg-white','dark:bg-slate-700','shadow-sm','text-[#9b87f5]'];
+            const inactiveCls = ['hover:text-slate-900','dark:hover:text-white','text-slate-500','bg-transparent'];
+            
+            if (mode === 0) { 
+                b0.classList.add(...activeCls); b0.classList.remove(...inactiveCls);
+                b1.classList.remove(...activeCls); b1.classList.add(...inactiveCls);
+            } else { 
+                b1.classList.add(...activeCls); b1.classList.remove(...inactiveCls);
+                b0.classList.remove(...activeCls); b0.classList.add(...inactiveCls);
+            }
+            if (pointsMat) pointsMat.uniforms.uMode.value = mode;
+        }
+
+        function toggleAxes() { axesGroup.visible = document.getElementById('chk-axes').checked; }
+        
+        function toggleAuto() {
+            state.autoRotate = document.getElementById('chk-auto').checked;
+            controls.autoRotate = state.autoRotate;
+            controls.autoRotateSpeed = 0.45; 
+        }
+
+        function toggleMobileDrawer() { document.getElementById('mobile-drawer').classList.toggle('open'); }
+        
+        function toggleInfo() { 
+            const modal = document.getElementById('info-modal');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                setTimeout(() => { modal.classList.remove('opacity-0'); modal.firstElementChild.classList.remove('scale-95'); }, 10);
+            } else {
+                modal.classList.add('opacity-0'); modal.firstElementChild.classList.add('scale-95');
+                setTimeout(() => modal.classList.add('hidden'), 300);
+            }
+        }
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('afeed_theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+            document.getElementById('theme-icon').setAttribute('data-lucide', document.documentElement.classList.contains('dark') ? 'moon' : 'sun');
+            lucide.createIcons();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable full-screen mode: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            const icon = document.getElementById('fullscreen-icon');
+            if(icon) {
+                icon.setAttribute('data-lucide', document.fullscreenElement ? 'minimize' : 'maximize');
+                lucide.createIcons();
+            }
+        });
+
+        function resetCamera() {
+            if(!cloudMesh) return;
+            const radius = catalog[state.currentOrbital].rScale;
+            const fov = THREE.MathUtils.degToRad(camera.fov);
+            const distance = (radius / Math.tan(fov / 2)) * 1.05; 
+
+            // Modified for Z-up orientation (+X right, +Y forward, +Z up)
+            camera.position.set(distance * 0.6, distance * 0.5, distance * 0.4);
+            controls.target.set(0, 0, 0);
+            controls.minDistance = radius * 0.3;
+            controls.maxDistance = radius * 5;
+            controls.update();
+        }
+
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            const width = Math.max(1, container.clientWidth);
+            const height = Math.max(1, container.clientHeight);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            renderer.setPixelRatio(dpr);
+            renderer.setSize(width, height);
+            if(pointsMat) pointsMat.uniforms.uPixelRatio.value = dpr;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update(); 
+            renderer.render(scene, camera);
+        }
+
+        window.onbeforeunload = () => {
+            if (worker) { worker.terminate(); URL.revokeObjectURL(workerUrl); }
+        };
+
+        window.onload = () => { init(); resizeCanvas(); };
+    </script>
+</body>
+</html>
