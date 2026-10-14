@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,7 +29,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        body { transition: background-color 0.3s ease, color 0.3s ease; }
+        body { transition: background-color 0.25s ease, color 0.25s ease; }
         .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -38,24 +37,37 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
         @keyframes pulse-ring {
-            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(234, 179, 8, 0); }
-            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+            0% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(234, 179, 8, 0); }
+            100% { transform: scale(0.97); box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
         }
-        .animate-pulse-ring { animation: pulse-ring 2s infinite; }
+        .animate-pulse-ring { animation: pulse-ring 1.8s infinite; }
     </style>
 </head>
 <body class="font-sans antialiased selection:bg-indigo-500/30 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
 
         // ==========================================
         // 1. Google Web App URL (API Gateway)
         // ==========================================
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwrKtZVpjCb4NBxulXnL5locvrQ-F2GBjv-tLbLuv6oijGHCar_6RJAMLLLC3ltkIA9/exec"; 
-        
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyhZCvSQ1QzeKE5Plb38rKw5RcAh56-ZDo1zMmnVDlP6ghJHWP_elAZDgsD5v28eEuI/exec"; 
+        const AUTO_SAVE_DELAY_MS = 750; // Rapid 0.75s debounce for snappy saving
+
+        const MILESTONE_KEYS = [
+            { key: 'theory', label: 'Theory', short: 'Theory' },
+            { key: 'textbook', label: 'Textbook', short: 'T.Book' },
+            { key: 'written', label: 'Written', short: 'CQ' },
+            { key: 'questionBank', label: 'Question Bank', short: 'QB' },
+            { key: 'mistakeCorrection', label: 'Mistakes', short: 'Mistakes' },
+            { key: 'conceptBook', label: 'Concept Book', short: 'C.Book' },
+            { key: 'lectureSlide', label: 'Lecture Slide', short: 'Slides' },
+            { key: 'engMcq', label: 'Eng. MCQ', short: 'EngMCQ', highlight: true },
+            { key: 'varsityMcq', label: 'Varsity MCQ', short: 'VarMCQ', highlight: true }
+        ];
+
         function encodeCSV(val) {
             if (val === null || val === undefined) return '';
             let str = String(val);
@@ -72,23 +84,33 @@
                 let cc = str[c], nc = str[c+1];
                 arr[row] = arr[row] || [];
                 arr[row][col] = arr[row][col] || '';
-                if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; continue; }
-                if (cc == '"') { quote = !quote; continue; }
-                if (cc == ',' && !quote) { ++col; continue; }
-                if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; continue; }
-                if (cc == '\n' && !quote) { ++row; col = 0; continue; }
-                if (cc == '\r' && !quote) { ++row; col = 0; continue; }
+                if (cc === '"' && quote && nc === '"') { arr[row][col] += cc; ++c; continue; }
+                if (cc === '"') { quote = !quote; continue; }
+                if (cc === ',' && !quote) { ++col; continue; }
+                if (cc === '\r' && nc === '\n' && !quote) { ++row; col = 0; ++c; continue; }
+                if (cc === '\n' && !quote) { ++row; col = 0; continue; }
+                if (cc === '\r' && !quote) { ++row; col = 0; continue; }
                 arr[row][col] += cc;
             }
             return arr;
         }
 
+        function calculateMilestoneProgress(milestones) {
+            if (!milestones) return { done: 0, total: MILESTONE_KEYS.length, pct: 0 };
+            const done = MILESTONE_KEYS.reduce((acc, m) => acc + (milestones[m.key] ? 1 : 0), 0);
+            return {
+                done,
+                total: MILESTONE_KEYS.length,
+                pct: Math.round((done / MILESTONE_KEYS.length) * 100)
+            };
+        }
+
         function App() {
-            const [theme, setTheme] = useState(localStorage.getItem('scc_theme') || 'light');
+            const [theme, setTheme] = useState(() => localStorage.getItem('scc_theme') || 'light');
             
-            // V4 Secure Auth State
-            const [userLoggedIn, setUserLoggedIn] = useState(localStorage.getItem('study_user_id') || null);
-            const [sessionToken, setSessionToken] = useState(localStorage.getItem('study_session_token') || null);
+            // Auth State
+            const [userLoggedIn, setUserLoggedIn] = useState(() => localStorage.getItem('study_user_id') || null);
+            const [sessionToken, setSessionToken] = useState(() => localStorage.getItem('study_session_token') || null);
             const [isRegisterMode, setIsRegisterMode] = useState(false);
             const [loginInput, setLoginInput] = useState('');
             const [passInput, setPassInput] = useState('');
@@ -97,10 +119,31 @@
             const [authError, setAuthError] = useState('');
             const [authSuccessMsg, setAuthSuccessMsg] = useState('');
 
-            // App Data States
-            const [chapters, setChapters] = useState([]);
+            // App Data States (Hydrated immediately from localStorage for 0ms startup)
+            const [chapters, setChapters] = useState(() => {
+                const uid = localStorage.getItem('study_user_id');
+                if (!uid) return [];
+                try {
+                    const cached = localStorage.getItem(`scc_cache_chapters_${uid}`);
+                    return cached ? JSON.parse(cached) : [];
+                } catch (e) { return []; }
+            });
+
+            const [pendingUpdates, setPendingUpdates] = useState(() => {
+                const uid = localStorage.getItem('study_user_id');
+                if (!uid) return {};
+                try {
+                    const cached = localStorage.getItem(`scc_pending_updates_${uid}`);
+                    return cached ? JSON.parse(cached) : {};
+                } catch (e) { return {}; }
+            });
+
+            // Navigation & Filters
             const [activeSubject, setActiveSubject] = useState('All Subjects');
             const [activePaper, setActivePaper] = useState('All');
+            const [statusFilter, setStatusFilter] = useState('All');
+            const [confidenceFilter, setConfidenceFilter] = useState('All');
+            const [sortBy, setSortBy] = useState('default');
             const [viewMode, setViewMode] = useState('tiles'); 
             const [searchTerm, setSearchTerm] = useState('');
 
@@ -110,14 +153,45 @@
             const [weakTopicSubjectFilter, setWeakTopicSubjectFilter] = useState('All');
             const [weakTopicPaperFilter, setWeakTopicPaperFilter] = useState('All');
             
-            // V4 Advanced Sync Queues
-            const [loading, setLoading] = useState(false);
-            const [pendingUpdates, setPendingUpdates] = useState({});
-            const [syncStatus, setSyncStatus] = useState('synced');
+            // Sync & Network States
+            const [initialLoading, setInitialLoading] = useState(false);
+            const [isBackgroundFetching, setIsBackgroundFetching] = useState(false);
+            const [syncStatus, setSyncStatus] = useState(() => {
+                const uid = localStorage.getItem('study_user_id');
+                if (!uid) return 'synced';
+                try {
+                    const cached = JSON.parse(localStorage.getItem(`scc_pending_updates_${uid}`) || '{}');
+                    return Object.keys(cached).length > 0 ? 'unsaved' : 'synced';
+                } catch (e) { return 'synced'; }
+            });
+            const [syncErrorMsg, setSyncErrorMsg] = useState('');
+            const [lastSyncedAt, setLastSyncedAt] = useState(null);
             const [showResetModal, setShowResetModal] = useState(false);
             
+            // Refs for synchronous access inside callbacks and timers (Fixes stale React state closure bugs)
+            const chaptersRef = useRef(chapters);
+            const pendingUpdatesRef = useRef(pendingUpdates);
+            const isSavingRef = useRef(false);
             const autoSaveTimerRef = useRef(null);
             const fileInputRef = useRef(null);
+
+            useEffect(() => {
+                chaptersRef.current = chapters;
+                if (userLoggedIn && chapters.length > 0) {
+                    try {
+                        localStorage.setItem(`scc_cache_chapters_${userLoggedIn}`, JSON.stringify(chapters));
+                    } catch (e) {}
+                }
+            }, [chapters, userLoggedIn]);
+
+            useEffect(() => {
+                pendingUpdatesRef.current = pendingUpdates;
+                if (userLoggedIn) {
+                    try {
+                        localStorage.setItem(`scc_pending_updates_${userLoggedIn}`, JSON.stringify(pendingUpdates));
+                    } catch (e) {}
+                }
+            }, [pendingUpdates, userLoggedIn]);
 
             useEffect(() => {
                 if (theme === 'dark') document.documentElement.classList.add('dark');
@@ -129,22 +203,57 @@
                 if (localStorage.getItem('study_user_pwd')) localStorage.removeItem('study_user_pwd');
             }, []);
 
+            // Warn user before closing tab if changes are still syncing
+            useEffect(() => {
+                const handleBeforeUnload = (e) => {
+                    if (Object.keys(pendingUpdatesRef.current).length > 0 || isSavingRef.current) {
+                        e.preventDefault();
+                        e.returnValue = '';
+                    }
+                };
+                window.addEventListener('beforeunload', handleBeforeUnload);
+                return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+            }, []);
+
             const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+
+            // Apply any locally queued edits on top of freshly fetched server chapters
+            const mergePendingOntoChapters = useCallback((serverChapters, pendingMap) => {
+                if (!pendingMap || Object.keys(pendingMap).length === 0) return serverChapters;
+                return serverChapters.map(ch => {
+                    const pending = pendingMap[ch.id];
+                    if (!pending) return ch;
+                    return {
+                        ...ch,
+                        ...pending,
+                        version: ch.version, // Always adopt latest server version so the next save succeeds
+                        milestones: {
+                            ...(ch.milestones || {}),
+                            ...(pending.milestones || {})
+                        }
+                    };
+                });
+            }, []);
 
             const handleAuth = async (e) => {
                 e.preventDefault();
                 setAuthError(''); setAuthSuccessMsg('');
                 
                 const formattedId = loginInput.trim().replace(/\s+/g, '_');
-                if(!/^[A-Za-z0-9_]{3,30}$/.test(formattedId)) return setAuthError("ID must be 3-30 characters, alphanumeric & underscores only.");
-                if(passInput.length < 6) return setAuthError("Password must be at least 6 characters.");
+                if (!/^[A-Za-z0-9_]{3,30}$/.test(formattedId)) {
+                    return setAuthError("ID must be 3-30 characters, alphanumeric & underscores only.");
+                }
+                if (passInput.length < 6) {
+                    return setAuthError("Password must be at least 6 characters.");
+                }
 
                 setAuthLoading(true);
 
                 try {
                     const action = isRegisterMode ? 'register' : 'login';
                     const response = await fetch(WEB_APP_URL, {
-                        method: 'POST', body: JSON.stringify({ action: action, userId: formattedId, password: passInput }),
+                        method: 'POST',
+                        body: JSON.stringify({ action, userId: formattedId, password: passInput }),
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                     });
                     
@@ -152,79 +261,139 @@
                     if (data.error) throw new Error(data.error);
 
                     if (isRegisterMode) {
-                        setIsRegisterMode(false); setPassInput(''); setAuthSuccessMsg("Account securely registered! Please log in.");
-                        setAuthLoading(false); return;
+                        setIsRegisterMode(false);
+                        setPassInput('');
+                        setAuthSuccessMsg("Account registered! Logging you in...");
                     }
 
-                    localStorage.setItem('study_user_id', formattedId); localStorage.setItem('study_session_token', data.sessionToken);
-                    setUserLoggedIn(formattedId); setSessionToken(data.sessionToken);
-                } catch (error) { setAuthError(error.message || "Connection failed."); }
+                    localStorage.setItem('study_user_id', formattedId);
+                    localStorage.setItem('study_session_token', data.sessionToken);
+                    setUserLoggedIn(formattedId);
+                    setSessionToken(data.sessionToken);
+                } catch (error) {
+                    setAuthError(error.message || "Connection failed. Please check your internet.");
+                }
                 setAuthLoading(false);
             };
 
-            const handleLogout = () => {
-                localStorage.removeItem('study_user_id'); localStorage.removeItem('study_session_token');
-                setUserLoggedIn(null); setSessionToken(null); setChapters([]);
-            };
+            const handleLogout = useCallback(() => {
+                if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+                localStorage.removeItem('study_user_id');
+                localStorage.removeItem('study_session_token');
+                setUserLoggedIn(null);
+                setSessionToken(null);
+                setChapters([]);
+                setPendingUpdates({});
+                setSyncErrorMsg('');
+            }, []);
 
-            const fetchWorkspaceData = async () => {
-                setLoading(true);
+            const fetchWorkspaceData = useCallback(async (isSilent = false) => {
+                if (!userLoggedIn || !sessionToken) return;
+                const hasCachedData = chaptersRef.current.length > 0;
+                if (!isSilent && !hasCachedData) setInitialLoading(true);
+                else setIsBackgroundFetching(true);
+
                 try {
                     const response = await fetch(WEB_APP_URL, {
-                        method: 'POST', body: JSON.stringify({ action: 'fetch', userId: userLoggedIn, sessionToken: sessionToken }),
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'fetch', userId: userLoggedIn, sessionToken }),
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                     });
                     const data = await response.json();
                     if (data.error) {
-                        if (data.error.includes('Session') || data.error.includes('Authentication')) handleLogout();
+                        if (data.error.includes('Session') || data.error.includes('Authentication')) {
+                            handleLogout();
+                        }
                         throw new Error(data.error);
                     }
-                    setChapters(data.chapters);
-                    setSyncStatus('synced');
-                } catch (error) { setSyncStatus('error'); }
-                setLoading(false);
-            };
+
+                    if (Array.isArray(data.chapters)) {
+                        // Reconcile server versions with any unsaved local edits
+                        const currentPending = pendingUpdatesRef.current;
+                        const merged = mergePendingOntoChapters(data.chapters, currentPending);
+                        setChapters(merged);
+
+                        // Also upgrade version numbers inside pendingUpdates so they never conflict
+                        if (Object.keys(currentPending).length > 0) {
+                            const versionMap = {};
+                            data.chapters.forEach(c => { versionMap[c.id] = c.version; });
+                            setPendingUpdates(prev => {
+                                const next = { ...prev };
+                                Object.keys(next).forEach(id => {
+                                    if (versionMap[id] !== undefined) {
+                                        next[id] = { ...next[id], version: versionMap[id] };
+                                    }
+                                });
+                                pendingUpdatesRef.current = next;
+                                return next;
+                            });
+                            setSyncStatus('unsaved');
+                        } else {
+                            setSyncStatus('synced');
+                            setSyncErrorMsg('');
+                        }
+                        setLastSyncedAt(new Date());
+                    }
+                } catch (error) {
+                    setSyncErrorMsg(error.message || 'Could not reach server. Changes are saved locally.');
+                    if (Object.keys(pendingUpdatesRef.current).length > 0) {
+                        setSyncStatus('error');
+                    }
+                } finally {
+                    setInitialLoading(false);
+                    setIsBackgroundFetching(false);
+                }
+            }, [userLoggedIn, sessionToken, handleLogout, mergePendingOntoChapters]);
 
             useEffect(() => {
-                if (userLoggedIn && sessionToken) fetchWorkspaceData();
-            }, [userLoggedIn, sessionToken]);
+                if (userLoggedIn && sessionToken) {
+                    // Load cached chapters if switching accounts
+                    try {
+                        const cached = localStorage.getItem(`scc_cache_chapters_${userLoggedIn}`);
+                        if (cached && chaptersRef.current.length === 0) {
+                            setChapters(JSON.parse(cached));
+                        }
+                    } catch (e) {}
+                    fetchWorkspaceData(false);
+                }
+            }, [userLoggedIn, sessionToken, fetchWorkspaceData]);
 
-            const executeReset = async () => {
-                setShowResetModal(false); setLoading(true);
-                try {
-                    const response = await fetch(WEB_APP_URL, {
-                        method: 'POST', body: JSON.stringify({ action: 'reset', userId: userLoggedIn, sessionToken: sessionToken }),
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-                    });
-                    const data = await response.json();
-                    if(data.error) throw new Error(data.error);
-                    setPendingUpdates({}); await fetchWorkspaceData(); 
-                } catch (error) { console.error("Reset Failed: " + error.message); }
-                setLoading(false);
-            };
-
-            // Added syncStatus to dependency array to resume processing queue after sync completion
-            useEffect(() => {
-                if (Object.keys(pendingUpdates).length === 0) return;
-                if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-                
-                autoSaveTimerRef.current = setTimeout(() => handleManualSave(), 2500); 
-                return () => clearTimeout(autoSaveTimerRef.current);
-            }, [pendingUpdates, syncStatus]);
-
-            const handleManualSave = async () => {
-                const snapshotUpdates = { ...pendingUpdates };
+            const handleManualSave = useCallback(async () => {
+                const snapshotUpdates = { ...pendingUpdatesRef.current };
                 const updatesArray = Object.values(snapshotUpdates);
                 
-                if (updatesArray.length === 0 || syncStatus === 'saving') return;
+                if (updatesArray.length === 0 || isSavingRef.current) return;
                 
-                if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+                if (autoSaveTimerRef.current) {
+                    clearTimeout(autoSaveTimerRef.current);
+                    autoSaveTimerRef.current = null;
+                }
+
+                isSavingRef.current = true;
                 setSyncStatus('saving');
+                setSyncErrorMsg('');
 
                 try {
-                    const payload = { action: 'save', userId: userLoggedIn, sessionToken: sessionToken, updates: updatesArray };
+                    // Ensure every update carries the latest known version from chaptersRef
+                    const currentChaptersMap = {};
+                    chaptersRef.current.forEach(ch => { currentChaptersMap[ch.id] = ch.version; });
+
+                    const payloadUpdates = updatesArray.map(u => ({
+                        ...u,
+                        version: currentChaptersMap[u.id] || u.version || 1
+                    }));
+
+                    const payload = {
+                        action: 'save',
+                        userId: userLoggedIn,
+                        sessionToken,
+                        updates: payloadUpdates
+                    };
+
                     const response = await fetch(WEB_APP_URL, {
-                        method: 'POST', body: JSON.stringify(payload), headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                        method: 'POST',
+                        body: JSON.stringify(payload),
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                     });
                     const data = await response.json();
                     
@@ -233,108 +402,231 @@
                         throw new Error(data.error);
                     }
 
-                    let conflictDetected = false;
-                    
-                    if (data.saved) {
-                        setChapters(prev => prev.map(ch => {
-                            if (data.saved[ch.id] !== undefined) return { ...ch, version: data.saved[ch.id] };
-                            return ch;
-                        }));
-                    }
-                    
-                    if (data.failed && data.failed.length > 0) conflictDetected = true;
+                    const savedVersions = data.saved || {};
+                    const failedIds = Array.isArray(data.failed) ? data.failed : [];
 
+                    // 1. Update chapter versions immediately in both state and ref
+                    if (Object.keys(savedVersions).length > 0) {
+                        setChapters(prev => {
+                            const updated = prev.map(ch => {
+                                if (savedVersions[ch.id] !== undefined) {
+                                    return { ...ch, version: savedVersions[ch.id] };
+                                }
+                                return ch;
+                            });
+                            chaptersRef.current = updated;
+                            return updated;
+                        });
+                    }
+
+                    // 2. Remove saved items from pendingUpdates unless the user made newer edits while saving
+                    let remainingCount = 0;
                     setPendingUpdates(prev => {
                         const next = { ...prev };
-                        for(const key in snapshotUpdates) {
-                            if (!data.failed || !data.failed.includes(key)) {
-                                // FIXED CONCURRENCY ISSUE: Check if user made NEW edits during save
+                        for (const key of Object.keys(snapshotUpdates)) {
+                            if (!failedIds.includes(key)) {
                                 if (JSON.stringify(next[key]) === JSON.stringify(snapshotUpdates[key])) {
                                     delete next[key];
                                 } else if (next[key]) {
-                                    // Keep new edits in queue but upgrade to new server version
-                                    next[key].version = data.saved[key] || next[key].version;
+                                    // User made another edit while network request was in flight!
+                                    next[key] = {
+                                        ...next[key],
+                                        version: savedVersions[key] || next[key].version
+                                    };
                                 }
                             }
                         }
+                        remainingCount = Object.keys(next).length;
+                        pendingUpdatesRef.current = next;
                         return next;
                     });
-                    
-                    setSyncStatus(conflictDetected ? 'error' : 'synced');
-                    if (conflictDetected) fetchWorkspaceData();
 
-                } catch (error) { setSyncStatus('error'); }
-            };
+                    setLastSyncedAt(new Date());
 
-            const updateChapter = (id, field, value) => {
-                let chapterVersion = 1;
-                
-                setChapters(prevChapters => prevChapters.map(ch => {
-                    if (ch.id === id) {
-                        chapterVersion = ch.version;
-                        if (field.includes('.')) {
-                            const [parent, child] = field.split('.');
-                            return { ...ch, [parent]: { ...ch[parent], [child]: value } };
-                        }
-                        return { ...ch, [field]: value };
+                    if (failedIds.length > 0) {
+                        // Re-fetch latest versions from server and seamlessly re-apply user's pending changes!
+                        await fetchWorkspaceData(true);
+                        setSyncStatus('unsaved');
+                    } else if (remainingCount > 0) {
+                        setSyncStatus('unsaved');
+                    } else {
+                        setSyncStatus('synced');
                     }
-                    return ch;
-                }));
+                } catch (error) {
+                    setSyncStatus('error');
+                    setSyncErrorMsg(error.message || 'Network error while saving. Retrying automatically...');
+                } finally {
+                    isSavingRef.current = false;
+                }
+            }, [userLoggedIn, sessionToken, handleLogout, fetchWorkspaceData]);
+
+            // Rapid Auto-Save Effect
+            useEffect(() => {
+                const pendingCount = Object.keys(pendingUpdates).length;
+                if (pendingCount === 0) return;
+
+                if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+                autoSaveTimerRef.current = setTimeout(() => {
+                    handleManualSave();
+                }, AUTO_SAVE_DELAY_MS);
+
+                return () => {
+                    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+                };
+            }, [pendingUpdates, syncStatus, handleManualSave]);
+
+            // FIXED: Synchronous version lookup from chaptersRef so chapterVersion is NEVER stale!
+            const updateChapter = useCallback((id, field, value) => {
+                const targetChapter = chaptersRef.current.find(ch => ch.id === id);
+                if (!targetChapter) return;
+
+                // Skip redundant updates if value hasn't actually changed
+                if (field.includes('.')) {
+                    const [parent, child] = field.split('.');
+                    if (targetChapter[parent]?.[child] === value) return;
+                } else {
+                    if (targetChapter[field] === value) return;
+                }
+
+                const accurateVersion = targetChapter.version || 1;
+
+                setChapters(prevChapters => {
+                    const nextChapters = prevChapters.map(ch => {
+                        if (ch.id === id) {
+                            if (field.includes('.')) {
+                                const [parent, child] = field.split('.');
+                                return { ...ch, [parent]: { ...(ch[parent] || {}), [child]: value } };
+                            }
+                            return { ...ch, [field]: value };
+                        }
+                        return ch;
+                    });
+                    chaptersRef.current = nextChapters;
+                    return nextChapters;
+                });
 
                 setPendingUpdates(prevPending => {
-                    const currentChapterQueue = prevPending[id] ? { ...prevPending[id] } : { id: id, version: chapterVersion };
-                    
+                    const existingEntry = prevPending[id]
+                        ? { ...prevPending[id], version: accurateVersion }
+                        : { id, version: accurateVersion };
+
                     if (field.includes('.')) {
                         const [parent, child] = field.split('.');
-                        currentChapterQueue[parent] = currentChapterQueue[parent] || {};
-                        currentChapterQueue[parent][child] = value;
+                        existingEntry[parent] = { ...(existingEntry[parent] || {}), [child]: value };
                     } else {
-                        currentChapterQueue[field] = value;
+                        existingEntry[field] = value;
                     }
-                    return { ...prevPending, [id]: currentChapterQueue };
+
+                    const nextPending = { ...prevPending, [id]: existingEntry };
+                    pendingUpdatesRef.current = nextPending;
+                    return nextPending;
                 });
+
                 setSyncStatus('unsaved');
+            }, []);
+
+            // Batch update helper for marking all milestones in a chapter
+            const markAllMilestones = useCallback((id, targetState) => {
+                const targetChapter = chaptersRef.current.find(ch => ch.id === id);
+                if (!targetChapter) return;
+                const accurateVersion = targetChapter.version || 1;
+
+                const newMilestones = {};
+                MILESTONE_KEYS.forEach(m => { newMilestones[m.key] = targetState; });
+                const newStatus = targetState ? 'Completed' : targetChapter.status;
+
+                setChapters(prev => {
+                    const next = prev.map(ch => ch.id === id ? { ...ch, status: newStatus, milestones: newMilestones } : ch);
+                    chaptersRef.current = next;
+                    return next;
+                });
+
+                setPendingUpdates(prev => {
+                    const existing = prev[id] ? { ...prev[id], version: accurateVersion } : { id, version: accurateVersion };
+                    existing.milestones = { ...(existing.milestones || {}), ...newMilestones };
+                    existing.status = newStatus;
+                    const next = { ...prev, [id]: existing };
+                    pendingUpdatesRef.current = next;
+                    return next;
+                });
+
+                setSyncStatus('unsaved');
+            }, []);
+
+            const executeReset = async () => {
+                setShowResetModal(false);
+                setInitialLoading(true);
+                try {
+                    const response = await fetch(WEB_APP_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'reset', userId: userLoggedIn, sessionToken }),
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                    });
+                    const data = await response.json();
+                    if (data.error) throw new Error(data.error);
+                    setPendingUpdates({});
+                    pendingUpdatesRef.current = {};
+                    localStorage.removeItem(`scc_pending_updates_${userLoggedIn}`);
+                    await fetchWorkspaceData(false);
+                } catch (error) {
+                    setSyncErrorMsg("Reset failed: " + error.message);
+                }
+                setInitialLoading(false);
             };
 
-            const handleExportCSV = () => { /* ... existing export logic ... */
-                if(chapters.length === 0) return;
-                const headers = ["id", "subject", "paper", "chapterNo", "titleEn", "titleBn", "status", "theory", "textbook", "written", "questionBank", "mistakeCorrection", "conceptBook", "lectureSlide", "engMcq", "varsityMcq", "qbSolved", "revisions", "writtenScore", "mcqScore", "confidence", "version"];
+            const handleExportCSV = () => {
+                if (chapters.length === 0) return;
+                const headers = ["id", "subject", "paper", "chapterNo", "titleEn", "titleBn", "status", "theory", "textbook", "written", "questionBank", "mistakeCorrection", "conceptBook", "lectureSlide", "engMcq", "varsityMcq", "qbSolved", "revisions", "writtenScore", "mcqScore", "confidence", "notes", "version"];
                 let csvContent = headers.join(',') + '\n';
                 chapters.forEach(ch => {
                     const safeMilestones = ch.milestones || {};
-                    const row = [ch.id, ch.subject, ch.paper, ch.chapterNo, ch.titleEn, ch.titleBn, ch.status, safeMilestones.theory || false, safeMilestones.textbook || false, safeMilestones.written || false, safeMilestones.questionBank || false, safeMilestones.mistakeCorrection || false, safeMilestones.conceptBook || false, safeMilestones.lectureSlide || false, safeMilestones.engMcq || false, safeMilestones.varsityMcq || false, ch.qbSolved || 0, ch.revisions || 0, ch.writtenScore || '', ch.mcqScore || '', ch.confidence || 'Unrated', ch.version || 1];
+                    const row = [
+                        ch.id, ch.subject, ch.paper, ch.chapterNo, ch.titleEn, ch.titleBn, ch.status,
+                        safeMilestones.theory || false, safeMilestones.textbook || false, safeMilestones.written || false,
+                        safeMilestones.questionBank || false, safeMilestones.mistakeCorrection || false,
+                        safeMilestones.conceptBook || false, safeMilestones.lectureSlide || false,
+                        safeMilestones.engMcq || false, safeMilestones.varsityMcq || false,
+                        ch.qbSolved || 0, ch.revisions || 0, ch.writtenScore || '', ch.mcqScore || '',
+                        ch.confidence || 'Unrated', ch.notes || '', ch.version || 1
+                    ];
                     csvContent += row.map(encodeCSV).join(',') + '\n';
                 });
                 const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.href = url; link.setAttribute('download', `StudyData_V4_${userLoggedIn}_${new Date().toISOString().split('T')[0]}.csv`);
-                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                link.href = url;
+                link.setAttribute('download', `StudyData_${userLoggedIn}_${new Date().toISOString().split('T')[0]}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             };
 
-            const handleImportCSV = (event) => { /* ... existing import logic ... */
+            const handleImportCSV = (event) => {
                 const file = event.target.files[0];
                 if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const rows = parseCSV(e.target.result);
-                    if (rows.length < 2) return alert("File is empty or invalid.");
+                    if (rows.length < 2) return setSyncErrorMsg("CSV file is empty or invalid.");
                     const headers = rows[0];
-                    if (!headers.includes("id")) return alert("Invalid CSV format. Missing 'id' column.");
+                    if (!headers.includes("id")) return setSyncErrorMsg("Invalid CSV format: Missing 'id' column.");
 
-                    let newPending = { ...pendingUpdates };
-                    let updatedChapters = JSON.parse(JSON.stringify(chapters)); 
+                    let newPending = { ...pendingUpdatesRef.current };
+                    let updatedChapters = JSON.parse(JSON.stringify(chaptersRef.current)); 
 
                     for (let i = 1; i < rows.length; i++) {
-                        const row = rows[i]; if (row.length < 2) continue;
-                        const rowData = {}; headers.forEach((h, idx) => rowData[h] = row[idx]);
+                        const row = rows[i];
+                        if (row.length < 2) continue;
+                        const rowData = {};
+                        headers.forEach((h, idx) => rowData[h] = row[idx]);
 
                         const chapterIndex = updatedChapters.findIndex(c => String(c.id) === String(rowData.id));
                         if (chapterIndex === -1) continue; 
 
                         const existing = updatedChapters[chapterIndex];
-                        if(!existing.milestones) existing.milestones = {};
-                        let chUpdates = {}; let hasChanges = false;
+                        if (!existing.milestones) existing.milestones = {};
+                        let chUpdates = {};
+                        let hasChanges = false;
 
                         const checkUpdate = (field, type = 'string') => {
                             let val = rowData[field];
@@ -347,27 +639,65 @@
                                 if (existing.milestones[field] !== val) {
                                     existing.milestones[field] = val;
                                     if (!chUpdates.milestones) chUpdates.milestones = {};
-                                    chUpdates.milestones[field] = val; hasChanges = true;
+                                    chUpdates.milestones[field] = val;
+                                    hasChanges = true;
                                 }
                             } else {
-                                if (existing[field] !== val) { existing[field] = val; chUpdates[field] = val; hasChanges = true; }
+                                if (existing[field] !== val) {
+                                    existing[field] = val;
+                                    chUpdates[field] = val;
+                                    hasChanges = true;
+                                }
                             }
                         };
 
-                        checkUpdate('status', 'string'); checkUpdate('theory', 'boolean'); checkUpdate('textbook', 'boolean'); checkUpdate('written', 'boolean'); checkUpdate('questionBank', 'boolean'); checkUpdate('mistakeCorrection', 'boolean'); checkUpdate('conceptBook', 'boolean'); checkUpdate('lectureSlide', 'boolean'); checkUpdate('engMcq', 'boolean'); checkUpdate('varsityMcq', 'boolean'); checkUpdate('qbSolved', 'number'); checkUpdate('revisions', 'number'); checkUpdate('writtenScore', 'string'); checkUpdate('mcqScore', 'string'); checkUpdate('confidence', 'string');
-                        if (hasChanges) newPending[existing.id] = { ...(newPending[existing.id] || { id: existing.id, version: existing.version }), ...chUpdates };
+                        checkUpdate('status', 'string');
+                        checkUpdate('theory', 'boolean');
+                        checkUpdate('textbook', 'boolean');
+                        checkUpdate('written', 'boolean');
+                        checkUpdate('questionBank', 'boolean');
+                        checkUpdate('mistakeCorrection', 'boolean');
+                        checkUpdate('conceptBook', 'boolean');
+                        checkUpdate('lectureSlide', 'boolean');
+                        checkUpdate('engMcq', 'boolean');
+                        checkUpdate('varsityMcq', 'boolean');
+                        checkUpdate('qbSolved', 'number');
+                        checkUpdate('revisions', 'number');
+                        checkUpdate('writtenScore', 'string');
+                        checkUpdate('mcqScore', 'string');
+                        checkUpdate('confidence', 'string');
+                        checkUpdate('notes', 'string');
+
+                        if (hasChanges) {
+                            newPending[existing.id] = {
+                                ...(newPending[existing.id] || { id: existing.id, version: existing.version }),
+                                ...chUpdates,
+                                milestones: {
+                                    ...(newPending[existing.id]?.milestones || {}),
+                                    ...(chUpdates.milestones || {})
+                                }
+                            };
+                        }
                     }
-                    setChapters(updatedChapters); setPendingUpdates(newPending);
+                    chaptersRef.current = updatedChapters;
+                    pendingUpdatesRef.current = newPending;
+                    setChapters(updatedChapters);
+                    setPendingUpdates(newPending);
                     if (Object.keys(newPending).length > 0) setSyncStatus('unsaved');
                     event.target.value = null;
                 };
                 reader.readAsText(file);
             };
 
-            const subjectsList = Array.from(new Set(chapters.map(ch => ch.subject))).filter(s => s !== 'Unknown');
-            const availablePapersForSubject = activeSubject !== 'All Subjects' 
-                ? Array.from(new Set(chapters.filter(c => c.subject === activeSubject).map(c => c.paper))).filter(Boolean)
-                : [];
+            const subjectsList = useMemo(() => (
+                Array.from(new Set(chapters.map(ch => ch.subject))).filter(s => s && s !== 'Unknown')
+            ), [chapters]);
+
+            const availablePapersForSubject = useMemo(() => (
+                activeSubject !== 'All Subjects' 
+                    ? Array.from(new Set(chapters.filter(c => c.subject === activeSubject).map(c => c.paper))).filter(Boolean)
+                    : []
+            ), [chapters, activeSubject]);
 
             const getSubjectColor = (sub) => {
                 switch(sub) {
@@ -390,29 +720,67 @@
                 }
             };
 
-            // Main Filter System (For Grid/Table)
-            const filteredChapters = chapters.filter(ch => {
-                if (activeSubject !== 'All Subjects' && ch.subject !== activeSubject) return false;
-                if (activePaper !== 'All' && ch.paper !== activePaper) return false;
+            // Filtered & Sorted Chapters for Subject View
+            const filteredChapters = useMemo(() => {
                 const searchLower = searchTerm.toLowerCase();
-                return ch.titleEn.toLowerCase().includes(searchLower) || ch.titleBn.includes(searchLower);
-            });
+                let list = chapters.filter(ch => {
+                    if (activeSubject !== 'All Subjects' && ch.subject !== activeSubject) return false;
+                    if (activePaper !== 'All' && ch.paper !== activePaper) return false;
+                    if (statusFilter !== 'All' && ch.status !== statusFilter) return false;
+                    if (confidenceFilter !== 'All' && ch.confidence !== confidenceFilter) return false;
+                    if (!searchLower) return true;
+                    return (
+                        (ch.titleEn || '').toLowerCase().includes(searchLower) ||
+                        (ch.titleBn || '').includes(searchLower) ||
+                        String(ch.chapterNo || '').toLowerCase().includes(searchLower) ||
+                        (ch.notes || '').toLowerCase().includes(searchLower)
+                    );
+                });
+
+                if (sortBy === 'progress_desc') {
+                    list = [...list].sort((a, b) => calculateMilestoneProgress(b.milestones).pct - calculateMilestoneProgress(a.milestones).pct);
+                } else if (sortBy === 'progress_asc') {
+                    list = [...list].sort((a, b) => calculateMilestoneProgress(a.milestones).pct - calculateMilestoneProgress(b.milestones).pct);
+                } else if (sortBy === 'qb_desc') {
+                    list = [...list].sort((a, b) => (b.qbSolved || 0) - (a.qbSolved || 0));
+                } else if (sortBy === 'rev_desc') {
+                    list = [...list].sort((a, b) => (b.revisions || 0) - (a.revisions || 0));
+                }
+                return list;
+            }, [chapters, activeSubject, activePaper, statusFilter, confidenceFilter, searchTerm, sortBy]);
+
+            // Global Dashboard Stats
+            const globalStats = useMemo(() => {
+                const total = chapters.length;
+                const completed = chapters.filter(c => c.status === 'Completed').length;
+                const started = chapters.filter(c => c.status === 'Started').length;
+                const totalQb = chapters.reduce((acc, c) => acc + (c.qbSolved || 0), 0);
+                const totalRev = chapters.reduce((acc, c) => acc + (c.revisions || 0), 0);
+                const pct = total === 0 ? 0 : Math.round((completed / total) * 100);
+                return { total, completed, started, totalQb, totalRev, pct };
+            }, [chapters]);
 
             // Weak Topics Filter System
-            const allWeakTopicsChapters = chapters.filter(ch => ch.confidence === 'Low');
-            const availableWeakSubjects = Array.from(new Set(allWeakTopicsChapters.map(c => c.subject)));
-            const availableWeakPapers = weakTopicSubjectFilter !== 'All'
-                ? Array.from(new Set(allWeakTopicsChapters.filter(c => c.subject === weakTopicSubjectFilter).map(c => c.paper)))
-                : [];
+            const allWeakTopicsChapters = useMemo(() => chapters.filter(ch => ch.confidence === 'Low'), [chapters]);
+            const availableWeakSubjects = useMemo(() => Array.from(new Set(allWeakTopicsChapters.map(c => c.subject))), [allWeakTopicsChapters]);
+            const availableWeakPapers = useMemo(() => (
+                weakTopicSubjectFilter !== 'All'
+                    ? Array.from(new Set(allWeakTopicsChapters.filter(c => c.subject === weakTopicSubjectFilter).map(c => c.paper)))
+                    : []
+            ), [allWeakTopicsChapters, weakTopicSubjectFilter]);
 
-            const weakTopicsChapters = allWeakTopicsChapters.filter(ch => {
-                if (weakTopicSubjectFilter !== 'All' && ch.subject !== weakTopicSubjectFilter) return false;
-                if (weakTopicPaperFilter !== 'All' && ch.paper !== weakTopicPaperFilter) return false;
-                return true;
-            }).sort((a, b) => a.subject.localeCompare(b.subject));
+            const weakTopicsChapters = useMemo(() => (
+                allWeakTopicsChapters.filter(ch => {
+                    if (weakTopicSubjectFilter !== 'All' && ch.subject !== weakTopicSubjectFilter) return false;
+                    if (weakTopicPaperFilter !== 'All' && ch.paper !== weakTopicPaperFilter) return false;
+                    return true;
+                }).sort((a, b) => a.subject.localeCompare(b.subject))
+            ), [allWeakTopicsChapters, weakTopicSubjectFilter, weakTopicPaperFilter]);
             
-            const weakTopicIds = new Set(weakTopicsChapters.map(c => c.id));
-            const inProgressChapters = chapters.filter(ch => ch.status === 'Started' && !weakTopicIds.has(ch.id)).sort((a, b) => a.subject.localeCompare(b.subject));
+            const inProgressChapters = useMemo(() => {
+                const weakTopicIds = new Set(weakTopicsChapters.map(c => c.id));
+                return chapters.filter(ch => ch.status === 'Started' && !weakTopicIds.has(ch.id)).sort((a, b) => a.subject.localeCompare(b.subject));
+            }, [chapters, weakTopicsChapters]);
 
             if (!userLoggedIn || !sessionToken) {
                 return (
@@ -428,10 +796,11 @@
                                 <div className="w-16 h-16 bg-indigo-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-100 dark:border-slate-700">
                                     <i className="fa-solid fa-shield-halved text-3xl text-indigo-600 dark:text-indigo-500"></i>
                                 </div>
-                                <h1 className="text-2xl font-bold text-slate-800 dark:text-white">SCC Auth V4.2</h1>
+                                <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Study Command Center</h1>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">V4.5 Turbo Sync • Instant Local Cache</p>
                             </div>
-                            {authError && <div className="bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-400 px-4 py-3 rounded-xl text-sm mb-6 flex items-start gap-2"><i className="fa-solid fa-circle-exclamation mt-0.5"></i> {authError}</div>}
-                            {authSuccessMsg && <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 px-4 py-3 rounded-xl text-sm mb-6 flex items-start gap-2"><i className="fa-solid fa-circle-check mt-0.5"></i> {authSuccessMsg}</div>}
+                            {authError && <div className="bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-400 px-4 py-3 rounded-xl text-sm mb-6 flex items-start gap-2"><i className="fa-solid fa-circle-exclamation mt-0.5"></i> <span>{authError}</span></div>}
+                            {authSuccessMsg && <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 px-4 py-3 rounded-xl text-sm mb-6 flex items-start gap-2"><i className="fa-solid fa-circle-check mt-0.5"></i> <span>{authSuccessMsg}</span></div>}
 
                             <form onSubmit={handleAuth} className="space-y-5">
                                 <div>
@@ -445,12 +814,12 @@
                                     <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Password</label>
                                     <div className="relative">
                                         <i className="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
-                                        <input type={showPass ? "text" : "password"} required placeholder={isRegisterMode ? "Create a password" : "Enter password"} value={passInput} onChange={e => setPassInput(e.target.value)} className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl pl-10 pr-10 py-3 text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 transition font-medium"/>
+                                        <input type={showPass ? "text" : "password"} required placeholder={isRegisterMode ? "Create a password (min 6 chars)" : "Enter password"} value={passInput} onChange={e => setPassInput(e.target.value)} className="w-full bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl pl-10 pr-10 py-3 text-slate-800 dark:text-white focus:outline-none focus:border-indigo-500 transition font-medium"/>
                                         <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><i className={`fa-solid ${showPass ? 'fa-eye-slash' : 'fa-eye'}`}></i></button>
                                     </div>
                                 </div>
                                 <button type="submit" disabled={authLoading} className="w-full bg-indigo-600 text-white rounded-xl py-3.5 font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 dark:shadow-indigo-900/20 disabled:opacity-70 flex items-center justify-center gap-2">
-                                    {authLoading ? <><i className="fa-solid fa-spinner fa-spin"></i> Processing...</> : <><i className="fa-solid fa-right-to-bracket"></i> {isRegisterMode ? 'Register' : 'Login'}</>}
+                                    {authLoading ? <><i className="fa-solid fa-spinner fa-spin"></i> Authenticating...</> : <><i className="fa-solid fa-right-to-bracket"></i> {isRegisterMode ? 'Create Account & Login' : 'Login'}</>}
                                 </button>
                                 <div className="text-center mt-4">
                                     <button type="button" onClick={() => {setIsRegisterMode(!isRegisterMode); setAuthError(''); setAuthSuccessMsg('');}} className="text-sm text-indigo-600 dark:text-indigo-400 font-bold hover:underline">
@@ -463,24 +832,26 @@
                 );
             }
 
-            if (loading) {
+            if (initialLoading && chapters.length === 0) {
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-slate-500 dark:text-slate-300">
-                        <i className="fa-solid fa-shield-check text-4xl text-indigo-500 animate-pulse"></i>
-                        <p className="font-bold tracking-wider">Verifying Session & Fetching Data...</p>
+                        <i className="fa-solid fa-bolt text-4xl text-indigo-500 animate-bounce"></i>
+                        <p className="font-bold tracking-wider">Initializing Study Workspace...</p>
                     </div>
                 );
             }
+
+            const pendingCount = Object.keys(pendingUpdates).length;
 
             return (
                 <div className="pb-20 relative min-h-screen transition-colors">
                     {/* RESET MODAL */}
                     {showResetModal && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-rose-900/50 p-6 md:p-8 rounded-2xl shadow-2xl max-w-md w-full animate-fade-in text-center">
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-rose-900/50 p-6 md:p-8 rounded-2xl shadow-2xl max-w-md w-full text-center">
                                 <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/30 rounded-full flex items-center justify-center mx-auto mb-4 border border-rose-200 dark:border-rose-500/50"><i className="fa-solid fa-triangle-exclamation text-3xl text-rose-500"></i></div>
                                 <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Targeted Reset</h2>
-                                <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">Are you sure you want to securely reset all your progress data? This operation preserves your syllabus structure but resets checkmarks, scores, and revisions to default states.</p>
+                                <p className="text-slate-600 dark:text-slate-400 text-sm mb-6">Are you sure you want to reset all your progress data? This preserves your syllabus structure but resets checkmarks, scores, and revisions to default states.</p>
                                 <div className="flex gap-3">
                                     <button onClick={() => setShowResetModal(false)} className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white font-bold py-3 rounded-xl transition">Cancel</button>
                                     <button onClick={executeReset} className="flex-1 bg-rose-600 hover:bg-rose-700 dark:hover:bg-rose-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-rose-200 dark:shadow-rose-900/50">Yes, Reset</button>
@@ -489,81 +860,161 @@
                         </div>
                     )}
 
-                    <div className="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 pt-8">
-                        {/* 1. HEADER RIBBON */}
-                        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center bg-white dark:bg-slate-900 px-5 py-3 rounded-2xl shadow-sm dark:shadow-lg border border-slate-200 dark:border-slate-800 transition-colors gap-4">
+                    <div className="p-4 md:p-6 lg:p-8 max-w-[1440px] mx-auto space-y-6 pt-6">
+                        {/* SYNC ERROR BANNER */}
+                        {syncErrorMsg && (
+                            <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 px-4 py-3 rounded-xl flex items-center justify-between gap-3 text-sm font-medium">
+                                <div className="flex items-center gap-2">
+                                    <i className="fa-solid fa-cloud-bolt text-amber-500"></i>
+                                    <span>{syncErrorMsg}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={handleManualSave} className="px-3 py-1 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700">Retry Now</button>
+                                    <button onClick={() => setSyncErrorMsg('')} className="text-amber-500 hover:text-amber-700 px-1"><i className="fa-solid fa-xmark"></i></button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 1. STICKY HEADER RIBBON */}
+                        <div className="sticky top-2 z-40 flex flex-col xl:flex-row justify-between items-start xl:items-center bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-5 py-3 rounded-2xl shadow-sm dark:shadow-lg border border-slate-200 dark:border-slate-800 transition-colors gap-4">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-cyan-500 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-inner">{userLoggedIn.charAt(0).toUpperCase()}</div>
-                                <div><div className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest"><i className="fa-solid fa-lock text-[8px]"></i> Session Secured</div><div className="font-bold text-slate-800 dark:text-slate-200">{userLoggedIn}</div></div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest"><i className="fa-solid fa-bolt text-[9px]"></i> Turbo Sync</span>
+                                        {isBackgroundFetching && <span className="text-[10px] text-indigo-500 font-semibold flex items-center gap-1"><i className="fa-solid fa-arrows-rotate fa-spin"></i> Refreshing</span>}
+                                    </div>
+                                    <div className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                                        <span>{userLoggedIn}</span>
+                                        {lastSyncedAt && <span className="text-[11px] font-normal text-slate-400 hidden sm:inline">• Synced {lastSyncedAt.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</span>}
+                                    </div>
+                                </div>
                             </div>
                             
                             <div className="flex flex-wrap gap-2 items-center w-full xl:w-auto justify-end">
-                                <div className="mr-1 md:mr-3">
-                                    {syncStatus === 'unsaved' && <button onClick={handleManualSave} className="flex items-center gap-2 bg-yellow-500 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-xl shadow font-bold transition-transform hover:scale-105 active:scale-95 animate-pulse-ring text-xs md:text-sm"><i className="fa-solid fa-cloud-arrow-up"></i> Save <span className="bg-black/20 px-1.5 py-0.5 rounded text-[10px] ml-1 text-white">{Object.keys(pendingUpdates).length}</span></button>}
-                                    {syncStatus === 'saving' && <div className="flex items-center gap-2 bg-indigo-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-xl shadow font-bold text-xs md:text-sm"><i className="fa-solid fa-spinner fa-spin"></i> Syncing...</div>}
-                                    {syncStatus === 'synced' && <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-3 md:px-4 py-1.5 md:py-2 rounded-xl shadow-sm font-bold text-xs md:text-sm"><i className="fa-solid fa-check-circle"></i> Synced</div>}
-                                    {syncStatus === 'error' && <button onClick={handleManualSave} className="flex items-center gap-2 bg-rose-500 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-xl shadow font-bold text-xs md:text-sm"><i className="fa-solid fa-triangle-exclamation"></i> Conflict/Retry</button>}
+                                <div className="mr-1 md:mr-2">
+                                    {syncStatus === 'unsaved' && (
+                                        <button onClick={handleManualSave} className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-3.5 py-2 rounded-xl shadow font-bold transition-transform active:scale-95 animate-pulse-ring text-xs md:text-sm">
+                                            <i className="fa-solid fa-cloud-arrow-up"></i> Save Now
+                                            <span className="bg-black/20 px-1.5 py-0.5 rounded text-[10px] text-white">{pendingCount}</span>
+                                        </button>
+                                    )}
+                                    {syncStatus === 'saving' && (
+                                        <div className="flex items-center gap-2 bg-indigo-600 text-white px-3.5 py-2 rounded-xl shadow font-bold text-xs md:text-sm">
+                                            <i className="fa-solid fa-spinner fa-spin"></i> Saving...
+                                        </div>
+                                    )}
+                                    {syncStatus === 'synced' && (
+                                        <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-3.5 py-2 rounded-xl font-bold text-xs md:text-sm">
+                                            <i className="fa-solid fa-check-circle"></i> All Saved
+                                        </div>
+                                    )}
+                                    {syncStatus === 'error' && (
+                                        <button onClick={handleManualSave} className="flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-3.5 py-2 rounded-xl shadow font-bold text-xs md:text-sm">
+                                            <i className="fa-solid fa-rotate-right"></i> Retry Save ({pendingCount})
+                                        </button>
+                                    )}
                                 </div>
+                                <button onClick={() => fetchWorkspaceData(true)} title="Refresh from Cloud" className="w-9 h-9 md:h-10 md:w-10 flex items-center justify-center text-sm font-bold bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 rounded-xl transition border border-slate-200 dark:border-slate-700">
+                                    <i className={`fa-solid fa-arrows-rotate ${isBackgroundFetching ? 'fa-spin text-indigo-500' : ''}`}></i>
+                                </button>
                                 <input type="file" ref={fileInputRef} onChange={handleImportCSV} accept=".csv" className="hidden" />
-                                <button onClick={() => fileInputRef.current.click()} className="w-9 h-9 md:h-10 md:w-auto md:px-4 flex items-center justify-center gap-2 text-sm font-bold bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 rounded-xl transition border border-slate-200 dark:border-slate-700"><i className="fa-solid fa-file-import text-blue-500"></i><span className="hidden md:inline">Import</span></button>
-                                <button onClick={handleExportCSV} className="w-9 h-9 md:h-10 md:w-auto md:px-4 flex items-center justify-center gap-2 text-sm font-bold bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 rounded-xl transition border border-slate-200 dark:border-slate-700"><i className="fa-solid fa-file-export text-emerald-500"></i><span className="hidden md:inline">Export</span></button>
-                                <button onClick={toggleTheme} className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center text-slate-500 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition">{theme === 'dark' ? <i className="fa-solid fa-sun"></i> : <i className="fa-solid fa-moon"></i>}</button>
-                                <button onClick={() => setShowResetModal(true)} className="w-9 h-9 md:h-10 md:w-auto md:px-4 flex items-center justify-center gap-2 text-sm font-bold bg-slate-50 dark:bg-slate-800 text-rose-500 rounded-xl transition border border-slate-200 dark:border-slate-700"><i className="fa-solid fa-rotate-left"></i><span className="hidden md:inline">Reset</span></button>
-                                <button onClick={handleLogout} className="w-9 h-9 md:h-10 md:w-auto md:px-4 flex items-center justify-center gap-2 text-sm font-bold bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl transition border border-slate-200 dark:border-slate-700"><i className="fa-solid fa-power-off"></i><span className="hidden md:inline">Logout</span></button>
+                                <button onClick={() => fileInputRef.current.click()} className="w-9 h-9 md:h-10 md:w-auto md:px-3.5 flex items-center justify-center gap-2 text-sm font-bold bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 rounded-xl transition border border-slate-200 dark:border-slate-700"><i className="fa-solid fa-file-import text-blue-500"></i><span className="hidden md:inline">Import</span></button>
+                                <button onClick={handleExportCSV} className="w-9 h-9 md:h-10 md:w-auto md:px-3.5 flex items-center justify-center gap-2 text-sm font-bold bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 rounded-xl transition border border-slate-200 dark:border-slate-700"><i className="fa-solid fa-file-export text-emerald-500"></i><span className="hidden md:inline">Export</span></button>
+                                <button onClick={toggleTheme} className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center text-slate-500 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transition">{theme === 'dark' ? <i className="fa-solid fa-sun text-amber-400"></i> : <i className="fa-solid fa-moon"></i>}</button>
+                                <button onClick={() => setShowResetModal(true)} className="w-9 h-9 md:h-10 md:w-auto md:px-3.5 flex items-center justify-center gap-2 text-sm font-bold bg-slate-50 dark:bg-slate-800 text-rose-500 rounded-xl transition border border-slate-200 dark:border-slate-700"><i className="fa-solid fa-rotate-left"></i><span className="hidden md:inline">Reset</span></button>
+                                <button onClick={handleLogout} className="w-9 h-9 md:h-10 md:w-auto md:px-3.5 flex items-center justify-center gap-2 text-sm font-bold bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl transition border border-slate-200 dark:border-slate-700"><i className="fa-solid fa-power-off"></i><span className="hidden md:inline">Logout</span></button>
                             </div>
                         </div>
 
                         {/* Top Subject Navigation Ribbon */}
-                        <div className="bg-white dark:bg-slate-900 rounded-full shadow-sm dark:shadow-lg border border-slate-200 dark:border-slate-800 p-1.5 flex items-center gap-1 overflow-x-auto custom-scrollbar transition-colors">
-                            <button onClick={() => { setActiveSubject('All Subjects'); setActivePaper('All'); }} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition whitespace-nowrap ${activeSubject === 'All Subjects' ? 'bg-slate-800 dark:bg-indigo-600 text-white shadow-md' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}><i className="fa-solid fa-layer-group"></i> All Subjects</button>
-                            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-2"></div>
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm dark:shadow-lg border border-slate-200 dark:border-slate-800 p-1.5 flex items-center gap-1.5 overflow-x-auto custom-scrollbar transition-colors">
+                            <button onClick={() => { setActiveSubject('All Subjects'); setActivePaper('All'); }} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition whitespace-nowrap ${activeSubject === 'All Subjects' ? 'bg-slate-800 dark:bg-indigo-600 text-white shadow-md' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}><i className="fa-solid fa-layer-group"></i> All Subjects</button>
+                            <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
                             {subjectsList.map((sub, idx) => {
                                 const subTotal = chapters.filter(c => c.subject === sub).length;
                                 const subCompleted = chapters.filter(c => c.subject === sub && c.status === 'Completed').length;
                                 const subProgress = subTotal === 0 ? 0 : Math.round((subCompleted / subTotal) * 100);
-                                return <button key={idx} onClick={() => { setActiveSubject(sub); setActivePaper('All'); }} className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium transition whitespace-nowrap ${activeSubject === sub ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-slate-700 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent'}`}>{sub} <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${activeSubject === sub ? 'bg-indigo-100 dark:bg-slate-700 text-indigo-800 dark:text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>{subProgress}% ({subTotal})</span></button>
+                                return (
+                                    <button key={idx} onClick={() => { setActiveSubject(sub); setActivePaper('All'); }} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition whitespace-nowrap ${activeSubject === sub ? 'bg-indigo-50 dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-slate-700 shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent'}`}>
+                                        {sub}
+                                        <span className={`text-[11px] px-2 py-0.5 rounded-full ${activeSubject === sub ? 'bg-indigo-100 dark:bg-slate-700 text-indigo-800 dark:text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>{subProgress}% ({subCompleted}/{subTotal})</span>
+                                    </button>
+                                );
                             })}
                         </div>
 
                         {/* DASHBOARD VIEW */}
                         {activeSubject === 'All Subjects' && (
                             <div className="space-y-6">
-                                <div className={`${getHeaderStyle('All Subjects')} rounded-3xl p-6 md:p-10 text-white shadow-xl relative overflow-hidden`}>
+                                <div className={`${getHeaderStyle('All Subjects')} rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden`}>
                                     <div className="absolute right-0 top-0 w-64 h-64 bg-white dark:bg-indigo-500 opacity-10 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl"></div>
-                                    <div className="relative z-10">
-                                        <div className="flex items-center gap-3 mb-2 opacity-80 dark:text-indigo-400 dark:opacity-100"><i className="fa-solid fa-earth-americas"></i><span className="text-sm font-medium tracking-wide uppercase">Universal Multi-Subject Master Hub</span></div>
-                                        <h1 className="text-3xl md:text-5xl font-extrabold mb-4">Study Command Center</h1>
-                                        <p className="max-w-2xl text-slate-200 dark:text-slate-400 text-sm md:text-base">V4.2 Concurrency Architecture Active: Added strict version matching and secure Google Sheet text coercion.</p>
+                                    <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2 opacity-80"><i className="fa-solid fa-earth-americas"></i><span className="text-xs font-bold tracking-widest uppercase">Universal Multi-Subject Master Hub</span></div>
+                                            <h1 className="text-3xl md:text-4xl font-extrabold mb-2">Study Command Center</h1>
+                                            <p className="max-w-xl text-slate-200 text-sm">Instant local persistence with 0.75s background cloud synchronization.</p>
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/15">
+                                            <div className="px-3 py-1">
+                                                <div className="text-[11px] uppercase tracking-wider opacity-75 font-bold">Completed</div>
+                                                <div className="text-2xl font-black">{globalStats.completed}<span className="text-sm font-medium opacity-75">/{globalStats.total}</span></div>
+                                            </div>
+                                            <div className="px-3 py-1 border-l border-white/15">
+                                                <div className="text-[11px] uppercase tracking-wider opacity-75 font-bold">In Progress</div>
+                                                <div className="text-2xl font-black">{globalStats.started}</div>
+                                            </div>
+                                            <div className="px-3 py-1 border-l border-white/15">
+                                                <div className="text-[11px] uppercase tracking-wider opacity-75 font-bold">Total QB</div>
+                                                <div className="text-2xl font-black">{globalStats.totalQb}</div>
+                                            </div>
+                                            <div className="px-3 py-1 border-l border-white/15">
+                                                <div className="text-[11px] uppercase tracking-wider opacity-75 font-bold">Revisions</div>
+                                                <div className="text-2xl font-black">{globalStats.totalRev}</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                     {subjectsList.map(sub => {
                                         const subChaps = chapters.filter(c => c.subject === sub);
                                         const subCompleted = subChaps.filter(c => c.status === 'Completed').length;
                                         const progress = subChaps.length === 0 ? 0 : Math.round((subCompleted / subChaps.length) * 100);
                                         return (
-                                            <div key={sub} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm dark:shadow-lg hover:shadow-md cursor-pointer group" onClick={() => setActiveSubject(sub)}>
+                                            <div key={sub} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm hover:shadow-md transition cursor-pointer group" onClick={() => setActiveSubject(sub)}>
                                                 <div className="flex justify-between items-start mb-4">
-                                                    <div className="flex items-center gap-3"><div className={`w-12 h-12 rounded-xl flex items-center justify-center font-extrabold text-lg ${getSubjectColor(sub).replace('border-', 'bg-opacity-20 ')}`}>{sub.substring(0, 2).toUpperCase()}</div><div><h3 className="font-bold text-slate-800 dark:text-slate-200 leading-tight">{sub}</h3><p className="text-xs text-slate-500 font-medium">{subChaps.length} Chapters</p></div></div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-extrabold text-lg ${getSubjectColor(sub)}`}>{sub.substring(0, 2).toUpperCase()}</div>
+                                                        <div>
+                                                            <h3 className="font-bold text-slate-800 dark:text-slate-200 leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">{sub}</h3>
+                                                            <p className="text-xs text-slate-500 font-medium">{subCompleted} of {subChaps.length} Completed</p>
+                                                        </div>
+                                                    </div>
                                                     <span className={`font-black text-xl ${getSubjectColor(sub).split(' ')[0]}`}>{progress}%</span>
                                                 </div>
-                                                <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden"><div className={`h-full rounded-full ${getSubjectColor(sub).split(' ')[0].replace('text', 'bg')}`} style={{ width: `${progress}%` }}></div></div>
+                                                <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                                                    <div className={`h-full rounded-full transition-all duration-300 ${getSubjectColor(sub).split(' ')[0].replace('text', 'bg')}`} style={{ width: `${progress}%` }}></div>
+                                                </div>
                                             </div>
-                                        )
+                                        );
                                     })}
                                 </div>
 
-                                {/* WEAK TOPICS QUEUE (Collapsible with Filters) */}
-                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm dark:shadow-lg transition-all">
+                                {/* WEAK TOPICS QUEUE */}
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
                                     <button onClick={() => setShowWeakTopics(!showWeakTopics)} className="w-full flex items-center justify-between text-left group outline-none pb-2">
-                                        <h2 className="text-lg font-bold flex items-center gap-2 text-rose-600 dark:text-rose-500"><i className="fa-solid fa-triangle-exclamation"></i> Priority Focus: Weak Topics <span className="text-xs bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-400 px-2 py-0.5 rounded-full ml-2">{allWeakTopicsChapters.length}</span></h2>
-                                        <i className={`fa-solid fa-chevron-${showWeakTopics ? 'up' : 'down'} text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-transform`}></i>
+                                        <h2 className="text-lg font-bold flex items-center gap-2 text-rose-600 dark:text-rose-500">
+                                            <i className="fa-solid fa-triangle-exclamation"></i> Priority Focus: Weak Topics
+                                            <span className="text-xs bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-400 px-2.5 py-0.5 rounded-full ml-1">{allWeakTopicsChapters.length}</span>
+                                        </h2>
+                                        <i className={`fa-solid fa-chevron-${showWeakTopics ? 'up' : 'down'} text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300`}></i>
                                     </button>
                                     
                                     {showWeakTopics && (
-                                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 animate-fade-in">
+                                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                                             {allWeakTopicsChapters.length > 0 && (
-                                                <div className="flex flex-wrap gap-3 mb-5 items-center bg-slate-50 dark:bg-slate-950 p-2 rounded-xl border border-slate-200 dark:border-slate-800">
+                                                <div className="flex flex-wrap gap-3 mb-5 items-center bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
                                                     <i className="fa-solid fa-filter text-slate-400 ml-2"></i>
                                                     <select value={weakTopicSubjectFilter} onChange={(e) => { setWeakTopicSubjectFilter(e.target.value); setWeakTopicPaperFilter('All'); }} className="text-sm font-bold bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 outline-none cursor-pointer">
                                                         <option value="All">All Subjects</option>
@@ -580,24 +1031,45 @@
                                             )}
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                                                {weakTopicsChapters.map(chapter => <ChapterCard key={chapter.id} chapter={chapter} onUpdate={updateChapter} subjectColor={getSubjectColor(chapter.subject)} />)}
-                                                {weakTopicsChapters.length === 0 && <div className="col-span-full py-6 text-center text-slate-500 font-medium">No chapters match your current filters. Great job!</div>}
+                                                {weakTopicsChapters.map(chapter => (
+                                                    <ChapterCard
+                                                        key={chapter.id}
+                                                        chapter={chapter}
+                                                        isPending={Boolean(pendingUpdates[chapter.id])}
+                                                        onUpdate={updateChapter}
+                                                        onMarkAll={markAllMilestones}
+                                                        subjectColor={getSubjectColor(chapter.subject)}
+                                                    />
+                                                ))}
+                                                {weakTopicsChapters.length === 0 && <div className="col-span-full py-6 text-center text-slate-500 font-medium">No weak chapters flagged right now. Great job!</div>}
                                             </div>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* IN PROGRESS QUEUE (Collapsible) */}
-                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm dark:shadow-lg transition-all">
+                                {/* IN PROGRESS QUEUE */}
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
                                     <button onClick={() => setShowInProgress(!showInProgress)} className="w-full flex items-center justify-between text-left group outline-none pb-2">
-                                        <h2 className="text-lg font-bold flex items-center gap-2 text-amber-600 dark:text-amber-500"><i className="fa-solid fa-person-digging"></i> Action Queue: In Progress <span className="text-xs bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full ml-2">{inProgressChapters.length}</span></h2>
-                                        <i className={`fa-solid fa-chevron-${showInProgress ? 'up' : 'down'} text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-transform`}></i>
+                                        <h2 className="text-lg font-bold flex items-center gap-2 text-amber-600 dark:text-amber-500">
+                                            <i className="fa-solid fa-person-digging"></i> Action Queue: In Progress
+                                            <span className="text-xs bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 px-2.5 py-0.5 rounded-full ml-1">{inProgressChapters.length}</span>
+                                        </h2>
+                                        <i className={`fa-solid fa-chevron-${showInProgress ? 'up' : 'down'} text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300`}></i>
                                     </button>
                                     
                                     {showInProgress && (
-                                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 animate-fade-in grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                                            {inProgressChapters.slice(0, 6).map(chapter => <ChapterCard key={chapter.id} chapter={chapter} onUpdate={updateChapter} subjectColor={getSubjectColor(chapter.subject)} />)}
-                                            {inProgressChapters.length === 0 && <div className="col-span-full py-6 text-center text-slate-500 font-medium">No active un-paused chapters found.</div>}
+                                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                                            {inProgressChapters.map(chapter => (
+                                                <ChapterCard
+                                                    key={chapter.id}
+                                                    chapter={chapter}
+                                                    isPending={Boolean(pendingUpdates[chapter.id])}
+                                                    onUpdate={updateChapter}
+                                                    onMarkAll={markAllMilestones}
+                                                    subjectColor={getSubjectColor(chapter.subject)}
+                                                />
+                                            ))}
+                                            {inProgressChapters.length === 0 && <div className="col-span-full py-6 text-center text-slate-500 font-medium">No chapters currently marked as Started.</div>}
                                         </div>
                                     )}
                                 </div>
@@ -606,71 +1078,106 @@
 
                         {/* SPECIFIC SUBJECT VIEW */}
                         {activeSubject !== 'All Subjects' && (
-                            <div className="space-y-6 animate-fade-in">
-                                <div className={`${getHeaderStyle(activeSubject)} rounded-3xl p-8 text-white shadow-xl relative`}>
-                                    <div className="flex items-center gap-2 text-white/70 dark:text-slate-400 text-sm mb-1 font-medium z-10 relative">
-                                        <button onClick={() => setActiveSubject('All Subjects')} className="hover:text-white transition"><i className="fa-solid fa-layer-group"></i> All Subjects</button><span>/</span> <span className="dark:text-slate-200">{activeSubject}</span>
+                            <div className="space-y-5">
+                                <div className={`${getHeaderStyle(activeSubject)} rounded-3xl p-6 md:p-8 text-white shadow-xl relative`}>
+                                    <div className="flex items-center gap-2 text-white/75 text-sm mb-1 font-medium">
+                                        <button onClick={() => setActiveSubject('All Subjects')} className="hover:text-white transition"><i className="fa-solid fa-layer-group"></i> All Subjects</button>
+                                        <span>/</span>
+                                        <span>{activeSubject}</span>
                                     </div>
-                                    <h1 className="text-4xl font-extrabold flex items-center gap-3 z-10 relative mt-4"><i className="fa-solid fa-book-open opacity-80"></i> {activeSubject} Command Center</h1>
+                                    <h1 className="text-3xl md:text-4xl font-extrabold flex items-center gap-3 mt-2"><i className="fa-solid fa-book-open opacity-80"></i> {activeSubject} Command Center</h1>
                                 </div>
 
-                                {/* Sub-Paper Selector Ribbon */}
-                                {availablePapersForSubject.length > 0 && (
-                                    <div className="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-200 dark:border-slate-800">
-                                        <span className="text-sm font-bold text-slate-500 mx-2"><i className="fa-solid fa-file-lines mr-1"></i> Paper:</span>
-                                        <button onClick={() => setActivePaper('All')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition ${activePaper === 'All' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>All</button>
-                                        {availablePapersForSubject.map(p => (
-                                            <button key={p} onClick={() => setActivePaper(p)} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition ${activePaper === p ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>{p}</button>
-                                        ))}
-                                    </div>
-                                )}
+                                {/* Sub-Paper Selector & Advanced Filter Bar */}
+                                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-4 space-y-4">
+                                    {availablePapersForSubject.length > 0 && (
+                                        <div className="flex flex-wrap items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mr-1"><i className="fa-solid fa-file-lines mr-1"></i> Paper:</span>
+                                            <button onClick={() => setActivePaper('All')} className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${activePaper === 'All' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}`}>All Papers</button>
+                                            {availablePapersForSubject.map(p => (
+                                                <button key={p} onClick={() => setActivePaper(p)} className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${activePaper === p ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'}`}>{p}</button>
+                                            ))}
+                                        </div>
+                                    )}
 
-                                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm dark:shadow-lg border border-slate-200 dark:border-slate-800 p-2 flex flex-col lg:flex-row gap-4 items-center justify-between">
-                                    <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-950 rounded-xl w-full lg:w-auto">
-                                        <button onClick={() => setViewMode('tiles')} className={`flex-1 flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${viewMode === 'tiles' ? 'bg-white text-indigo-700 shadow-sm dark:bg-slate-800 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><i className="fa-solid fa-border-all"></i> Tiles</button>
-                                        <button onClick={() => setViewMode('table')} className={`flex-1 flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${viewMode === 'table' ? 'bg-white text-indigo-700 shadow-sm dark:bg-slate-800 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><i className="fa-solid fa-table-list"></i> Table</button>
-                                    </div>
-                                    <div className="relative flex-1 w-full px-2">
-                                        <i className="fa-solid fa-magnifying-glass absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
-                                        <input type="text" placeholder="Search chapters..." className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                    <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+                                        <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-950 rounded-xl">
+                                            <button onClick={() => setViewMode('tiles')} className={`flex-1 lg:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'tiles' ? 'bg-white text-indigo-700 shadow-sm dark:bg-slate-800 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><i className="fa-solid fa-border-all"></i> Cards</button>
+                                            <button onClick={() => setViewMode('table')} className={`flex-1 lg:flex-initial flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'table' ? 'bg-white text-indigo-700 shadow-sm dark:bg-slate-800 dark:text-indigo-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><i className="fa-solid fa-table-list"></i> Compact Table</button>
+                                        </div>
+
+                                        <div className="relative flex-1">
+                                            <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                            <input type="text" placeholder="Search by chapter title, number, or notes..." className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-2">
+                                            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none">
+                                                <option value="All">Status: All</option>
+                                                <option value="Not Started">Not Started</option>
+                                                <option value="Started">Started</option>
+                                                <option value="Paused">Paused</option>
+                                                <option value="Completed">Completed</option>
+                                            </select>
+
+                                            <select value={confidenceFilter} onChange={e => setConfidenceFilter(e.target.value)} className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none">
+                                                <option value="All">Confidence: All</option>
+                                                <option value="Low">Low Confidence</option>
+                                                <option value="Medium">Medium Confidence</option>
+                                                <option value="High">High Confidence</option>
+                                                <option value="Unrated">Unrated</option>
+                                            </select>
+
+                                            <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 outline-none">
+                                                <option value="default">Sort: Default Order</option>
+                                                <option value="progress_desc">Milestone % (High → Low)</option>
+                                                <option value="progress_asc">Milestone % (Low → High)</option>
+                                                <option value="qb_desc">QB Solved (High → Low)</option>
+                                                <option value="rev_desc">Revisions (High → Low)</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
 
                                 {viewMode === 'tiles' ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                                        {filteredChapters.map((chapter) => <ChapterCard key={chapter.id} chapter={chapter} onUpdate={updateChapter} subjectColor={getSubjectColor(chapter.subject)} />)}
-                                        {filteredChapters.length === 0 && <div className="col-span-full text-center py-10 text-slate-500 font-medium">No chapters match the selected filters.</div>}
+                                        {filteredChapters.map((chapter) => (
+                                            <ChapterCard
+                                                key={chapter.id}
+                                                chapter={chapter}
+                                                isPending={Boolean(pendingUpdates[chapter.id])}
+                                                onUpdate={updateChapter}
+                                                onMarkAll={markAllMilestones}
+                                                subjectColor={getSubjectColor(chapter.subject)}
+                                            />
+                                        ))}
+                                        {filteredChapters.length === 0 && <div className="col-span-full text-center py-12 text-slate-500 font-medium bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">No chapters match the selected filters.</div>}
                                     </div>
                                 ) : (
-                                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm dark:shadow-xl overflow-hidden overflow-x-auto">
+                                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden overflow-x-auto custom-scrollbar">
                                         <table className="w-full text-left text-sm whitespace-nowrap text-slate-700 dark:text-slate-300">
                                             <thead className="bg-slate-100 dark:bg-slate-950 text-slate-500 font-bold uppercase text-[10px] border-b border-slate-200 dark:border-slate-800 tracking-wider">
                                                 <tr>
-                                                    <th className="px-3 py-4">Chapter</th><th className="px-3 py-4">Status</th>
-                                                    <th className="px-3 py-4 text-center">Theory</th><th className="px-3 py-4 text-center">T.Book</th><th className="px-3 py-4 text-center">CQ</th>
-                                                    <th className="px-3 py-4 text-center">Mistakes</th><th className="px-3 py-4 text-center">C.Book</th><th className="px-3 py-4 text-center">Slides</th>
-                                                    <th className="px-3 py-4 text-center text-blue-500">EngMCQ</th><th className="px-3 py-4 text-center text-blue-500">VarMCQ</th>
-                                                    <th className="px-3 py-4 text-center">QB Solves</th><th className="px-3 py-4">Confidence</th>
+                                                    <th className="px-3 py-3.5">Chapter</th>
+                                                    <th className="px-3 py-3.5">Status</th>
+                                                    {MILESTONE_KEYS.map(m => (
+                                                        <th key={m.key} className={`px-2.5 py-3.5 text-center ${m.highlight ? 'text-blue-500' : ''}`}>{m.short}</th>
+                                                    ))}
+                                                    <th className="px-3 py-3.5 text-center">QB Solves</th>
+                                                    <th className="px-3 py-3.5 text-center">Revisions</th>
+                                                    <th className="px-3 py-3.5 text-center">Written</th>
+                                                    <th className="px-3 py-3.5 text-center">MCQ</th>
+                                                    <th className="px-3 py-3.5">Confidence</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
                                                 {filteredChapters.map(ch => (
-                                                    <tr key={ch.id} className="hover:bg-indigo-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                                                        <td className="px-3 py-4"><div className="font-bold text-slate-800 dark:text-slate-200 text-base">{ch.titleEn}</div><div className="text-[11px] font-medium text-slate-500">{ch.paper} • Ch {ch.chapterNo} • v{ch.version}</div></td>
-                                                        <td className="px-3 py-4"><select value={ch.status} onChange={(e) => updateChapter(ch.id, 'status', e.target.value)} className="text-sm font-bold bg-transparent dark:bg-slate-900 outline-none cursor-pointer text-indigo-700 dark:text-indigo-400 border border-transparent dark:border-slate-700 rounded p-1"><option value="Not Started">Not Started</option><option value="Started">Started</option><option value="Paused">Paused</option><option value="Completed">Completed</option></select></td>
-                                                        <td className="px-3 py-4 text-center cursor-pointer text-lg" onClick={() => updateChapter(ch.id, 'milestones.theory', !(ch.milestones?.theory))}>{ch.milestones?.theory ? <i className="fa-solid fa-circle-check text-indigo-600"></i> : <i className="fa-regular fa-circle text-slate-300 dark:text-slate-600"></i>}</td>
-                                                        <td className="px-3 py-4 text-center cursor-pointer text-lg" onClick={() => updateChapter(ch.id, 'milestones.textbook', !(ch.milestones?.textbook))}>{ch.milestones?.textbook ? <i className="fa-solid fa-circle-check text-indigo-600"></i> : <i className="fa-regular fa-circle text-slate-300 dark:text-slate-600"></i>}</td>
-                                                        <td className="px-3 py-4 text-center cursor-pointer text-lg" onClick={() => updateChapter(ch.id, 'milestones.written', !(ch.milestones?.written))}>{ch.milestones?.written ? <i className="fa-solid fa-circle-check text-indigo-600"></i> : <i className="fa-regular fa-circle text-slate-300 dark:text-slate-600"></i>}</td>
-                                                        <td className="px-3 py-4 text-center cursor-pointer text-lg" onClick={() => updateChapter(ch.id, 'milestones.mistakeCorrection', !(ch.milestones?.mistakeCorrection))}>{ch.milestones?.mistakeCorrection ? <i className="fa-solid fa-circle-check text-indigo-600"></i> : <i className="fa-regular fa-circle text-slate-300 dark:text-slate-600"></i>}</td>
-                                                        <td className="px-3 py-4 text-center cursor-pointer text-lg" onClick={() => updateChapter(ch.id, 'milestones.conceptBook', !(ch.milestones?.conceptBook))}>{ch.milestones?.conceptBook ? <i className="fa-solid fa-circle-check text-indigo-600"></i> : <i className="fa-regular fa-circle text-slate-300 dark:text-slate-600"></i>}</td>
-                                                        <td className="px-3 py-4 text-center cursor-pointer text-lg" onClick={() => updateChapter(ch.id, 'milestones.lectureSlide', !(ch.milestones?.lectureSlide))}>{ch.milestones?.lectureSlide ? <i className="fa-solid fa-circle-check text-indigo-600"></i> : <i className="fa-regular fa-circle text-slate-300 dark:text-slate-600"></i>}</td>
-                                                        <td className="px-3 py-4 text-center cursor-pointer text-lg bg-blue-50/30 dark:bg-blue-900/10" onClick={() => updateChapter(ch.id, 'milestones.engMcq', !(ch.milestones?.engMcq))}>{ch.milestones?.engMcq ? <i className="fa-solid fa-circle-check text-blue-600"></i> : <i className="fa-regular fa-circle text-slate-300 dark:text-slate-600"></i>}</td>
-                                                        <td className="px-3 py-4 text-center cursor-pointer text-lg bg-blue-50/30 dark:bg-blue-900/10" onClick={() => updateChapter(ch.id, 'milestones.varsityMcq', !(ch.milestones?.varsityMcq))}>{ch.milestones?.varsityMcq ? <i className="fa-solid fa-circle-check text-blue-600"></i> : <i className="fa-regular fa-circle text-slate-300 dark:text-slate-600"></i>}</td>
-                                                        <td className="px-3 py-4 text-center">
-                                                            <div className="flex items-center justify-center gap-3 bg-slate-50 dark:bg-slate-950 p-1.5 rounded-lg border border-slate-200 dark:border-slate-800"><button onClick={() => updateChapter(ch.id, 'qbSolved', Math.max(0, ch.qbSolved - 1))} className="text-slate-400 w-6 h-6 bg-white dark:bg-slate-800 rounded font-bold">-</button><span className="font-bold w-4 text-indigo-900 dark:text-indigo-400">{ch.qbSolved}</span><button onClick={() => updateChapter(ch.id, 'qbSolved', ch.qbSolved + 1)} className="text-slate-400 w-6 h-6 bg-white dark:bg-slate-800 rounded font-bold">+</button></div>
-                                                        </td>
-                                                        <td className="px-3 py-4"><select value={ch.confidence} onChange={(e) => updateChapter(ch.id, 'confidence', e.target.value)} className="text-sm font-bold bg-transparent outline-none text-slate-700 dark:text-slate-300"><option value="Unrated">Unrated</option><option value="Low">Low</option><option value="Medium">Medium</option><option value="High">High</option></select></td>
-                                                    </tr>
+                                                    <TableRow
+                                                        key={ch.id}
+                                                        ch={ch}
+                                                        isPending={Boolean(pendingUpdates[ch.id])}
+                                                        updateChapter={updateChapter}
+                                                    />
                                                 ))}
                                             </tbody>
                                         </table>
@@ -684,15 +1191,106 @@
             );
         }
 
-        function ChapterCard({ chapter, onUpdate, subjectColor }) {
-            const { id, subject, paper, chapterNo, titleEn, titleBn, status, milestones, qbSolved, revisions, writtenScore, mcqScore, confidence, version } = chapter;
+        function TableRow({ ch, isPending, updateChapter }) {
+            const [localWritten, setLocalWritten] = useState(ch.writtenScore || '');
+            const [localMcq, setLocalMcq] = useState(ch.mcqScore || '');
+            const scoreTimerRef = useRef(null);
+
+            useEffect(() => { setLocalWritten(ch.writtenScore || ''); }, [ch.writtenScore]);
+            useEffect(() => { setLocalMcq(ch.mcqScore || ''); }, [ch.mcqScore]);
+
+            const handleScoreChange = (field, val, setter) => {
+                setter(val);
+                if (scoreTimerRef.current) clearTimeout(scoreTimerRef.current);
+                scoreTimerRef.current = setTimeout(() => {
+                    updateChapter(ch.id, field, val);
+                }, 400);
+            };
+
+            return (
+                <tr className="hover:bg-indigo-50/40 dark:hover:bg-slate-800/40 transition-colors">
+                    <td className="px-3 py-3">
+                        <div className="font-bold text-slate-800 dark:text-slate-200 text-sm flex items-center gap-2">
+                            <span>{ch.titleEn}</span>
+                            {isPending && <span className="w-2 h-2 rounded-full bg-amber-500" title="Queued for save"></span>}
+                        </div>
+                        <div className="text-[11px] font-medium text-slate-500">{ch.paper} • Ch {ch.chapterNo}</div>
+                    </td>
+                    <td className="px-3 py-3">
+                        <select value={ch.status} onChange={(e) => updateChapter(ch.id, 'status', e.target.value)} className="text-xs font-bold bg-slate-50 dark:bg-slate-950 outline-none cursor-pointer text-indigo-700 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5">
+                            <option value="Not Started">Not Started</option>
+                            <option value="Started">Started</option>
+                            <option value="Paused">Paused</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </td>
+                    {MILESTONE_KEYS.map(m => {
+                        const checked = Boolean(ch.milestones?.[m.key]);
+                        return (
+                            <td key={m.key} className={`px-2.5 py-3 text-center cursor-pointer text-base ${m.highlight ? 'bg-blue-50/20 dark:bg-blue-900/10' : ''}`} onClick={() => updateChapter(ch.id, `milestones.${m.key}`, !checked)}>
+                                {checked
+                                    ? <i className={`fa-solid fa-circle-check ${m.highlight ? 'text-blue-600' : 'text-indigo-600'}`}></i>
+                                    : <i className="fa-regular fa-circle text-slate-300 dark:text-slate-600"></i>}
+                            </td>
+                        );
+                    })}
+                    <td className="px-3 py-3 text-center">
+                        <div className="inline-flex items-center gap-2 bg-slate-50 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800">
+                            <button onClick={() => updateChapter(ch.id, 'qbSolved', Math.max(0, (ch.qbSolved || 0) - 1))} className="text-slate-500 w-6 h-6 bg-white dark:bg-slate-800 rounded font-bold hover:bg-slate-100">-</button>
+                            <span className="font-bold min-w-[1.25rem] text-center text-amber-600 dark:text-amber-400">{ch.qbSolved || 0}</span>
+                            <button onClick={() => updateChapter(ch.id, 'qbSolved', (ch.qbSolved || 0) + 1)} className="text-slate-500 w-6 h-6 bg-white dark:bg-slate-800 rounded font-bold hover:bg-slate-100">+</button>
+                        </div>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                        <div className="inline-flex items-center gap-2 bg-slate-50 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800">
+                            <button onClick={() => updateChapter(ch.id, 'revisions', Math.max(0, (ch.revisions || 0) - 1))} className="text-slate-500 w-6 h-6 bg-white dark:bg-slate-800 rounded font-bold hover:bg-slate-100">-</button>
+                            <span className="font-bold min-w-[1.25rem] text-center text-indigo-600 dark:text-indigo-400">{ch.revisions || 0}</span>
+                            <button onClick={() => updateChapter(ch.id, 'revisions', (ch.revisions || 0) + 1)} className="text-slate-500 w-6 h-6 bg-white dark:bg-slate-800 rounded font-bold hover:bg-slate-100">+</button>
+                        </div>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                        <input type="text" placeholder="-" value={localWritten} onChange={e => handleScoreChange('writtenScore', e.target.value, setLocalWritten)} onBlur={() => updateChapter(ch.id, 'writtenScore', localWritten)} className="w-16 text-xs font-bold text-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500" />
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                        <input type="text" placeholder="-" value={localMcq} onChange={e => handleScoreChange('mcqScore', e.target.value, setLocalMcq)} onBlur={() => updateChapter(ch.id, 'mcqScore', localMcq)} className="w-16 text-xs font-bold text-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500" />
+                    </td>
+                    <td className="px-3 py-3">
+                        <select value={ch.confidence} onChange={(e) => updateChapter(ch.id, 'confidence', e.target.value)} className="text-xs font-bold bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1.5 outline-none text-slate-700 dark:text-slate-300">
+                            <option value="Unrated">Unrated</option>
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </td>
+                </tr>
+            );
+        }
+
+        function ChapterCard({ chapter, isPending, onUpdate, onMarkAll, subjectColor }) {
+            const { id, subject, paper, chapterNo, titleEn, titleBn, status, milestones, qbSolved, revisions, writtenScore, mcqScore, confidence, notes, version } = chapter;
             const [localWritten, setLocalWritten] = useState(writtenScore || '');
             const [localMcq, setLocalMcq] = useState(mcqScore || '');
+            const [localNotes, setLocalNotes] = useState(notes || '');
+            const [showNotes, setShowNotes] = useState(Boolean(notes));
+            const inputDebounceRef = useRef(null);
 
             useEffect(() => { setLocalWritten(writtenScore || ''); }, [writtenScore]);
             useEffect(() => { setLocalMcq(mcqScore || ''); }, [mcqScore]);
+            useEffect(() => { setLocalNotes(notes || ''); }, [notes]);
+
+            // Debounced live text update so user doesn't even need to click outside before clicking Save
+            const handleTextChange = (field, val, setter) => {
+                setter(val);
+                if (inputDebounceRef.current) clearTimeout(inputDebounceRef.current);
+                inputDebounceRef.current = setTimeout(() => {
+                    onUpdate(id, field, val);
+                }, 400);
+            };
 
             const safeMilestones = milestones || {};
+            const progress = calculateMilestoneProgress(safeMilestones);
+            const allDone = progress.done === progress.total;
+
             const toggleMilestone = (field) => onUpdate(id, `milestones.${field}`, !safeMilestones[field]);
 
             const getConfidenceStyle = (conf) => {
@@ -713,53 +1311,143 @@
             };
 
             return (
-                <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm dark:shadow-lg border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden group">
+                <div className={`bg-white dark:bg-slate-900 rounded-2xl shadow-sm dark:shadow-lg border transition-all flex flex-col overflow-hidden ${isPending ? 'border-amber-400/80 dark:border-amber-500/60' : 'border-slate-200 dark:border-slate-800'}`}>
                     <div className="p-5 border-b border-slate-100 dark:border-slate-800/50">
-                        <div className="flex justify-between items-start mb-4">
+                        <div className="flex justify-between items-start mb-3">
                             <div className="flex items-center gap-2 flex-wrap">
                                 <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase border ${subjectColor}`}>{subject}</span>
                                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">{paper} • Ch {chapterNo}</span>
                             </div>
-                            <span className="text-[10px] text-slate-300 dark:text-slate-600">v{version}</span>
+                            <div className="flex items-center gap-1.5">
+                                {isPending && <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span> Queued</span>}
+                                <span className="text-[10px] text-slate-300 dark:text-slate-600">v{version}</span>
+                            </div>
                         </div>
 
                         <h3 className="font-extrabold text-slate-800 dark:text-white text-lg leading-tight mb-1">{titleEn}</h3>
-                        <p className="text-sm font-medium text-slate-500 mb-2">{titleBn}</p>
-                        {confidence && confidence !== 'Unrated' && (
-                            <span className={`text-[10px] inline-flex font-bold px-2 py-1 rounded items-center gap-1 border ${getConfidenceStyle(confidence)}`}>{confidence === 'Low' && <i className="fa-solid fa-triangle-exclamation"></i>} {confidence} Conf</span>
-                        )}
+                        <p className="text-sm font-medium text-slate-500 mb-3">{titleBn}</p>
+
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-1.5">
+                            <span>Milestones ({progress.done}/{progress.total})</span>
+                            <span className="text-indigo-600 dark:text-indigo-400">{progress.pct}%</span>
+                        </div>
+                        <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mb-4">
+                            <div className="bg-indigo-600 dark:bg-indigo-500 h-full rounded-full transition-all duration-300" style={{ width: `${progress.pct}%` }}></div>
+                        </div>
                         
-                        <div className="mt-5 flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
-                            <span className="text-xs font-bold text-slate-500 ml-2">Status:</span>
-                            <select value={status} onChange={(e) => onUpdate(id, 'status', e.target.value)} className={`text-xs font-bold px-3 py-1.5 rounded-lg border outline-none appearance-none cursor-pointer ${getStatusColor(status)}`}>
-                                <option value="Not Started">Not Started</option><option value="Started">Started</option><option value="Paused">Paused</option><option value="Completed">Completed</option>
+                        <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-slate-500 ml-1.5">Status:</span>
+                                {confidence && confidence !== 'Unrated' && (
+                                    <span className={`text-[10px] inline-flex font-bold px-2 py-0.5 rounded items-center gap-1 border ${getConfidenceStyle(confidence)}`}>
+                                        {confidence === 'Low' && <i className="fa-solid fa-triangle-exclamation"></i>} {confidence}
+                                    </span>
+                                )}
+                            </div>
+                            <select value={status} onChange={(e) => onUpdate(id, 'status', e.target.value)} className={`text-xs font-bold px-3 py-1.5 rounded-lg border outline-none cursor-pointer ${getStatusColor(status)}`}>
+                                <option value="Not Started">Not Started</option>
+                                <option value="Started">Started</option>
+                                <option value="Paused">Paused</option>
+                                <option value="Completed">Completed</option>
                             </select>
                         </div>
                     </div>
 
-                    <div className="p-5 bg-slate-50/50 dark:bg-slate-800/20 flex-1">
-                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Study Milestones</h4>
-                        <div className="grid grid-cols-2 gap-2">
-                            <MilestoneCheckbox label="Theory" checked={safeMilestones.theory} onChange={() => toggleMilestone('theory')} />
-                            <MilestoneCheckbox label="Textbook" checked={safeMilestones.textbook} onChange={() => toggleMilestone('textbook')} />
-                            <MilestoneCheckbox label="Written" checked={safeMilestones.written} onChange={() => toggleMilestone('written')} />
-                            <MilestoneCheckbox label="Question Bank" checked={safeMilestones.questionBank} onChange={() => toggleMilestone('questionBank')} />
-                            <MilestoneCheckbox label="Mistakes" checked={safeMilestones.mistakeCorrection} onChange={() => toggleMilestone('mistakeCorrection')} />
-                            <MilestoneCheckbox label="Concept Book" checked={safeMilestones.conceptBook} onChange={() => toggleMilestone('conceptBook')} />
-                            <MilestoneCheckbox label="Lecture Slide" checked={safeMilestones.lectureSlide} onChange={() => toggleMilestone('lectureSlide')} />
-                            <MilestoneCheckbox label="Eng. MCQ" checked={safeMilestones.engMcq} onChange={() => toggleMilestone('engMcq')} />
-                            <MilestoneCheckbox label="Varsity MCQ" checked={safeMilestones.varsityMcq} onChange={() => toggleMilestone('varsityMcq')} />
+                    <div className="p-5 bg-slate-50/50 dark:bg-slate-800/20 flex-1 flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Study Milestones</h4>
+                                <button
+                                    type="button"
+                                    onClick={() => onMarkAll(id, !allDone)}
+                                    className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                                >
+                                    {allDone ? 'Uncheck All' : 'Check All'}
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                {MILESTONE_KEYS.map(m => (
+                                    <MilestoneCheckbox
+                                        key={m.key}
+                                        label={m.label}
+                                        checked={Boolean(safeMilestones[m.key])}
+                                        onChange={() => toggleMilestone(m.key)}
+                                    />
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3 mt-5">
-                            <div className="bg-white dark:bg-slate-900 border border-yellow-100 dark:border-slate-700 rounded-xl p-3"><div className="text-[10px] font-bold text-yellow-600 dark:text-amber-500 uppercase mb-2">QB Solved</div><div className="flex items-center justify-between bg-yellow-50 dark:bg-slate-950 rounded-lg p-1.5 border border-yellow-200/50 dark:border-slate-800"><button onClick={() => onUpdate(id, 'qbSolved', Math.max(0, qbSolved - 1))} className="w-7 h-7 bg-white dark:bg-slate-800 text-yellow-700 dark:text-slate-400 rounded font-bold">-</button><span className="font-extrabold text-yellow-900 dark:text-amber-500 text-lg">{qbSolved}</span><button onClick={() => onUpdate(id, 'qbSolved', qbSolved + 1)} className="w-7 h-7 bg-white dark:bg-slate-800 text-yellow-700 dark:text-slate-400 rounded font-bold">+</button></div></div>
-                            <div className="bg-white dark:bg-slate-900 border border-blue-100 dark:border-slate-700 rounded-xl p-3"><div className="text-[10px] font-bold text-blue-600 dark:text-indigo-400 uppercase mb-2">Revisions</div><div className="flex items-center justify-between bg-blue-50 dark:bg-slate-950 rounded-lg p-1.5 border border-blue-200/50 dark:border-slate-800"><button onClick={() => onUpdate(id, 'revisions', Math.max(0, revisions - 1))} className="w-7 h-7 bg-white dark:bg-slate-800 text-blue-700 dark:text-slate-400 rounded font-bold">-</button><span className="font-extrabold text-blue-900 dark:text-indigo-400 text-lg">{revisions}</span><button onClick={() => onUpdate(id, 'revisions', revisions + 1)} className="w-7 h-7 bg-white dark:bg-slate-800 text-blue-700 dark:text-slate-400 rounded font-bold">+</button></div></div>
-                        </div>
+                        <div>
+                            <div className="grid grid-cols-2 gap-3 mt-4">
+                                <div className="bg-white dark:bg-slate-900 border border-yellow-100 dark:border-slate-700 rounded-xl p-2.5">
+                                    <div className="text-[10px] font-bold text-yellow-600 dark:text-amber-500 uppercase mb-1.5">QB Solved</div>
+                                    <div className="flex items-center justify-between bg-yellow-50 dark:bg-slate-950 rounded-lg p-1 border border-yellow-200/50 dark:border-slate-800">
+                                        <button onClick={() => onUpdate(id, 'qbSolved', Math.max(0, (qbSolved || 0) - 1))} className="w-7 h-7 bg-white dark:bg-slate-800 text-yellow-700 dark:text-slate-300 rounded font-bold hover:bg-yellow-100 transition">-</button>
+                                        <span className="font-extrabold text-yellow-900 dark:text-amber-500 text-base">{qbSolved || 0}</span>
+                                        <button onClick={() => onUpdate(id, 'qbSolved', (qbSolved || 0) + 1)} className="w-7 h-7 bg-white dark:bg-slate-800 text-yellow-700 dark:text-slate-300 rounded font-bold hover:bg-yellow-100 transition">+</button>
+                                    </div>
+                                </div>
+                                <div className="bg-white dark:bg-slate-900 border border-blue-100 dark:border-slate-700 rounded-xl p-2.5">
+                                    <div className="text-[10px] font-bold text-blue-600 dark:text-indigo-400 uppercase mb-1.5">Revisions</div>
+                                    <div className="flex items-center justify-between bg-blue-50 dark:bg-slate-950 rounded-lg p-1 border border-blue-200/50 dark:border-slate-800">
+                                        <button onClick={() => onUpdate(id, 'revisions', Math.max(0, (revisions || 0) - 1))} className="w-7 h-7 bg-white dark:bg-slate-800 text-blue-700 dark:text-slate-300 rounded font-bold hover:bg-blue-100 transition">-</button>
+                                        <span className="font-extrabold text-blue-900 dark:text-indigo-400 text-base">{revisions || 0}</span>
+                                        <button onClick={() => onUpdate(id, 'revisions', (revisions || 0) + 1)} className="w-7 h-7 bg-white dark:bg-slate-800 text-blue-700 dark:text-slate-300 rounded font-bold hover:bg-blue-100 transition">+</button>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-slate-200/60 dark:border-slate-800">
-                            <div><label className="text-[10px] text-slate-500 font-bold block mb-1">Written:</label><input type="text" placeholder="42" value={localWritten} onChange={(e) => setLocalWritten(e.target.value)} onBlur={() => onUpdate(id, 'writtenScore', localWritten)} className="w-full text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-2 focus:ring-2 focus:ring-indigo-500 outline-none text-center" /></div>
-                            <div><label className="text-[10px] text-slate-500 font-bold block mb-1">MCQ:</label><input type="text" placeholder="28/30" value={localMcq} onChange={(e) => setLocalMcq(e.target.value)} onBlur={() => onUpdate(id, 'mcqScore', localMcq)} className="w-full text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-2 focus:ring-2 focus:ring-indigo-500 outline-none text-center" /></div>
-                            <div><label className="text-[10px] text-slate-500 font-bold block mb-1">Conf:</label><select value={confidence} onChange={(e) => onUpdate(id, 'confidence', e.target.value)} className="w-full text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-2 focus:ring-2 focus:ring-indigo-500 outline-none text-center appearance-none cursor-pointer"><option value="Unrated">-</option><option value="Low">Low</option><option value="Medium">Med</option><option value="High">High</option></select></div>
+                            <div className="grid grid-cols-3 gap-2.5 mt-4 pt-4 border-t border-slate-200/60 dark:border-slate-800">
+                                <div>
+                                    <label className="text-[10px] text-slate-500 font-bold block mb-1">Written:</label>
+                                    <input
+                                        type="text"
+                                        placeholder="42/50"
+                                        value={localWritten}
+                                        onChange={(e) => handleTextChange('writtenScore', e.target.value, setLocalWritten)}
+                                        onBlur={() => onUpdate(id, 'writtenScore', localWritten)}
+                                        className="w-full text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-2 focus:ring-2 focus:ring-indigo-500 outline-none text-center"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-slate-500 font-bold block mb-1">MCQ:</label>
+                                    <input
+                                        type="text"
+                                        placeholder="28/30"
+                                        value={localMcq}
+                                        onChange={(e) => handleTextChange('mcqScore', e.target.value, setLocalMcq)}
+                                        onBlur={() => onUpdate(id, 'mcqScore', localMcq)}
+                                        className="w-full text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-2 focus:ring-2 focus:ring-indigo-500 outline-none text-center"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-slate-500 font-bold block mb-1">Conf:</label>
+                                    <select value={confidence} onChange={(e) => onUpdate(id, 'confidence', e.target.value)} className="w-full text-xs font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-2 focus:ring-2 focus:ring-indigo-500 outline-none text-center cursor-pointer">
+                                        <option value="Unrated">-</option>
+                                        <option value="Low">Low</option>
+                                        <option value="Medium">Med</option>
+                                        <option value="High">High</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Quick Notes Section */}
+                            <div className="mt-3">
+                                {!showNotes ? (
+                                    <button onClick={() => setShowNotes(true)} className="text-[11px] font-bold text-slate-400 hover:text-indigo-500 flex items-center gap-1">
+                                        <i className="fa-regular fa-note-sticky"></i> Add study note...
+                                    </button>
+                                ) : (
+                                    <input
+                                        type="text"
+                                        placeholder="Quick note (e.g., revise पेज 45 formulas)..."
+                                        value={localNotes}
+                                        onChange={(e) => handleTextChange('notes', e.target.value, setLocalNotes)}
+                                        onBlur={() => onUpdate(id, 'notes', localNotes)}
+                                        className="w-full text-xs font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    />
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -768,9 +1456,9 @@
 
         function MilestoneCheckbox({ label, checked, onChange }) {
             return (
-                <div onClick={onChange} className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-all ${checked ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-500/50 text-indigo-700 dark:text-indigo-400 shadow-inner' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                    {checked ? <i className="fa-solid fa-circle-check text-indigo-600 text-lg"></i> : <i className="fa-regular fa-circle text-slate-300 dark:text-slate-600 text-lg"></i>}
-                    <span className="text-[11px] font-bold leading-none select-none">{label}</span>
+                <div onClick={onChange} className={`flex items-center gap-2 p-2 rounded-xl border cursor-pointer transition-all select-none ${checked ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-500/50 text-indigo-700 dark:text-indigo-400 shadow-inner' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+                    {checked ? <i className="fa-solid fa-circle-check text-indigo-600 text-base"></i> : <i className="fa-regular fa-circle text-slate-300 dark:text-slate-600 text-base"></i>}
+                    <span className="text-[11px] font-bold leading-none">{label}</span>
                 </div>
             );
         }
