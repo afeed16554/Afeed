@@ -143,16 +143,44 @@
                     <div id="existingSimsList" class="space-y-2"></div>
                 </div>
 
-                <!-- Upload Sim -->
+                <!-- Upload Sim or Attach Link -->
                 <div class="bg-slate-950 border border-slate-800 p-5 rounded-2xl">
-                    <h4 class="text-sm font-bold text-indigo-400 mb-4 flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4"></i> Upload New Simulation</h4>
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                        <h4 class="text-sm font-bold text-indigo-400 flex items-center gap-2">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Simulation or Link
+                        </h4>
+                        <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800 w-fit">
+                            <button type="button" id="modeFileBtn" onclick="setAddMode('file')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-indigo-600 text-white flex items-center gap-1.5">
+                                <i data-lucide="file-code" class="w-3.5 h-3.5"></i> HTML File
+                            </button>
+                            <button type="button" id="modeLinkBtn" onclick="setAddMode('link')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors text-slate-400 hover:text-white flex items-center gap-1.5">
+                                <i data-lucide="link" class="w-3.5 h-3.5"></i> External Link
+                            </button>
+                        </div>
+                    </div>
                     <form id="uploadForm" onsubmit="handleUpload(event)" class="space-y-4">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div><label class="block text-xs uppercase font-semibold text-slate-400 mb-2">Display Title</label><input id="simTitle" required type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-indigo-500 outline-none"></div>
-                            <div><label class="block text-xs uppercase font-semibold text-slate-400 mb-2">File Name (.html)</label><input id="fileName" required type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-indigo-500 outline-none"></div>
+                            <div id="titleFieldWrapper">
+                                <label class="block text-xs uppercase font-semibold text-slate-400 mb-2">Display Title</label>
+                                <input id="simTitle" required type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-indigo-500 outline-none">
+                            </div>
+                            <div id="fileNameWrapper">
+                                <label class="block text-xs uppercase font-semibold text-slate-400 mb-2">File Name (.html)</label>
+                                <input id="fileName" required type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-indigo-500 outline-none">
+                            </div>
+                            <div id="linkUrlWrapper" class="hidden">
+                                <label class="block text-xs uppercase font-semibold text-slate-400 mb-2">Target URL</label>
+                                <input id="externalLink" type="url" placeholder="https://example.com" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:border-indigo-500 outline-none">
+                            </div>
                         </div>
-                        <div><label class="block text-xs uppercase font-semibold text-slate-400 mb-2">HTML File</label><input id="fileUpload" required type="file" accept=".html,.htm" class="w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-800 file:text-indigo-400 hover:file:bg-slate-700 cursor-pointer"></div>
-                        <button id="uploadBtn" type="submit" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition flex items-center justify-center gap-2"><i id="uploadIcon" data-lucide="cloud-upload" class="w-5 h-5"></i><span id="uploadBtnText">Upload & Register</span></button>
+                        <div id="fileInputWrapper">
+                            <label class="block text-xs uppercase font-semibold text-slate-400 mb-2">HTML File</label>
+                            <input id="fileUpload" required type="file" accept=".html,.htm" class="w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-800 file:text-indigo-400 hover:file:bg-slate-700 cursor-pointer">
+                        </div>
+                        <button id="uploadBtn" type="submit" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition flex items-center justify-center gap-2">
+                            <i id="uploadIcon" data-lucide="cloud-upload" class="w-5 h-5"></i>
+                            <span id="uploadBtnText">Upload & Register</span>
+                        </button>
                     </form>
                 </div>
                 <div id="modalStatusLog" class="text-sm font-mono text-center h-6 hidden"></div>
@@ -285,6 +313,52 @@
         let db = {};
         let currentSubject = 'physics';
         let activeContext = { subjectId: null, paperId: null, chapterId: null };
+        let currentAddMode = 'file';
+
+        function setAddMode(mode) {
+            currentAddMode = mode;
+            const modeFileBtn = document.getElementById('modeFileBtn');
+            const modeLinkBtn = document.getElementById('modeLinkBtn');
+            const fileNameWrapper = document.getElementById('fileNameWrapper');
+            const fileInputWrapper = document.getElementById('fileInputWrapper');
+            const linkUrlWrapper = document.getElementById('linkUrlWrapper');
+            const fileNameInput = document.getElementById('fileName');
+            const fileUploadInput = document.getElementById('fileUpload');
+            const externalLinkInput = document.getElementById('externalLink');
+            const uploadBtnText = document.getElementById('uploadBtnText');
+            const uploadIcon = document.getElementById('uploadIcon');
+
+            if (mode === 'file') {
+                modeFileBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-indigo-600 text-white flex items-center gap-1.5";
+                modeLinkBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-colors text-slate-400 hover:text-white flex items-center gap-1.5";
+                
+                fileNameWrapper.classList.remove('hidden');
+                fileInputWrapper.classList.remove('hidden');
+                linkUrlWrapper.classList.add('hidden');
+                
+                fileNameInput.required = true;
+                fileUploadInput.required = true;
+                externalLinkInput.required = false;
+                
+                uploadBtnText.innerText = "Upload & Register";
+                uploadIcon.setAttribute('data-lucide', 'cloud-upload');
+            } else {
+                modeLinkBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-indigo-600 text-white flex items-center gap-1.5";
+                modeFileBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-colors text-slate-400 hover:text-white flex items-center gap-1.5";
+                
+                fileNameWrapper.classList.add('hidden');
+                fileInputWrapper.classList.add('hidden');
+                linkUrlWrapper.classList.remove('hidden');
+                
+                fileNameInput.required = false;
+                fileUploadInput.required = false;
+                externalLinkInput.required = true;
+                
+                uploadBtnText.innerText = "Attach Link & Register";
+                uploadIcon.setAttribute('data-lucide', 'link');
+            }
+            lucide.createIcons();
+        }
 
         // Network Listeners for Admin App
         window.addEventListener('offline', () => {
@@ -649,6 +723,7 @@
             
             renderExistingSims();
             document.getElementById('uploadForm').reset();
+            setAddMode('file');
             document.getElementById('modalStatusLog').classList.add('hidden');
 
             toggleModal('managerModal');
@@ -664,17 +739,24 @@
                 return;
             }
 
-            listContainer.innerHTML = chapter.simulations.map((sim, index) => `
+            listContainer.innerHTML = chapter.simulations.map((sim, index) => {
+                const isExternal = sim.link.startsWith('http://') || sim.link.startsWith('https://');
+                return `
                 <div class="flex justify-between items-center p-3 bg-slate-950 rounded-xl border border-slate-800 group hover:border-slate-600 transition-colors">
-                    <div class="flex flex-col overflow-hidden">
-                        <span class="text-sm font-semibold text-white truncate">${sim.title}</span>
-                        <span class="text-xs text-slate-500 truncate">${sim.link}</span>
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="w-7 h-7 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-indigo-400 flex-shrink-0">
+                            <i data-lucide="${isExternal ? 'external-link' : 'file-code'}" class="w-3.5 h-3.5"></i>
+                        </div>
+                        <div class="flex flex-col overflow-hidden">
+                            <span class="text-sm font-semibold text-white truncate">${sim.title}</span>
+                            <span class="text-xs text-slate-500 truncate">${sim.link}</span>
+                        </div>
                     </div>
                     <button onclick="handleDelete(${index})" class="p-2 ml-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0" title="Delete Simulation">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 </div>
-            `).join('');
+            `}).join('');
             lucide.createIcons();
         }
 
@@ -705,47 +787,67 @@
             btn.disabled = true;
 
             try {
-                setLogMsg('modalStatusLog', "1/3 Reading file...");
-                const file = document.getElementById('fileUpload').files[0];
-                let fileName = document.getElementById('fileName').value.trim();
                 const simTitle = document.getElementById('simTitle').value.trim();
-                if(!fileName.endsWith('.html')) fileName += '.html';
+                let targetLink = '';
 
-                const base64File = await new Promise((res, rej) => {
-                    const reader = new FileReader();
-                    reader.onload = () => res(reader.result.split(',')[1]);
-                    reader.onerror = rej; reader.readAsDataURL(file);
-                });
+                if (currentAddMode === 'link') {
+                    targetLink = document.getElementById('externalLink').value.trim();
+                    if (!targetLink.startsWith('http://') && !targetLink.startsWith('https://')) {
+                        targetLink = 'https://' + targetLink;
+                    }
+                    setLogMsg('modalStatusLog', "Registering external link...");
+                } else {
+                    setLogMsg('modalStatusLog', "1/3 Reading file...");
+                    const file = document.getElementById('fileUpload').files[0];
+                    let fileName = document.getElementById('fileName').value.trim();
+                    if(!fileName.endsWith('.html') && !fileName.endsWith('.htm')) fileName += '.html';
+                    targetLink = fileName;
 
-                setLogMsg('modalStatusLog', "2/3 Uploading to GitHub...");
-                const existingFile = await apiFetch(fileName);
-                await apiFetch(fileName, 'PUT', { message: `Upload ${fileName}`, content: base64File, sha: existingFile?.sha });
+                    const base64File = await new Promise((res, rej) => {
+                        const reader = new FileReader();
+                        reader.onload = () => res(reader.result.split(',')[1]);
+                        reader.onerror = rej; reader.readAsDataURL(file);
+                    });
+
+                    setLogMsg('modalStatusLog', "2/3 Uploading to GitHub...");
+                    const existingFile = await apiFetch(fileName);
+                    await apiFetch(fileName, 'PUT', { message: `Upload ${fileName}`, content: base64File, sha: existingFile?.sha });
+                }
 
                 const success = await commitDatabaseMutation((liveDb) => {
                     const chapter = liveDb[activeContext.subjectId].papers.find(p => p.id === activeContext.paperId).chapters.find(c => c.id === activeContext.chapterId);
                     if (!chapter.simulations) chapter.simulations = [];
                     const existingIdx = chapter.simulations.findIndex(s => s.title === simTitle);
-                    if (existingIdx >= 0) chapter.simulations[existingIdx].link = fileName;
-                    else chapter.simulations.push({ title: simTitle, link: fileName });
+                    if (existingIdx >= 0) chapter.simulations[existingIdx].link = targetLink;
+                    else chapter.simulations.push({ title: simTitle, link: targetLink });
                     chapter.status = "available";
-                }, 'modalStatusLog', `Upload Successful!`);
+                }, 'modalStatusLog', currentAddMode === 'link' ? `Link Attached!` : `Upload Successful!`);
 
-                if (success) { e.target.reset(); renderExistingSims(); }
+                if (success) {
+                    e.target.reset();
+                    setAddMode(currentAddMode);
+                    renderExistingSims();
+                }
             } catch (err) { setLogMsg('modalStatusLog', `Error: ${err.message}`, 'error'); } 
             finally { btn.disabled = false; }
         }
 
         async function handleDelete(simIndex) {
-            if(!confirm("Are you sure you want to permanently delete this simulation?")) return;
+            if(!confirm("Are you sure you want to permanently delete this item?")) return;
             const btnList = document.querySelectorAll('#existingSimsList button');
             btnList.forEach(b => b.disabled = true);
             
             try {
                 const simTarget = db[activeContext.subjectId].papers.find(p => p.id === activeContext.paperId).chapters.find(c => c.id === activeContext.chapterId).simulations[simIndex];
+                const isExternal = simTarget.link.startsWith('http://') || simTarget.link.startsWith('https://');
                 
-                setLogMsg('modalStatusLog', "1/2 Deleting file from GitHub...");
-                const targetFile = await apiFetch(simTarget.link);
-                if(targetFile) await apiFetch(simTarget.link, 'DELETE', { message: `Delete ${simTarget.link}`, sha: targetFile.sha });
+                if (!isExternal) {
+                    setLogMsg('modalStatusLog', "1/2 Deleting file from GitHub...");
+                    const targetFile = await apiFetch(simTarget.link);
+                    if(targetFile) await apiFetch(simTarget.link, 'DELETE', { message: `Delete ${simTarget.link}`, sha: targetFile.sha });
+                } else {
+                    setLogMsg('modalStatusLog', "Removing external link from registry...");
+                }
 
                 await commitDatabaseMutation((liveDb) => {
                     const chapterLive = liveDb[activeContext.subjectId].papers.find(p => p.id === activeContext.paperId).chapters.find(c => c.id === activeContext.chapterId);
