@@ -916,15 +916,10 @@
             "id": "ch_mve4z0q8",
             "name": "Web book",
             "bn": "ওয়েব বই",
-            "status": "available",
+            "status": "planned",
             "icon": "book-open",
             "keywords": [],
-            "simulations": [
-              {
-                "title": "Web Book",
-                "link": "https://github.com/afeed16554/Web-books_16554"
-              }
-            ]
+            "simulations": []
           }
         ]
       }
