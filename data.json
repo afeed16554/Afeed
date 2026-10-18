@@ -911,6 +911,15 @@
                 "link": "https://docs.google.com/spreadsheets/d/1Q98WitHrPaA82X0cvnphBnAIgIu-uLQKlfGfkf9Kmu0/edit?gid=1481639252#gid=1481639252"
               }
             ]
+          },
+          {
+            "id": "ch_mve4z0q8",
+            "name": "Web book",
+            "bn": "ওয়েব বই",
+            "status": "planned",
+            "icon": "book-open",
+            "keywords": [],
+            "simulations": []
           }
         ]
       }
