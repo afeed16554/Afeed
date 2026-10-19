@@ -445,13 +445,19 @@
             "id": "c2c2",
             "name": "Organic Chemistry",
             "bn": "জৈব রসায়ন",
-            "status": "planned",
+            "status": "available",
             "icon": "hexagon",
             "keywords": [
               "hydrocarbons",
               "benzene",
               "alcohol",
               "reaction mechanism"
+            ],
+            "simulations": [
+              {
+                "title": "Markovnikov's rule",
+                "link": "Markovnikov's rule.html"
+              }
             ]
           },
           {
