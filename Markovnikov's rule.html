@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Propene Addition | AFEED</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        afeed: { primary: '#9b87f5', dark: '#050811', panel: '#0f172a' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls for smoother 3D movement -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        :root { --ease: cubic-bezier(0.2, 0.8, 0.2, 1); }
+        body { margin: 0; overflow-x: hidden; background-color: #f8fafc; }
+        html.dark body { background-color: #050811; }
+
+        /* AFEED Header Button Styles */
+        .header-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 38px; height: 38px; border-radius: 12px;
+            background: rgba(15, 23, 42, 0.05);
+            border: 1px solid rgba(15, 23, 42, 0.05);
+            cursor: pointer; transition: all 0.2s ease;
+            color: #475569; text-decoration: none;
+            flex-shrink: 0;
+        }
+        .header-btn:hover { background: rgba(15, 23, 42, 0.1); }
+        html.dark .header-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+        }
+        html.dark .header-btn:hover { background: rgba(255, 255, 255, 0.08); }
+
+        .glass-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        html.dark .glass-header {
+            background: rgba(5, 8, 17, 0.85);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .brand-text { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -0.05em; }
+        
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        html.dark .custom-scroll::-webkit-scrollbar-thumb { background: #334155; }
+
+        #canvas-container { 
+            cursor: grab; position: relative; isolation: isolate;
+            background: radial-gradient(circle at 50% 48%, rgba(155, 135, 245, 0.08) 0%, transparent 68%), #f8fafc; 
+        }
+        html.dark #canvas-container { 
+            background: radial-gradient(circle at 50% 48%, rgba(155, 135, 245, 0.12) 0%, transparent 68%), #050811; 
+        }
+        #sim-canvas { position: relative; z-index: 1; outline: none; display: block; width: 100%; height: 100%; }
+        #canvas-container:active { cursor: grabbing; }
+
+        /* GPU-accelerated sub-pixel label positioning */
+        .label-3d {
+            position: absolute; left: 0; top: 0; pointer-events: none;
+            font-weight: 700; font-family: 'Inter', sans-serif;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+            will-change: transform, opacity; z-index: 10; white-space: nowrap;
+        }
+
+        .step-indicator {
+            transition: all 0.3s ease;
+        }
+        .step-indicator.active {
+            background-color: #9b87f5;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="text-slate-800 dark:text-slate-200 transition-colors duration-300 flex flex-col h-[100dvh] overflow-hidden font-sans">
+
+    <!-- AFEED Header -->
+    <nav class="h-[64px] shrink-0 glass-header flex items-center justify-between px-4 z-50">
+        <div class="flex items-center gap-4">
+            <a href="index.html" class="header-btn" aria-label="Go Back" title="Return to Index">
+                <i data-lucide="arrow-left" class="w-[18px] h-[18px]"></i>
+            </a>
+            <div class="flex items-center">
+                <h1 class="brand-text text-[24px] text-[#9b87f5]">AFEED</h1>
+                <div class="w-[1px] h-8 bg-slate-300 dark:bg-slate-700/60 mx-4"></div>
+                <div class="flex flex-col justify-center">
+                    <span class="text-[14px] font-bold text-slate-900 dark:text-white leading-tight">Organic Chemistry</span>
+                    <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-tight">Electrophilic Addition (H-Br)</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2.5">
+            <button onclick="resetCameraView()" class="header-btn" title="Reset View">
+                <i data-lucide="rotate-ccw" class="w-[18px] h-[18px]"></i>
+            </button>
+            <button onclick="toggleTheme()" class="header-btn hidden md:flex" aria-label="Toggle Theme" title="Toggle Theme">
+                <i data-lucide="sun" id="theme-icon" class="w-[18px] h-[18px]"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="flex-1 flex overflow-hidden relative flex-col md:flex-row w-full">
+        
+        <!-- AFEED Controls Sidebar -->
+        <aside class="absolute md:relative z-40 w-full md:w-[420px] h-[45vh] md:h-full bottom-0 md:bottom-auto bg-white dark:bg-[#0B101E] border-t md:border-t-0 md:border-r border-slate-200 dark:border-slate-800 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:shadow-[10px_0_40px_rgba(0,0,0,0.05)]">
+            
+            <div class="flex-1 overflow-y-auto custom-scroll p-4 md:p-6 flex flex-col gap-5">
+                
+                <!-- Information Card -->
+                <div class="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/60 relative">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span id="step-badge" class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-[#9b87f5]/10 text-[#9b87f5] border border-[#9b87f5]/20">
+                            Step 1 of 5
+                        </span>
+                        <div class="flex gap-1.5 ml-auto">
+                            <!-- Step indicators -->
+                            <div id="ind-0" class="step-indicator w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700 active"></div>
+                            <div id="ind-1" class="step-indicator w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+                            <div id="ind-2" class="step-indicator w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+                            <div id="ind-3" class="step-indicator w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+                            <div id="ind-4" class="step-indicator w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+                        </div>
+                    </div>
+
+                    <h2 id="step-title" class="text-lg font-bold text-slate-800 dark:text-white mb-3 font-sans leading-snug">
+                        ১. স্বাভাবিক প্রোপিন অণুর সম্ভাব্যতা মেঘ (Probability Cloud)
+                    </h2>
+
+                    <div id="step-bullets" class="space-y-2 text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-sans">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <!-- Live Hybridization & Status Strip -->
+                    <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700/60 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                        <div class="flex items-center gap-1.5 font-mono">
+                            <span id="hyb-c2" class="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 transition-colors">C₂: sp²</span>
+                            <span id="hyb-c1" class="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 transition-colors">C₁: sp²</span>
+                        </div>
+                        <span id="species-status" class="text-amber-500 dark:text-amber-400 font-bold uppercase tracking-wider">Propene</span>
+                    </div>
+                </div>
+
+                <!-- 2D Skeletal Diagram Panel -->
+                <div class="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/60 flex flex-col items-center">
+                    <div class="w-full flex justify-between items-center mb-2">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">2D Mechanism</span>
+                        <div class="flex items-center gap-2 text-[9px] text-slate-500 font-medium">
+                            <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-yellow-400"></div> σ</span>
+                            <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-blue-400"></div> π</span>
+                        </div>
+                    </div>
+                    
+                    <svg id="skeletal-svg" viewBox="0 0 260 155" class="w-full max-w-[280px] h-auto overflow-visible">
+                        <defs>
+                            <marker id="green-arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#22c55e" />
+                            </marker>
+                            <marker id="pi-arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8" />
+                            </marker>
+                            <marker id="br-arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                                <path d="M 0 1 L 10 5 L 0 9 z" fill="#fb923c" />
+                            </marker>
+                        </defs>
+
+                        <!-- Bonds -->
+                        <line x1="48" y1="84" x2="102" y2="46" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" />
+                        <line id="svg-ind-1" x1="62" y1="74" x2="80" y2="61.5" stroke="#22c55e" stroke-width="2.8" marker-end="url(#green-arrow)" />
+                        <line id="svg-ind-2" x1="72" y1="67" x2="91" y2="53.5" stroke="#22c55e" stroke-width="2.8" marker-end="url(#green-arrow)" />
+
+                        <line x1="136" y1="48" x2="176" y2="80" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" />
+                        <line id="svg-pi-bond" x1="130" y1="55" x2="170" y2="87" stroke="#60a5fa" stroke-width="2.6" stroke-linecap="round" />
+
+                        <path id="svg-curved-pi" d="M 148 50 Q 174 45 184 68" fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="3,2" marker-end="url(#pi-arrow)" opacity="0" />
+
+                        <g id="svg-c1-h-group" opacity="0">
+                            <line x1="194" y1="98" x2="218" y2="122" stroke="#facc15" stroke-width="2.8" stroke-linecap="round" />
+                            <circle cx="226" cy="130" r="10" fill="rgba(239, 68, 68, 0.15)" stroke="#ef4444" stroke-width="1.5" />
+                            <text x="221" y="135" fill="#ef4444" font-size="13" font-weight="bold">H</text>
+                        </g>
+
+                        <g id="svg-c2-br-group" opacity="0">
+                            <line id="svg-c2-br-line" x1="118" y1="64" x2="118" y2="108" stroke="#fb923c" stroke-width="2.8" stroke-linecap="round" />
+                            <path id="svg-br-attack-arrow" d="M 118 112 Q 118 88 118 68" fill="none" stroke="#fb923c" stroke-width="2" stroke-dasharray="3,2" marker-end="url(#br-arrow)" />
+                            <circle cx="118" cy="124" r="14" fill="rgba(249, 115, 22, 0.15)" stroke="#fb923c" stroke-width="1.5" />
+                            <text x="108" y="129" fill="#fb923c" font-size="13" font-weight="bold">Br</text>
+                        </g>
+
+                        <!-- Group Labels -->
+                        <text x="14" y="98" class="fill-slate-800 dark:fill-slate-100" font-size="17" font-weight="bold">CH<tspan dy="4" font-size="12">3</tspan></text>
+                        <text x="106" y="44" class="fill-slate-800 dark:fill-slate-100" font-size="17" font-weight="bold">CH</text>
+                        <text x="175" y="98" class="fill-slate-800 dark:fill-slate-100" font-size="17" font-weight="bold">CH<tspan dy="4" font-size="12">2</tspan></text>
+
+                        <!-- Partial Charges -->
+                        <g id="svg-delta-c2" opacity="0">
+                            <text x="109" y="22" fill="#eab308" font-size="17" font-weight="bold" font-family="serif">δ⁻</text>
+                        </g>
+                        <g id="svg-plus-c2" opacity="0">
+                            <text id="svg-plus-c2-text" x="109" y="22" fill="#ef4444" font-size="16" font-weight="bold" font-family="serif">δ⁺</text>
+                        </g>
+                        <g id="svg-delta-c1" opacity="0">
+                            <text x="203" y="76" fill="#0ea5e9" font-size="17" font-weight="bold" font-family="serif">δ⁻</text>
+                        </g>
+                    </svg>
+                </div>
+
+            </div>
+
+            <!-- Bottom Control Dock (Next Button) -->
+            <div class="p-5 border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-[#0B101E]/95 backdrop-blur z-20">
+                <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full mb-5 overflow-hidden relative">
+                    <div id="progress-bar" class="absolute top-0 left-0 h-full bg-[#9b87f5] transition-all duration-300" style="width: 0%;"></div>
+                </div>
+                
+                <button onclick="nextStep()" id="btn-next" class="w-full py-3.5 rounded-xl bg-[#9b87f5] hover:bg-[#8b75e5] text-white text-sm font-bold flex justify-center items-center gap-2 shadow-[0_4px_20px_rgba(155,135,245,0.4)] transition-all">
+                    <span id="btn-next-text">Next Step</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main 3D Canvas Area -->
+        <div id="canvas-container" class="flex-1 relative flex flex-col h-full w-full">
+            <!-- 3D Projected HTML Labels Container -->
+            <div id="labels-container" class="absolute inset-0 pointer-events-none overflow-hidden z-10"></div>
+            
+            <canvas id="sim-canvas"></canvas>
+            
+            <!-- Controls Hint -->
+            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none opacity-60 flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/50 backdrop-blur border border-white/10 text-[10px] text-white font-medium">
+                <i data-lucide="move-3d" class="w-3 h-3"></i> Drag to rotate
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            document.getElementById('theme-icon').setAttribute('data-lucide', isDark ? 'moon' : 'sun');
+            lucide.createIcons();
+        }
+        
+        if (localStorage.getItem('afeed_theme') === 'light') {
+            toggleTheme();
+        }
+
+        // ============================================================================
+        // STEP DATA 
+        // ============================================================================
+        const STEPS_INFO = [
+            {
+                badge: "Step 1 of 5 • Quantum Probability",
+                title: "১. প্রোপিন (CH₃–CH=CH₂) এর স্বাভাবিক অরবিটাল মেঘ",
+                bullets: [
+                    "• এখানে ইলেকট্রনের অবস্থানকে প্রকৃত <strong class='text-[#9b87f5]'>কোয়ান্টাম সম্ভাব্যতা মেঘ</strong> হিসেবে দেখানো হয়েছে।",
+                    "• হলুদ মেঘগুলো <span class='text-yellow-500 dark:text-yellow-400'>σ (সিগমা) বন্ধন</span> এবং <strong class='text-blue-500 dark:text-blue-400'>C₂=C₁</strong> এর উপর-নিচের নীল মেঘটি <span class='text-blue-500 font-semibold'>π (পাই) বন্ধন মেঘ</span> নির্দেশ করে।"
+                ]
+            },
+            {
+                badge: "Step 2 of 5 • Inductive Push (+I Effect)",
+                title: "২. CH₃ গ্রুপ ইলেকট্রন Push করে",
+                bullets: [
+                    "• <strong class='text-emerald-500 dark:text-emerald-400'>CH₃ ইলেকট্রন push করে:</strong> মিথাইল মূলক (+I আবেশীয় প্রভাবের কারণে) C₃–C₂ বন্ধনের সিগমা ইলেকট্রন মেঘকে C₂ এর দিকে ঠেলে দেয়।",
+                    "• <strong class='text-amber-500'>C₂ এ e⁻ density বেড়ে যায়:</strong> ফলে আংশিক ঋণাত্মক আধান (<strong class='text-amber-500'>δ⁻</strong>) সৃষ্টি করে।"
+                ]
+            },
+            {
+                badge: "Step 3 of 5 • Polarization",
+                title: "৩. বিকর্ষণে π Bond C₁ এর দিকে সরে যায়",
+                bullets: [
+                    "• C₂-এর বর্ধিত ইলেকট্রন মেঘ নীল π-ইলেকট্রন মেঘকে বিকর্ষণ করে C₁ এর দিকে ঠেলে দেয়।",
+                    "• ফলে <strong class='text-sky-500'>C₁ এ δ⁻</strong> এবং C₂ এ ইলেকট্রন ঘাটতি (<strong class='text-rose-500'>δ⁺</strong>) দেখা দেয়। পোলার <strong class='text-orange-500'>H<sup>δ+</sup>–Br<sup>δ-</sup></strong> অণু অগ্রসর হয়।"
+                ]
+            },
+            {
+                badge: "Step 4 of 5 • Electrophilic Addition",
+                title: "৪. C₁ এ H⁺ এর সংযোজন",
+                bullets: [
+                    "• C₁ এর ঋণাত্মক চার্জ ঘনত্ব π-ইলেকট্রন মেঘ দিয়ে ইলেকট্রোফাইল <strong class='text-red-500'>H⁺</strong> কে আকর্ষণ করে।",
+                    "• <strong class='text-yellow-500'>C₁–H সিগমা (σ) বন্ধন</strong> তৈরি করে এবং C₂-এ ফাঁকা 2p অরবিটালসহ (<strong class='text-rose-500'>C₂⁺</strong>) কার্বোক্যাটায়ন সৃষ্টি হয়।"
+                ]
+            },
+            {
+                badge: "Step 5 of 5 • Nucleophilic Attack",
+                title: "৫. C₂ তে Br⁻ যুক্ত হয়ে C₂–Br বন্ধন গঠন",
+                bullets: [
+                    "• ধনাত্মক C₂⁺ কার্বোক্যাটায়নে ঋণাত্মক হ্যালাইড আয়ন (<strong class='text-orange-500'>Br⁻</strong>) সরাসরি যুক্ত হয়।",
+                    "• একটি সুষম <strong class='text-orange-500'>C₂–Br সিগমা (σ) বন্ধন</strong> গঠিত হয় এবং <strong class='text-emerald-500'>২-ব্রোমোপ্রোপেন</strong> তৈরি হয়।"
+                ]
+            }
+        ];
+
+        // ============================================================================
+        // THREE.JS SCENE SETUP
+        // ============================================================================
+        const container = document.getElementById('canvas-container');
+        const labelsContainer = document.getElementById('labels-container');
+
+        const scene = new THREE.Scene();
+        scene.background = null; 
+
+        const camera = new THREE.PerspectiveCamera(42, container.clientWidth / container.clientHeight, 0.1, 1000);
+        camera.position.set(12, 10, 12);
+        
+        const renderer = new THREE.WebGLRenderer({ 
+            canvas: document.getElementById('sim-canvas'),
+            antialias: true, 
+            alpha: true,
+            powerPreference: "high-performance" 
+        });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(container.clientWidth, container.clientHeight);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.enablePan = false;
+        controls.minDistance = 10;
+        controls.maxDistance = 35;
+        controls.target.set(0.2, -0.4, 0.0);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+
+        const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.9);
+        dirLight1.position.set(8, 12, 10);
+        scene.add(dirLight1);
+
+        // ============================================================================
+        // TEXTURES & MATH
+        // ============================================================================
+        function createGaussianCloudTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            grad.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+            grad.addColorStop(0.25, 'rgba(255, 255, 255, 0.75)');
+            grad.addColorStop(0.6, 'rgba(255, 255, 255, 0.22)');
+            grad.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+        const cloudTexture = createGaussianCloudTexture();
+
+        function randomGaussian() {
+            let u = 0, v = 0;
+            while (u === 0) u = Math.random();
+            while (v === 0) v = Math.random();
+            return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        }
+
+        function smoothstep(edge0, edge1, x) {
+            const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+            return t * t * (3 - 2 * t);
+        }
+
+        // ============================================================================
+        // MOLECULE DATA
+        // ============================================================================
+        const POS = {
+            C3: new THREE.Vector3(-2.7, -0.45, 0.0),
+            C2: new THREE.Vector3(0.0, 1.45, 0.0),
+            C1: new THREE.Vector3(2.6, -0.75, 0.0),
+            H3a: new THREE.Vector3(-5.05, 0.35, 0.4),
+            H3b: new THREE.Vector3(-4.85, -1.75, -0.45),
+            H3c: new THREE.Vector3(-2.45, -2.90, 0.15),
+            H2: new THREE.Vector3(-0.15, 3.95, 0.0),
+            H1a: new THREE.Vector3(5.1, -1.05, 0.25),
+            H1b: new THREE.Vector3(2.25, -3.20, -0.25),
+            H_new_start: new THREE.Vector3(4.5, 2.3, 1.3),
+            H_new_bonded: new THREE.Vector3(3.85, 0.65, 1.55),
+            Br_start: new THREE.Vector3(3.1, 3.5, 1.8),
+            Br_wait: new THREE.Vector3(0.6, -1.45, 2.45),
+            Br_bonded: new THREE.Vector3(0.15, 0.15, 2.15)
+        };
+
+        const moleculeGroup = new THREE.Group();
+        scene.add(moleculeGroup);
+
+        function getBasisVectors(start, end) {
+            const dir = new THREE.Vector3().subVectors(end, start);
+            const length = dir.length();
+            const forward = dir.clone().normalize();
+            const upRef = Math.abs(forward.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+            const right = new THREE.Vector3().crossVectors(forward, upRef).normalize();
+            const up = new THREE.Vector3().crossVectors(right, forward).normalize();
+            return { forward, right, up, length };
+        }
+
+        function createAtomCloud(pos, coreColor, cloudRGB, coreRadius = 0.28, cloudRadius = 0.52, count = 480) {
+            const group = new THREE.Group();
+            group.position.copy(pos);
+            const coreGeo = new THREE.SphereGeometry(coreRadius, 24, 24);
+            const coreMat = new THREE.MeshStandardMaterial({ color: coreColor, roughness: 0.35, metalness: 0.15, emissive: coreColor, emissiveIntensity: 0.35 });
+            const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+            group.add(coreMesh);
+
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+            for (let i = 0; i < count; i++) {
+                let gx = randomGaussian(), gy = randomGaussian(), gz = randomGaussian();
+                const norm = Math.sqrt(gx*gx + gy*gy + gz*gz) || 1;
+                const r = Math.min(cloudRadius * 1.35, Math.abs(randomGaussian()) * 0.42 * cloudRadius + 0.12 * cloudRadius);
+                positions[i*3] = (gx/norm)*r; positions[i*3+1] = (gy/norm)*r; positions[i*3+2] = (gz/norm)*r;
+                const radialFade = 1.0 - (r / (cloudRadius * 1.4)) * 0.45;
+                colors[i*3] = cloudRGB[0]*radialFade; colors[i*3+1] = cloudRGB[1]*radialFade; colors[i*3+2] = cloudRGB[2]*radialFade;
+            }
+            const pGeo = new THREE.BufferGeometry();
+            pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            pGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            const pMat = new THREE.PointsMaterial({ size: 0.14, map: cloudTexture, vertexColors: true, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false });
+            const points = new THREE.Points(pGeo, pMat);
+            group.add(points);
+            moleculeGroup.add(group);
+            return { group, coreMesh, points, pMat, coreMat };
+        }
+
+        const h3a = createAtomCloud(POS.H3a, 0xdc2626, [1.0, 0.22, 0.22]);
+        const h3b = createAtomCloud(POS.H3b, 0xdc2626, [1.0, 0.22, 0.22]);
+        const h3c = createAtomCloud(POS.H3c, 0xdc2626, [1.0, 0.22, 0.22]);
+        const h2Atom = createAtomCloud(POS.H2, 0xdc2626, [1.0, 0.22, 0.22]);
+        const h1aAtom = createAtomCloud(POS.H1a, 0xdc2626, [1.0, 0.22, 0.22]);
+        const h1bAtom = createAtomCloud(POS.H1b, 0xdc2626, [1.0, 0.22, 0.22]);
+        const incomingHAtom = createAtomCloud(POS.H_new_start, 0xef4444, [1.0, 0.3, 0.25], 0.28, 0.52, 500);
+        const incomingBrAtom = createAtomCloud(POS.Br_start, 0xea580c, [1.0, 0.58, 0.18], 0.44, 0.82, 850);
+
+        function createCarbonCore(pos) {
+            const geo = new THREE.SphereGeometry(0.16, 20, 20);
+            const mat = new THREE.MeshBasicMaterial({ color: 0x94a3b8 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(pos);
+            moleculeGroup.add(mesh);
+            return mesh;
+        }
+        createCarbonCore(POS.C3);
+        createCarbonCore(POS.C2);
+        createCarbonCore(POS.C1);
+
+        function createSigmaProbabilityCloud(start, end, maxRadius = 0.42, particleCount = 1100) {
+            const { forward, right, up, length } = getBasisVectors(start, end);
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            const seeds = [];
+            for (let i = 0; i < particleCount; i++) {
+                const u1 = Math.random(), u2 = Math.random();
+                const t = 0.5 * (u1 + u2) * 0.88 + 0.06;
+                const envelope = Math.sin(t * Math.PI) * (0.78 + 0.32 * t);
+                const sigmaR = maxRadius * envelope * 0.52;
+                const rx = randomGaussian() * sigmaR;
+                const ry = randomGaussian() * sigmaR;
+                const rNorm = Math.min(1.0, Math.sqrt(rx*rx + ry*ry) / (maxRadius*0.9));
+                seeds.push({ t, rx, ry });
+                const point = new THREE.Vector3().copy(start).addScaledVector(forward, t*length).addScaledVector(right, rx).addScaledVector(up, ry);
+                positions[i*3] = point.x; positions[i*3+1] = point.y; positions[i*3+2] = point.z;
+                const intensity = 1.0 - 0.35 * rNorm;
+                colors[i*3] = 0.98*intensity; colors[i*3+1] = 0.90*intensity; colors[i*3+2] = (0.50 + 0.25*(1-rNorm))*intensity;
+            }
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            const mat = new THREE.PointsMaterial({ size: 0.14, map: cloudTexture, vertexColors: true, transparent: true, opacity: 0.72, blending: THREE.AdditiveBlending, depthWrite: false });
+            const points = new THREE.Points(geo, mat);
+            moleculeGroup.add(points);
+            return { points, geo, seeds };
+        }
+
+        function updateDynamicSigmaCloud(cloudObj, start, end) {
+            const { forward, right, up, length } = getBasisVectors(start, end);
+            const posAttr = cloudObj.geo.attributes.position;
+            const seeds = cloudObj.seeds;
+            for (let i = 0; i < seeds.length; i++) {
+                const s = seeds[i];
+                const pt = new THREE.Vector3().copy(start).addScaledVector(forward, s.t*length).addScaledVector(right, s.rx).addScaledVector(up, s.ry);
+                posAttr.setXYZ(i, pt.x, pt.y, pt.z);
+            }
+            posAttr.needsUpdate = true;
+        }
+
+        createSigmaProbabilityCloud(POS.C3, POS.H3a, 0.38, 950);
+        createSigmaProbabilityCloud(POS.C3, POS.H3b, 0.38, 950);
+        createSigmaProbabilityCloud(POS.C3, POS.H3c, 0.38, 950);
+        createSigmaProbabilityCloud(POS.C2, POS.H2, 0.38, 950);
+        const c1h1aCloud = createSigmaProbabilityCloud(POS.C1, POS.H1a, 0.38, 950);
+        const c1h1bCloud = createSigmaProbabilityCloud(POS.C1, POS.H1b, 0.38, 950);
+        createSigmaProbabilityCloud(POS.C2, POS.C1, 0.46, 1500);
+
+        // Vacant 2p Halo
+        const vacantPCount = 650;
+        const vacantPGeo = new THREE.BufferGeometry();
+        const vacantPPositions = new Float32Array(vacantPCount * 3);
+        const vacantPColors = new Float32Array(vacantPCount * 3);
+        for (let i = 0; i < vacantPCount; i++) {
+            const sign = i % 2 === 0 ? 1 : -1;
+            const h = 0.22 + Math.abs(randomGaussian()) * 0.55;
+            const rx = randomGaussian() * 0.25 * (h / 0.8);
+            const ry = randomGaussian() * 0.25 * (h / 0.8);
+            const pt = new THREE.Vector3(POS.C2.x + rx + sign*0.06*h, POS.C2.y + ry - sign*0.55*h, POS.C2.z + sign*0.82*h);
+            vacantPPositions[i*3] = pt.x; vacantPPositions[i*3+1] = pt.y; vacantPPositions[i*3+2] = pt.z;
+            vacantPColors[i*3] = 0.98; vacantPColors[i*3+1] = 0.28; vacantPColors[i*3+2] = 0.45;
+        }
+        vacantPGeo.setAttribute('position', new THREE.BufferAttribute(vacantPPositions, 3));
+        vacantPGeo.setAttribute('color', new THREE.BufferAttribute(vacantPColors, 3));
+        const vacantPMat = new THREE.PointsMaterial({ size: 0.16, map: cloudTexture, vertexColors: true, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending, depthWrite: false });
+        moleculeGroup.add(new THREE.Points(vacantPGeo, vacantPMat));
+
+        // C3-C2 Sigma
+        const c3c2Count = 2200;
+        const c3c2Basis = getBasisVectors(POS.C3, POS.C2);
+        const c3c2Seeds = [];
+        const c3c2Positions = new Float32Array(c3c2Count * 3);
+        const c3c2Colors = new Float32Array(c3c2Count * 3);
+        for (let i = 0; i < c3c2Count; i++) {
+            c3c2Seeds.push({ u: 0.04+0.92*(0.5*(Math.random()+Math.random())), gx: randomGaussian(), gy: randomGaussian(), rRatio: Math.min(1.0, Math.sqrt(randomGaussian()**2+randomGaussian()**2)/2.2), phase: Math.random()*Math.PI*2 });
+        }
+        const c3c2Geo = new THREE.BufferGeometry();
+        c3c2Geo.setAttribute('position', new THREE.BufferAttribute(c3c2Positions, 3));
+        c3c2Geo.setAttribute('color', new THREE.BufferAttribute(c3c2Colors, 3));
+        moleculeGroup.add(new THREE.Points(c3c2Geo, new THREE.PointsMaterial({ size: 0.15, map: cloudTexture, vertexColors: true, transparent: true, opacity: 0.82, blending: THREE.AdditiveBlending, depthWrite: false })));
+
+        function updateC3C2Orbital(inductiveShift, elapsed) {
+            const posAttr = c3c2Geo.attributes.position, colAttr = c3c2Geo.attributes.color;
+            const { forward, right, up, length } = c3c2Basis;
+            for (let i = 0; i < c3c2Count; i++) {
+                const seed = c3c2Seeds[i];
+                const tBase = Math.pow(seed.u, 1.0 - 0.56 * inductiveShift);
+                const t = Math.max(0.02, Math.min(0.99, tBase + Math.sin(elapsed*2.2+seed.phase)*0.014*Math.sin(tBase*Math.PI)));
+                const sigmaR = 0.25 * Math.sin(t*Math.PI) * (1.0 + inductiveShift*0.55*Math.pow(t, 2.2));
+                const pt = new THREE.Vector3().copy(POS.C3).addScaledVector(forward, t*length).addScaledVector(right, seed.gx*sigmaR).addScaledVector(up, seed.gy*sigmaR);
+                posAttr.setXYZ(i, pt.x, pt.y, pt.z);
+                const h = inductiveShift*Math.pow(t,1.5), cb = 1.0-0.35*seed.rRatio;
+                colAttr.setXYZ(i, (0.95+0.05*h)*cb, (0.86+0.12*h)*cb, (0.52*(1.0-0.75*h))*cb);
+            }
+            posAttr.needsUpdate = colAttr.needsUpdate = true;
+        }
+
+        // Pi Cloud
+        const piCount = 3200, piBasis = getBasisVectors(POS.C2, POS.C1), piSeeds = [];
+        const piPositions = new Float32Array(piCount * 3), piColors = new Float32Array(piCount * 3);
+        for (let i = 0; i < piCount; i++) piSeeds.push({ u: 0.04+0.92*(0.5*(Math.random()+Math.random())), lobeSign: i%2===0?1:-1, gh: Math.abs(randomGaussian()), gz: randomGaussian(), phase: Math.random()*Math.PI*2 });
+        const piGeo = new THREE.BufferGeometry();
+        piGeo.setAttribute('position', new THREE.BufferAttribute(piPositions, 3));
+        piGeo.setAttribute('color', new THREE.BufferAttribute(piColors, 3));
+        moleculeGroup.add(new THREE.Points(piGeo, new THREE.PointsMaterial({ size: 0.15, map: cloudTexture, vertexColors: true, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false })));
+
+        function updatePiAndC1HBonds(piShift, hBondProgress, currentHPos, elapsed) {
+            const posAttr = piGeo.attributes.position, colAttr = piGeo.attributes.color;
+            const { forward, right, up, length } = piBasis;
+            const c1hBasis = getBasisVectors(POS.C1, currentHPos);
+            for (let i = 0; i < piCount; i++) {
+                const seed = piSeeds[i];
+                const tBase = Math.pow(seed.u, 1.0 - 0.58 * piShift);
+                const osc = Math.sin(elapsed*2.0+seed.phase)*0.015*Math.sin(tBase*Math.PI);
+                const t = Math.max(0.02, Math.min(0.99, tBase + osc));
+                const skew = Math.sin(t*Math.PI)*(1.0-0.52*piShift*(1.0-t)+0.78*piShift*t);
+                const piPt = new THREE.Vector3().copy(POS.C2).addScaledVector(forward, t*length).addScaledVector(up, seed.lobeSign*(0.24*Math.sin(t*Math.PI)+Math.min(1.15,(0.28+0.28*seed.gh))*skew)).addScaledVector(right, seed.gz*0.22*skew);
+                
+                const sT = Math.max(0.04, Math.min(0.96, seed.u + osc*0.5));
+                const sEnv = Math.sin(sT*Math.PI)*0.22;
+                const c1hPt = new THREE.Vector3().copy(POS.C1).addScaledVector(c1hBasis.forward, sT*c1hBasis.length).addScaledVector(c1hBasis.right, seed.gz*sEnv).addScaledVector(c1hBasis.up, (seed.gh-0.7)*seed.lobeSign*sEnv);
+                
+                const finalPt = piPt.lerp(c1hPt, hBondProgress);
+                posAttr.setXYZ(i, finalPt.x, finalPt.y, finalPt.z);
+                const glow = piShift*Math.pow(t, 1.4);
+                colAttr.setXYZ(i, 0.18+0.22*glow+(0.98-(0.18+0.22*glow))*hBondProgress, 0.52+0.38*glow+(0.91-(0.52+0.38*glow))*hBondProgress, 1.0+(0.52-1.0)*hBondProgress);
+            }
+            posAttr.needsUpdate = colAttr.needsUpdate = true;
+        }
+
+        // H-Br Cloud
+        const brBondCount = 2000, brBondSeeds = [];
+        const brBondPositions = new Float32Array(brBondCount * 3), brBondColors = new Float32Array(brBondCount * 3);
+        for (let i = 0; i < brBondCount; i++) brBondSeeds.push({ u: 0.05+0.90*(0.5*(Math.random()+Math.random())), gx: randomGaussian(), gy: randomGaussian(), phase: Math.random()*Math.PI*2 });
+        const brBondGeo = new THREE.BufferGeometry();
+        brBondGeo.setAttribute('position', new THREE.BufferAttribute(brBondPositions, 3));
+        brBondGeo.setAttribute('color', new THREE.BufferAttribute(brBondColors, 3));
+        const brBondMat = new THREE.PointsMaterial({ size: 0.15, map: cloudTexture, vertexColors: true, transparent: true, opacity: 0.0, blending: THREE.AdditiveBlending, depthWrite: false });
+        moleculeGroup.add(new THREE.Points(brBondGeo, brBondMat));
+
+        function updateHBrAndC2BrCloud(appearAlpha, hBondProgress, brBondProgress, currentHPos, currentBrPos, elapsed) {
+            brBondMat.opacity = appearAlpha * 0.85;
+            if (appearAlpha <= 0.01) return;
+            const posAttr = brBondGeo.attributes.position, colAttr = brBondGeo.attributes.color;
+            const hbrBasis = getBasisVectors(currentHPos, currentBrPos), c2brBasis = getBasisVectors(POS.C2, currentBrPos);
+            for (let i = 0; i < brBondCount; i++) {
+                const seed = brBondSeeds[i];
+                const tHBr = Math.pow(seed.u, 1.0 - 0.72*hBondProgress), envHBr = Math.sin(tHBr*Math.PI)*0.25*(1.0-0.4*hBondProgress);
+                const ptHBr = new THREE.Vector3().copy(currentHPos).addScaledVector(hbrBasis.forward, tHBr*hbrBasis.length).addScaledVector(hbrBasis.right, seed.gx*envHBr).addScaledVector(hbrBasis.up, seed.gy*envHBr);
+                const ptLonePair = new THREE.Vector3().copy(currentBrPos).add(new THREE.Vector3(seed.gx*0.34, seed.gy*0.34, Math.sin(seed.phase)*0.34));
+                const tC2Br = Math.max(0.05, Math.min(0.95, seed.u + Math.sin(elapsed*2.1+seed.phase)*0.015)), envC2Br = Math.sin(tC2Br*Math.PI)*(0.22+0.10*tC2Br);
+                const ptC2Br = new THREE.Vector3().copy(POS.C2).addScaledVector(c2brBasis.forward, tC2Br*c2brBasis.length).addScaledVector(c2brBasis.right, seed.gx*envC2Br).addScaledVector(c2brBasis.up, seed.gy*envC2Br);
+                const finalPt = ptHBr.lerp(ptLonePair, hBondProgress).lerp(ptC2Br, brBondProgress);
+                posAttr.setXYZ(i, finalPt.x, finalPt.y, finalPt.z);
+                colAttr.setXYZ(i, 0.98, 0.62+0.22*brBondProgress*(1.0-seed.u*0.5), 0.22+0.25*brBondProgress);
+            }
+            posAttr.needsUpdate = colAttr.needsUpdate = true;
+        }
+
+        // Arrows
+        function create3DArrow(colorHex) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 0.9 });
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.55, 12), mat);
+            const head = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.28, 16), mat);
+            head.position.y = 0.35;
+            group.add(shaft, head);
+            return { group, mat };
+        }
+        const indArrow1 = create3DArrow(0x22c55e), indArrow2 = create3DArrow(0x4ade80);
+        moleculeGroup.add(indArrow1.group, indArrow2.group);
+        const c3c2Quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), c3c2Basis.forward);
+        indArrow1.group.quaternion.copy(c3c2Quat); indArrow2.group.quaternion.copy(c3c2Quat);
+
+        // HTML Labels
+        const labelsData = [
+            { id: 'lbl-c3', text: 'C', sub: '3', pos: new THREE.Vector3(-2.65, -0.55, 0.45), classes: 'text-slate-800 dark:text-white text-base md:text-lg' },
+            { id: 'lbl-c2', text: 'C', sub: '2', pos: new THREE.Vector3(0.0, 1.32, 0.45), classes: 'text-slate-800 dark:text-white text-base md:text-lg' },
+            { id: 'lbl-c1', text: 'C', sub: '1', pos: new THREE.Vector3(2.6, -0.88, 0.45), classes: 'text-slate-800 dark:text-white text-base md:text-lg' },
+            { id: 'lbl-h3a', text: 'H', pos: new THREE.Vector3(-5.75, 0.50, 0.4), classes: 'text-red-500 text-sm md:text-base' },
+            { id: 'lbl-h3b', text: 'H', pos: new THREE.Vector3(-5.55, -1.95, -0.45), classes: 'text-red-500 text-sm md:text-base' },
+            { id: 'lbl-h3c', text: 'H', pos: new THREE.Vector3(-2.45, -3.65, 0.15), classes: 'text-red-500 text-sm md:text-base' },
+            { id: 'lbl-h2',  text: 'H', pos: new THREE.Vector3(-0.15, 4.65, 0.0),  classes: 'text-red-500 text-sm md:text-base' },
+            { id: 'lbl-h1a', text: 'H', pos: new THREE.Vector3(5.8, -1.15, 0.25),  classes: 'text-red-500 text-sm md:text-base' },
+            { id: 'lbl-h1b', text: 'H', pos: new THREE.Vector3(2.25, -3.95, -0.25), classes: 'text-red-500 text-sm md:text-base' },
+            { id: 'lbl-h-new', text: 'H⁺', pos: POS.H_new_start.clone(), classes: 'text-red-400 text-sm md:text-base opacity-0' },
+            { id: 'lbl-br-new', text: 'Br⁻', pos: POS.Br_start.clone(), classes: 'text-orange-400 text-base md:text-lg opacity-0' },
+            { id: 'lbl-delta-c2', text: 'δ⁻', pos: new THREE.Vector3(0.68, 2.25, 0.2), classes: 'text-yellow-500 text-2xl md:text-3xl font-serif opacity-0' },
+            { id: 'lbl-plus-c2',  text: 'δ⁺', pos: new THREE.Vector3(0.68, 2.25, 0.2), classes: 'text-rose-500 text-2xl md:text-3xl font-serif opacity-0' },
+            { id: 'lbl-delta-c1', text: 'δ⁻', pos: new THREE.Vector3(3.45, 0.15, 0.2), classes: 'text-sky-500 text-2xl md:text-3xl font-serif opacity-0' }
+        ];
+
+        const labelElements = {};
+        labelsData.forEach(item => {
+            const div = document.createElement('div');
+            div.id = item.id;
+            div.className = `label-3d ${item.classes}`;
+            if (item.sub) div.innerHTML = `${item.text}<sub class="text-[10px] ml-0.5 opacity-70">${item.sub}</sub>`;
+            else div.textContent = item.text;
+            labelsContainer.appendChild(div);
+            labelElements[item.id] = { el: div, pos: item.pos, scale: 1.0 };
+        });
+
+        function update3DLabels(c2MinusAlpha, c2PlusAlpha, c1MinusAlpha, hbrAlpha, hBondProgress, brBondProgress) {
+            const rect = container.getBoundingClientRect();
+            const halfW = rect.width / 2, halfH = rect.height / 2;
+
+            labelElements['lbl-delta-c2'].el.style.opacity = c2MinusAlpha.toFixed(3);
+            labelElements['lbl-delta-c2'].scale = 0.85 + 0.25 * c2MinusAlpha;
+            labelElements['lbl-plus-c2'].el.style.opacity = c2PlusAlpha.toFixed(3);
+            labelElements['lbl-plus-c2'].scale = 0.85 + 0.3 * c2PlusAlpha;
+            labelElements['lbl-plus-c2'].el.textContent = hBondProgress > 0.5 && brBondProgress < 0.6 ? '⊕' : 'δ⁺';
+            labelElements['lbl-delta-c1'].el.style.opacity = c1MinusAlpha.toFixed(3);
+            labelElements['lbl-delta-c1'].scale = 0.85 + 0.25 * c1MinusAlpha;
+
+            labelElements['lbl-h-new'].el.style.opacity = hbrAlpha.toFixed(3);
+            labelElements['lbl-h-new'].el.textContent = hBondProgress > 0.75 ? 'H' : 'Hδ⁺';
+            labelElements['lbl-h-new'].pos.copy(incomingHAtom.group.position).add(new THREE.Vector3(0.55, 0.45, 0));
+            labelElements['lbl-br-new'].el.style.opacity = hbrAlpha.toFixed(3);
+            labelElements['lbl-br-new'].el.textContent = brBondProgress > 0.75 ? 'Br' : (hBondProgress > 0.5 ? 'Br⁻' : 'Brδ⁻');
+            labelElements['lbl-br-new'].pos.copy(incomingBrAtom.group.position).add(new THREE.Vector3(0.0, -0.78, 0.2));
+
+            for (const key in labelElements) {
+                const item = labelElements[key];
+                const worldPos = item.pos.clone().applyMatrix4(moleculeGroup.matrixWorld).project(camera);
+                const x = (worldPos.x * halfW) + halfW;
+                const y = -(worldPos.y * halfH) + halfH;
+                item.el.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) translate(-50%, -50%) scale(${item.scale.toFixed(3)})`;
+            }
+        }
+
+        function resetCameraView() {
+            camera.position.set(12, 10, 12);
+            controls.target.set(0.2, -0.4, 0.0);
+            controls.update();
+        }
+
+        // ============================================================================
+        // TIMELINE & NEXT BUTTON STATE
+        // ============================================================================
+        let currentTimeline = 0.0;
+        let targetTimeline = 0.0;
+        let lastRenderedStepIndex = -1;
+
+        function updateUIPanelsIfChanged(stepIndex) {
+            if (stepIndex === lastRenderedStepIndex) return;
+            lastRenderedStepIndex = stepIndex;
+
+            const info = STEPS_INFO[stepIndex];
+            document.getElementById('step-badge').textContent = info.badge;
+            document.getElementById('step-title').innerHTML = info.title;
+            document.getElementById('step-bullets').innerHTML = info.bullets.map(b => `<p>${b}</p>`).join('');
+
+            const hybC1 = document.getElementById('hyb-c1'), hybC2 = document.getElementById('hyb-c2'), status = document.getElementById('species-status');
+            if (stepIndex <= 2) {
+                hybC1.textContent = 'C₁: sp²'; hybC2.textContent = 'C₂: sp²';
+                status.textContent = stepIndex === 0 ? 'Propene (Normal)' : 'Polarized Propene';
+                status.className = 'text-amber-500 font-bold uppercase tracking-wider';
+            } else if (stepIndex === 3) {
+                hybC1.textContent = 'C₁: sp³'; hybC2.textContent = 'C₂: sp² (2° C⁺)';
+                status.textContent = '2° Carbocation';
+                status.className = 'text-rose-500 font-bold uppercase tracking-wider';
+            } else {
+                hybC1.textContent = 'C₁: sp³'; hybC2.textContent = 'C₂: sp³';
+                status.textContent = '2-Bromopropane';
+                status.className = 'text-emerald-500 font-bold uppercase tracking-wider';
+            }
+
+            for(let i=0; i<5; i++) {
+                document.getElementById(`ind-${i}`).classList.toggle('active', i <= stepIndex);
+                document.getElementById(`ind-${i}`).classList.toggle('bg-[#9b87f5]', i <= stepIndex);
+            }
+
+            const btnText = document.getElementById('btn-next-text');
+            btnText.textContent = stepIndex === 4 ? "Restart Reaction" : "Next Step";
+        }
+
+        function nextStep() {
+            let next = Math.floor(targetTimeline) + 1;
+            if (next > 4) next = 0;
+            targetTimeline = next;
+            updateUIPanelsIfChanged(next);
+        }
+
+        updateUIPanelsIfChanged(0);
+
+        // ============================================================================
+        // MAIN LOOP
+        // ============================================================================
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsed = clock.getElapsedTime();
+            controls.update();
+
+            currentTimeline += (targetTimeline - currentTimeline) * 0.025;
+            document.getElementById('progress-bar').style.width = `${(currentTimeline / 4) * 100}%`;
+
+            const inductiveShift = smoothstep(0.0, 1.0, currentTimeline);
+            const piShift        = smoothstep(1.0, 2.0, currentTimeline);
+            const hbrAppear      = smoothstep(1.5, 2.2, currentTimeline);
+            const hBondProgress  = smoothstep(2.0, 3.0, currentTimeline);
+            const brBondProgress = smoothstep(3.0, 4.0, currentTimeline);
+
+            incomingHAtom.coreMesh.visible = incomingHAtom.points.visible = hbrAppear > 0.02;
+            incomingHAtom.pMat.opacity = hbrAppear * 0.85;
+            incomingBrAtom.coreMesh.visible = incomingBrAtom.points.visible = hbrAppear > 0.02;
+            incomingBrAtom.pMat.opacity = hbrAppear * 0.88;
+
+            incomingHAtom.group.position.copy(POS.H_new_start).lerp(POS.H_new_bonded, hBondProgress);
+            incomingBrAtom.group.position.copy(POS.Br_start).lerp(POS.Br_wait, hBondProgress).lerp(POS.Br_bonded, brBondProgress);
+
+            h1aAtom.group.position.copy(POS.H1a).add(new THREE.Vector3(0, -0.25*hBondProgress, -0.45*hBondProgress));
+            h1bAtom.group.position.copy(POS.H1b).add(new THREE.Vector3(0, 0.10*hBondProgress, -0.35*hBondProgress));
+            
+            updateDynamicSigmaCloud(c1h1aCloud, POS.C1, h1aAtom.group.position);
+            updateDynamicSigmaCloud(c1h1bCloud, POS.C1, h1bAtom.group.position);
+
+            vacantPMat.opacity = hBondProgress * (1.0 - brBondProgress) * (0.52 + 0.12*Math.sin(elapsed*4.0));
+
+            updateC3C2Orbital(inductiveShift, elapsed);
+            updatePiAndC1HBonds(piShift, hBondProgress, incomingHAtom.group.position, elapsed);
+            updateHBrAndC2BrCloud(hbrAppear, hBondProgress, brBondProgress, incomingHAtom.group.position, incomingBrAtom.group.position, elapsed);
+
+            const slide1 = ((elapsed * 0.55) % 1.0), slide2 = ((elapsed * 0.55 + 0.5) % 1.0);
+            indArrow1.group.position.copy(POS.C3).addScaledVector(c3c2Basis.forward, (0.25+slide1*0.5)*c3c2Basis.length).addScaledVector(c3c2Basis.up, 0.52);
+            indArrow2.group.position.copy(POS.C3).addScaledVector(c3c2Basis.forward, (0.25+slide2*0.5)*c3c2Basis.length).addScaledVector(c3c2Basis.up, 0.52);
+            indArrow1.mat.opacity = (0.25 + 0.75*inductiveShift) * Math.sin(slide1*Math.PI);
+            indArrow2.mat.opacity = (0.25 + 0.75*inductiveShift) * Math.sin(slide2*Math.PI);
+
+            const c2MinusAlpha = Math.max(0, Math.min(1, inductiveShift*1.15 - piShift*0.95));
+            const c2PlusAlpha  = Math.max(0, Math.min(1, (piShift*0.65 + hBondProgress*0.55) * (1.0 - brBondProgress*1.1)));
+            const c1MinusAlpha = Math.max(0, Math.min(1, piShift*1.2 * (1.0 - hBondProgress*1.1)));
+
+            document.getElementById('svg-delta-c2').style.opacity  = c2MinusAlpha.toFixed(2);
+            document.getElementById('svg-plus-c2').style.opacity   = c2PlusAlpha.toFixed(2);
+            document.getElementById('svg-delta-c1').style.opacity  = c1MinusAlpha.toFixed(2);
+            document.getElementById('svg-curved-pi').style.opacity = Math.max(0, piShift - hBondProgress*0.8).toFixed(2);
+            document.getElementById('svg-pi-bond').style.opacity   = (1.0 - hBondProgress*0.85).toFixed(2);
+            document.getElementById('svg-c1-h-group').style.opacity  = hBondProgress.toFixed(2);
+            document.getElementById('svg-c2-br-group').style.opacity = Math.max(hBondProgress*0.6, brBondProgress).toFixed(2);
+            document.getElementById('svg-c2-br-line').style.opacity  = brBondProgress.toFixed(2);
+            document.getElementById('svg-br-attack-arrow').style.opacity = (hBondProgress*(1.0-brBondProgress)).toFixed(2);
+
+            moleculeGroup.updateMatrixWorld();
+            update3DLabels(c2MinusAlpha, c2PlusAlpha, c1MinusAlpha, hbrAppear, hBondProgress, brBondProgress);
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            const width = container.clientWidth, height = container.clientHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        });
+
+        window.onload = animate;
+    </script>
+</body>
+</html>
