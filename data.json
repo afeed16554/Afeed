@@ -614,12 +614,18 @@
             "id": "m1c9",
             "name": "Differentiation",
             "bn": "অন্টারীকরণ",
-            "status": "planned",
+            "status": "available",
             "icon": "trending-up",
             "keywords": [
               "calculus",
               "derivative",
               "limits"
+            ],
+            "simulations": [
+              {
+                "title": "Inscribed Cylinder Intuation",
+                "link": "Inscribed Cylinder Intuation.html"
+              }
             ]
           },
           {
